@@ -382,8 +382,6 @@ namespace nndx
 
 		BYTE Buf1;
 		BYTE Buf2;
-		BYTE Buf3;
-		BYTE Buf4;
 
 		BOOL retval;
 		retval = CryptAcquireContext(phProv, 0, 0, PROV_RSA_FULL, 0);
@@ -393,10 +391,6 @@ namespace nndx
 			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
 			CryptReleaseContext(hProv, 0);
 			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
-			CryptReleaseContext(hProv, 0);
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf3);
-			CryptReleaseContext(hProv, 0);
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf4);
 			CryptReleaseContext(hProv, 0);
 		}
 		int i = (int)Buf1;

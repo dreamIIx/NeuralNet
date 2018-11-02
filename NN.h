@@ -7,10 +7,13 @@
 #include <fstream>
 #include <math.h>
 #include <vector>
+#include <Windows.h>
 //#include <ctime>
 
 namespace nndx
 {
+	inline int randT();
+
 	class neuron
 	{
 	public:
@@ -178,7 +181,7 @@ namespace nndx
 				weight.push_back(dataW());
 				for (int j = 0; j < data[i].size() * data[i + 1].size(); j++)
 				{
-					weight.back().push_back(rand() / double(RAND_MAX));
+					weight.back().push_back(double((randT() % 10000) * 0.001));
 					std::cout << weight.back().back().wg << "   ";
 				}
 				std::cout << std::endl;
@@ -224,7 +227,7 @@ namespace nndx
 					weight.push_back(dataW());
 					for (int j = 0; j < data[i].size() * data[i + 1].size(); j++)
 					{
-						weight.back().push_back(rand() / double(RAND_MAX));
+						weight.back().push_back(double((randT() % 10000) * 0.001));
 					}
 				}
 				std::cout << "Training file(default): " << nameT << std::endl;
@@ -371,4 +374,33 @@ namespace nndx
 			}
 		}
 	};
+
+	inline int randT()
+	{
+		HCRYPTPROV hProv;
+		HCRYPTPROV *phProv = &hProv;
+
+		BYTE Buf1;
+		BYTE Buf2;
+		BYTE Buf3;
+		BYTE Buf4;
+
+		BOOL retval;
+		retval = CryptAcquireContext(phProv, 0, 0, PROV_RSA_FULL, 0);
+
+		if (retval != 0)
+		{
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
+			CryptReleaseContext(hProv, 0);
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
+			CryptReleaseContext(hProv, 0);
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf3);
+			CryptReleaseContext(hProv, 0);
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf4);
+			CryptReleaseContext(hProv, 0);
+		}
+		int i = (int)Buf1;
+		i += (int)Buf2;
+		return i;
+	}
 }

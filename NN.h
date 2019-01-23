@@ -14,6 +14,31 @@ namespace nndx
 {
 	inline int randT();
 
+	struct dy_tpl
+	{
+		std::vector<int> tempDATA;
+
+		dy_tpl(int size, ...)
+		{
+			va_list args;
+			va_start(args, size);
+
+			tempDATA.reserve(size);
+			for (int i = 0; i < size; ++i)
+			{
+				int value = va_arg(args, int);
+				tempDATA.emplace_back(value);
+			}
+			va_end(args);
+		}
+
+		~dy_tpl()
+		{
+			tempDATA.clear();
+			//std::cout << "called ~dy_tpl()" << std::endl;
+		}
+	};
+
 	class neuron
 	{
 	public:
@@ -42,6 +67,7 @@ namespace nndx
 	class neuronet
 	{
 	public:
+		bool BIfunc = false;
 		double moment = 0.0; // 0.05
 		double u = 0.0; // 0.1
 		std::vector<dataA> data;
@@ -50,11 +76,55 @@ namespace nndx
 		std::string nameF = "";
 		std::string nameT = "";
 
-		void saveF()
+		neuronet() {}
+
+		neuronet(dy_tpl& temp, bool setBIfunc) : BIfunc(setBIfunc)
+		{
+			/// \<- SPECinit()
+			int* pos = temp.tempDATA.data();
+			for (int i = 0; i < temp.tempDATA.size(); i++)
+			{
+				int a = *pos++;
+				if (a > 0)
+				{
+					data.push_back(dataA());
+
+					for (int i = 0; i < a; i++)
+					{
+						data.back().push_back(0);
+					}
+					topology_save.push_back(a);
+				}
+			}
+
+			for (int i = 0; i < data.size() - 1; i++)
+			{
+				data[i].push_back(1);
+				data[i].back().is_bias();
+			}
+
+			for (int i = 0; i < data.size() - 1; i++)
+			{
+				weight.push_back(dataW());
+				for (int j = 0; j < data[i].size() * data[i + 1].size(); j++)
+				{
+					weight.back().push_back((nndx::randT() % 6) - 2);
+					//weight.back().push_back((randT() % 101) * 0.01);
+					//weight.back().push_back(randT() * 0.001);
+					//weight.back().push_back(rand() / double(RAND_MAX));
+					//std::cout << weight.back().back().wg << "   ";
+				}
+				//std::cout << std::endl;
+			}
+
+			//temp.~dy_tpl();
+		}
+
+		void saveF(std::string s)
 		{
 			std::cout << "Outputing weights..." << std::endl;
 
-			std::ofstream f(nameF + "_OUT.txt");
+			std::ofstream f("output/" + s);
 			for (int i = 0; i < topology_save.size(); i++)
 			{
 				f << topology_save[i] << " ";
@@ -70,12 +140,12 @@ namespace nndx
 				}
 				f << "-----" << std::endl;
 			}
-			f << nameT;
+			f << s;
 			f.close();
-			std::cout << "Weights is saved!(File - " << nameF << "_OUT.txt)" << std::endl;
+			std::cout << "Weights is saved!(File - " << s << ")" << std::endl;
 		}
 
-		void mA()
+		/*void mA()
 		{
 			std::ifstream read(nameT);
 			if (!read.is_open())
@@ -122,7 +192,7 @@ namespace nndx
 				/*for (int i = 0; i < weight.size(); i++)
 				{
 					std::cout << weight[i][weight[i].size() - 1].wg << std::endl;
-				}*/
+				}
 				std::vector<double> errDat;
 				for (int i = 0; i < data.back().size(); i++)
 				{
@@ -136,30 +206,38 @@ namespace nndx
 				std::cout << "------------" << std::endl;
 			}
 			read.close();
-		}
+		}*/
 
-		void SPECmA(std::vector<double> input)
+		void SPECmA(std::vector<int>& dataT)
 		{
-			for (int i = 0; i < data[0].size() - 1; i++)
+			if (dataT.size() == data[0].size() - 1)
 			{
-				data[0][i].data = input[i];
-				if (!data[0][i].BIAS)	data[0][i].goF();
+				for (int i = 0; i < data[0].size() - 1; i++)
+				{
+					data[0][i].data = dataT[i];
+					if (!data[0][i].BIAS)	data[0][i].goF();
+					else std::cout << "checkout here!" << std::endl;
+				}
+				if(BIfunc)	activationF_BI();
+				else	activationF();
 			}
-			activationF();
-			for (int i = 0; i < data.back().size(); i++)
+			else
+			{
+				std::cout << "ERROR || !@#$" << std::endl;
+			}
+			/*for (int i = 0; i < data.back().size(); i++)
 			{
 				std::cout << data.back()[i].data << std::endl;
-			}
+			}*/
 		}
 
-		void SPECinit(std::vector<int> topology)
+		/*void SPECinit(std::vector<int> topology)
 		{
 			for (int i = 0; i < topology.size(); i++)
 			{
 				int a = topology[i];
 				if (a > 0)
 				{
-
 					data.push_back(dataA());
 
 					for (int i = 0; i < a; i++)
@@ -181,12 +259,15 @@ namespace nndx
 				weight.push_back(dataW());
 				for (int j = 0; j < data[i].size() * data[i + 1].size(); j++)
 				{
-					weight.back().push_back(double((randT() % 10000) * 0.001));
-					std::cout << weight.back().back().wg << "   ";
+					weight.back().push_back((nndx::randT() % 6) - 2);
+					//weight.back().push_back((randT() % 101) * 0.01);
+					//weight.back().push_back(randT() * 0.001);
+					//weight.back().push_back(rand() / double(RAND_MAX));
+					//std::cout << weight.back().back().wg << "   ";
 				}
-				std::cout << std::endl;
+				//std::cout << std::endl;
 			}
-		}
+		}*/
 
 		void init()
 		{
@@ -227,7 +308,7 @@ namespace nndx
 					weight.push_back(dataW());
 					for (int j = 0; j < data[i].size() * data[i + 1].size(); j++)
 					{
-						weight.back().push_back(double((randT() % 10000) * 0.001));
+						weight.back().push_back(randT() * 0.001);
 					}
 				}
 				std::cout << "Training file(default): " << nameT << std::endl;
@@ -332,7 +413,7 @@ namespace nndx
 			}
 		}
 
-		void backProp(std::vector<double> &d)
+		/*void backProp(std::vector<double> &d)
 		{
 			std::vector<dataW> errR;
 
@@ -347,7 +428,7 @@ namespace nndx
 			}
 
 			double local_sum = 0;
-			for (int i = data.size() - 2; i >= 0; i--)
+			for (size_t i = data.size() - 2; i >= 0; i--)
 			{
 				for (int j = 0; j < data[i].size(); j++)
 				{
@@ -372,7 +453,7 @@ namespace nndx
 					}
 				}
 			}
-		}
+		}*/
 	};
 
 	inline int randT()
@@ -390,11 +471,18 @@ namespace nndx
 		{
 			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
 			CryptReleaseContext(hProv, 0);
+		}
+		retval = CryptAcquireContext(phProv, 0, 0, PROV_RSA_FULL, 0);
+
+		if (retval != 0)
+		{
 			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
 			CryptReleaseContext(hProv, 0);
 		}
+
 		int i = (int)Buf1;
 		i += (int)Buf2;
+		//std::cout << i << std::endl;
 		return i;
 	}
 }

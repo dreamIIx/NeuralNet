@@ -80,7 +80,7 @@ void radixSort(std::vector<Object*>& a);
 void mA_gen(std::vector<Object*>& obj, std::vector<int>& tg);
 void mT(std::vector<nndx::dataW>& v, size_t index1, size_t index2);
 
-int main8()
+int main()
 {
 	RenderWindow win({ WIN_X, WIN_Y }, "test");
 	//win.setFramerateLimit(2);
@@ -98,7 +98,7 @@ int main8()
 	std::vector<Object> v_Obj;
 	v_Obj.reserve(_SIZE_);
 	//v_Obj.emplace_back(t, topology__, 0);
-	//v_Obj[0].net.nameF = "net_10";
+	//v_Obj[0].net.nameF = "wWWw_OUT";
 	//v_Obj[0].net.init();
 	for (int i = 0; i < _SIZE_; ++i)
 	{
@@ -188,9 +188,9 @@ int main8()
 					if (v_Wll[j][0].wall.getPosition().x > _ptr[i]->obj.getPosition().x)
 					{
 						int toY = static_cast<int>(target[j] - _ptr[i]->obj.getPosition().y);
-						if (toY > 0) toY = 1;
-						else if (toY < 0) toY = -1;
-						_ptr[i]->net.SPECmA(1, toY);
+						/*if (toY > 0) toY = 1;
+						else if (toY < 0) toY = -1;*/
+						_ptr[i]->net.SPECmA(1, toY * 0.01);
 						//bool non = false;
 						std::vector<double> values;
 						for (size_t uy = 0; uy < _ptr[i]->net.data.back().size(); ++uy)
@@ -306,9 +306,10 @@ int main8()
 	}
 
 	std::ofstream out("output/log.txt");
-	out << "The best score: ";
-	out << mP << std::endl;
-	out << "of " << mI << " net(index)" << std::endl;
+	for (int i = 0; i < _SIZE_; ++i)
+	{
+		out << "net_" << i << " - " << v_Obj[i].score << std::endl;
+	}
 	out.close();
 
 	return 0;
@@ -335,25 +336,17 @@ void radixSort(std::vector<Object*>& a)
 void mA_gen(std::vector<Object*>& obj, std::vector<int>& tg)
 {
 	size_t index;
-	obj[8]->net.weight = obj[11]->net.weight;
-	index = nndx::randT() % obj[11]->net.weight.size();
-	mT(obj[8]->net.weight, index, static_cast<size_t>(nndx::randT() % obj[11]->net.weight[index].size()));
-
-	obj[7]->net.weight = obj[11]->net.weight;
-	index = nndx::randT() % obj[11]->net.weight.size();
-	mT(obj[7]->net.weight, index, static_cast<size_t>(nndx::randT() % obj[11]->net.weight[index].size()));
-
-	obj[6]->net.weight = obj[11]->net.weight;
-	index = nndx::randT() % obj[11]->net.weight.size();
-	mT(obj[6]->net.weight, index, static_cast<size_t>(nndx::randT() % obj[11]->net.weight[index].size()));
-
-	obj[5]->net.weight = obj[10]->net.weight;
+	obj[8]->net.weight = obj[10]->net.weight;
 	index = nndx::randT() % obj[10]->net.weight.size();
-	mT(obj[5]->net.weight, index, static_cast<size_t>(nndx::randT() % obj[10]->net.weight[index].size()));
+	mT(obj[8]->net.weight, index, nndx::randT() % obj[10]->net.weight[index].size());
 
-	obj[4]->net.weight = obj[9]->net.weight;
+	obj[7]->net.weight = obj[9]->net.weight;
 	index = nndx::randT() % obj[9]->net.weight.size();
-	mT(obj[4]->net.weight, index, static_cast<size_t>(nndx::randT() % obj[9]->net.weight[index].size()));
+	mT(obj[7]->net.weight, index, nndx::randT() % obj[9]->net.weight[index].size());
+
+	mT(obj[6]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
+	mT(obj[5]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
+	mT(obj[4]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
 
 	for (size_t i = 0; i < tg.size() - 2; ++i)
 	{
@@ -364,7 +357,7 @@ void mA_gen(std::vector<Object*>& obj, std::vector<int>& tg)
 	if (nndx::randT() % 3 == 2)
 	{
 		index = nndx::randT() % obj[3]->net.weight.size();
-		mT(obj[3]->net.weight, index, static_cast<size_t>(nndx::randT() % obj[3]->net.weight[index].size()));
+		mT(obj[3]->net.weight, index, nndx::randT() % obj[3]->net.weight[index].size());
 	}
 
 	for (size_t i = 0; i < tg.size() - 2; ++i)
@@ -375,11 +368,11 @@ void mA_gen(std::vector<Object*>& obj, std::vector<int>& tg)
 	if (nndx::randT() % 3 == 2)
 	{
 		index = nndx::randT() % obj[2]->net.weight.size();
-		mT(obj[2]->net.weight, index, static_cast<size_t>(nndx::randT() % obj[2]->net.weight[index].size()));
+		mT(obj[2]->net.weight, index, nndx::randT() % obj[2]->net.weight[index].size());
 	}
 
-	mT(obj[1]->net.weight, static_cast<size_t>(obj[11]->net.weight.size()), static_cast<size_t>(obj[11]->net.weight.back().size()));
-	mT(obj[0]->net.weight, static_cast<size_t>(obj[11]->net.weight.size()), static_cast<size_t>(obj[11]->net.weight.back().size()));
+	mT(obj[1]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
+	mT(obj[0]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
 }
 
 void mT(std::vector<nndx::dataW>& v, size_t index1, size_t index2)
@@ -388,8 +381,8 @@ void mT(std::vector<nndx::dataW>& v, size_t index1, size_t index2)
 	{
 		for (size_t j = 0; j < index2; ++j)
 		{
-			v[i][j].wg = static_cast<double>((nndx::randT() % 3) * 0.5);
-			//v[i][j].wg = static_cast<double>((nndx::randT() % 11) * 0.1);
+			v[i][j].wg = static_cast<double>(nndx::randT() % 6) - 2;
+			//v[i][j].wg = static_cast<double>((nndx::randT() % 101) * 0.01);
 			//v[i][j].wg = static_cast<double>(nndx::randT() * 0.001);
 		}
 	}

@@ -1,28 +1,10 @@
 #pragma once
 
-#ifndef _ERR_FL_
-#define _ERR_FL_
-#define S(x) #x
-#define S_(x) S(x)
-#define S__LINE__ S_(__LINE__)
-#define FILELINE (__FILE__  " line " S__LINE__)
-#define ERROR_ ::std::cout << FILELINE << ::std::endl;
-#endif
-
 //Autor -dreamIIx
 //GitHub - https://github.com/dreamIIx
 //Release on GitHub 27.01.2019
 
-//#include <iostream>
-//#include <string>
-//#include <fstream>
-//#include <math.h>
-//#include <vector>
 #include <Windows.h>
-/*#include "wincrypt.h"
-#include "minwindef.h"
-#include "winerror.h"
-#include "vcruntime.h"*/
 
 namespace nndx
 {
@@ -70,7 +52,7 @@ namespace nndx
 	{
 	public:
 		double wg = 0.0;
-		//double dwg = 0.0;
+		double dwg = 0.0;
 		//double grad = 0.0;
 		wWw() {}
 		wWw(double num) : wg(num) {}
@@ -87,7 +69,7 @@ namespace nndx
 		double u = 15; // 0.1
 		::std::vector<dataA> data;
 		::std::vector<dataW> weight;
-		//::std::vector<int> topology_save;
+		::std::vector<int> topology_save;
 		::std::string nameF = "";
 		::std::string nameT = "";
 
@@ -109,7 +91,7 @@ namespace nndx
 					{
 						data.back().push_back(0);
 					}
-					//topology_save.push_back(a);
+					topology_save.push_back(a);
 				}
 			}
 
@@ -134,7 +116,7 @@ namespace nndx
 			}
 		}
 
-		/*void saveF(::std::string s)
+		void saveF(::std::string& s)
 		{
 			::std::cout << "Outputing weights..." << ::std::endl;
 
@@ -157,7 +139,7 @@ namespace nndx
 			f << s;
 			f.close();
 			::std::cout << "Weights is saved!(File - " << s << ")" << ::std::endl;
-		}*/
+		}
 
 		/*void mA()
 		{

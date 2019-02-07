@@ -27,6 +27,7 @@
 namespace nndx
 {
 	inline int randT();
+	inline int randB();
 
 	struct dy_tpl
 	{
@@ -531,6 +532,7 @@ namespace nndx
 					::std::cout << "Error ... [crypt]" << ::std::endl;
 					ERROR_
 					system("pause");
+					return 0;
 				}
 				else
 				{
@@ -554,6 +556,7 @@ namespace nndx
 					::std::cout << "Error ... [crypt]" << ::std::endl;
 					ERROR_
 					system("pause");
+					return 0;
 				}
 				else
 				{
@@ -570,6 +573,65 @@ namespace nndx
 
 		int i = (int)Buf1;
 		i += (int)Buf2;
+
+		return i;
+	}
+
+	inline int randB()
+	{
+		HCRYPTPROV hProv;
+
+		BYTE Buf1;
+		BYTE Buf2;
+		int i;
+
+		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		{
+			if (GetLastError() == NTE_BAD_KEYSET)
+			{
+				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
+				{
+					//Error
+					return 0;
+				}
+				else
+				{
+					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
+					CryptReleaseContext(hProv, 0);
+					i = static_cast<int>(Buf1);
+				}
+			}
+		}
+		else
+		{
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
+			CryptReleaseContext(hProv, 0);
+			i = static_cast<int>(Buf1);
+		}
+
+		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		{
+			if (GetLastError() == NTE_BAD_KEYSET)
+			{
+				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
+				{
+					//Error
+					return 0;
+				}
+				else
+				{
+					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
+					CryptReleaseContext(hProv, 0);
+					i <<= static_cast<int>(Buf2 % 24);
+				}
+			}
+		}
+		else
+		{
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
+			CryptReleaseContext(hProv, 0);
+			i <<= static_cast<int>(Buf2 % 24);
+		}
 
 		return i;
 	}

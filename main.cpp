@@ -1,6 +1,18 @@
 #include <iostream>
+#include <fstream>
+#include <string>
 #include <vector>
 #include "SFML/Graphics.hpp"
+
+#ifndef _ERR_FL_
+#define _ERR_FL_
+#define S(x) #x
+#define S_(x) S(x)
+#define S__LINE__ S_(__LINE__)
+#define FILELINE (__FILE__  " line " S__LINE__)
+#define ERROR_ ::std::cout << FILELINE << ::std::endl;
+#endif
+
 #include "NN.h"
 #include "MainH.h"
 
@@ -15,29 +27,27 @@
 #define POSX 410
 #define POSY 200
 #define POSY_WALL 140
-#define KF 0.5
+#define KF 0.6
 #define TIME 2000
 
-using namespace sf;
 
 class Object
 {
 public:
-	Sprite obj;
+	sf::Sprite obj;
 	nndx::neuronet net;
 	int score, i;
 	bool life;
 
-	Object(Texture& t, std::vector<int>& topology, int i) : obj(t), net(topology), score(0), life(true), i(i)
+	Object(sf::Texture& t, const nndx::dy_tpl& tpl, int i) : obj(t), net(tpl, true), score(0), life(true), i(i)
 	{
 		//if (i != 0)	net.SPECinit(topology);
-		obj.setTextureRect(IntRect(0, TEXTURE_OBJ_Y * i, TEXTURE_OBJ_X, TEXTURE_OBJ_Y));
+		obj.setTextureRect(sf::IntRect(0, TEXTURE_OBJ_Y * i, TEXTURE_OBJ_X, TEXTURE_OBJ_Y));
 		obj.setPosition(static_cast<float>(POSX), static_cast<float>(POSY));
-		//obj.setPosition(static_cast<float>(POSX - 20 * this->i), static_cast<float>(POSY));
-		obj.setOrigin(Vector2f(TEXTURE_OBJ_X / 2, TEXTURE_OBJ_Y / 2));
+		obj.setOrigin(sf::Vector2f(TEXTURE_OBJ_X / 2, TEXTURE_OBJ_Y / 2));
 	}
 
-	void mA(std::vector<double> args)
+	void mA(::std::vector<double>& args)
 	{
 		if (args[0] > KF)
 		{
@@ -66,53 +76,49 @@ public:
 class Wall
 {
 public:
-	Sprite wall;
+	sf::Sprite wall;
 
-	Wall(Texture& t, float x, float y) : wall(t)
+	Wall(sf::Texture& t, float x, float y) : wall(t)
 	{
-		wall.setTextureRect(IntRect(TEXTURE_OBJ_X, 0, TEXTURE_OBJ_X, TEXTURE_OBJ_Y));
+		wall.setTextureRect(sf::IntRect(TEXTURE_OBJ_X, 0, TEXTURE_OBJ_X, TEXTURE_OBJ_Y));
 		wall.setPosition(x, y);
-		wall.setOrigin(Vector2f(TEXTURE_OBJ_X / 2, TEXTURE_OBJ_Y / 2));
+		wall.setOrigin(sf::Vector2f(TEXTURE_OBJ_X / 2, TEXTURE_OBJ_Y / 2));
 	}
 };
 
-void radixSort(std::vector<Object*>& a);
-void mA_gen(std::vector<Object*>& obj, std::vector<int>& tg);
-void mT(std::vector<nndx::dataW>& v, size_t index1, size_t index2);
+void radixSort(::std::vector<Object*>& a);
+void mA_gen(::std::vector<Object*>& obj, const int& tg);
+void mT(::std::vector<nndx::dataW>& v, size_t index1, size_t index2);
 
 int main()
 {
-	RenderWindow win({ WIN_X, WIN_Y }, "test");
+	sf::RenderWindow win({ WIN_X, WIN_Y }, "test");
 	//win.setFramerateLimit(2);
 	win.setVerticalSyncEnabled(true);
 
-	Image image;
+	sf::Image image;
 	image.loadFromFile(FILEIMAGE);
-	Texture t;
+	sf::Texture t;
 	t.loadFromImage(image);
-	std::vector<int> topology__;
-	topology__.reserve(3);
-	topology__.emplace_back(2);
-	topology__.emplace_back(3);
-	topology__.emplace_back(2);
-	std::vector<Object> v_Obj;
+
+	::std::vector<Object> v_Obj;
 	v_Obj.reserve(_SIZE_);
 	//v_Obj.emplace_back(t, topology__, 0);
 	//v_Obj[0].net.nameF = "wWWw_OUT";
 	//v_Obj[0].net.init();
 	for (int i = 0; i < _SIZE_; ++i)
 	{
-		v_Obj.emplace_back(t, topology__, i);
+		v_Obj.emplace_back(t, nndx::dy_tpl(3, 2, 3, 2), i);
 	}
-	std::vector<std::vector<Wall>> v_Wll;
-	std::vector<int> target;
+	::std::vector<::std::vector<Wall>> v_Wll;
+	::std::vector<int> target;
 	v_Wll.reserve(SIZE_VECTOR_WALL);
 	target.reserve(SIZE_VECTOR_WALL);
 	int tmpy = nndx::randT() % 4;
 	int next = nndx::randT() % 4;
 	float wposx = 470.0f;
 	target.emplace_back(POSY_WALL + 20 + tmpy * 20);
-	v_Wll.push_back(std::vector<Wall>());
+	v_Wll.push_back(::std::vector<Wall>());
 	v_Wll.back().emplace_back(t, wposx, static_cast<float>(POSY_WALL));
 	for (int i = 0; i < _NUM_ACTIVE_WALL; ++i)
 	{
@@ -122,8 +128,8 @@ int main()
 	tmpy = next;
 	wposx += 20.0f;
 
-	View view;
-	view.reset(FloatRect(0.0f, 0.0f, WIN_X, WIN_Y));
+	sf::View view;
+	view.reset(sf::FloatRect(0.0f, 0.0f, WIN_X, WIN_Y));
 	dx::TimeGet tm;
 	size_t bufsizeO;
 
@@ -132,17 +138,17 @@ int main()
 
 	while (win.isOpen())
 	{
-		Event event;
+		sf::Event event;
 		while (win.pollEvent(event))
 		{
-			if (event.type == Event::Closed)
+			if (event.type == sf::Event::Closed)
 			{
 				win.close();
 				break;
 			}
 		}
 
-		std::vector<Object*> _ptr;
+		::std::vector<Object*> _ptr;
 		for (int i = 0; i < _SIZE_; ++i)
 		{
 			if (v_Obj[i].life)	_ptr.emplace_back(&v_Obj[i]);
@@ -157,14 +163,14 @@ int main()
 		}
 		if (v_Wll[0][0].wall.getPosition().x < minposx_obj)
 		{
-			std::vector<std::vector<Wall>>::iterator it = v_Wll.begin();
+			::std::vector<::std::vector<Wall>>::iterator it = v_Wll.begin();
 			it = v_Wll.erase(it);
-			std::vector<int>::iterator itTg = target.begin();
+			::std::vector<int>::iterator itTg = target.begin();
 			itTg = target.erase(itTg);
 		}
 		if (static_cast<int>(wposx) - maxposx_obj < 100)
 		{
-			v_Wll.push_back(std::vector<Wall>());
+			v_Wll.push_back(::std::vector<Wall>());
 			v_Wll.back().emplace_back(t, wposx, static_cast<float>(POSY_WALL));
 			next = nndx::randT() % 4;
 			target.emplace_back(POSY_WALL + 20 + tmpy * 20);
@@ -180,38 +186,24 @@ int main()
 		bufsizeO = _ptr.size();
 		if ((_ptr.size()) && (bufsizeO == _ptr.size() ? *tm < TIME : 1))
 		{
-			//std::cout << _ptr.size() << std::endl;
 			for (size_t i = 0; i < _ptr.size(); ++i)
 			{
 				for (size_t j = 0; j < target.size(); ++j)
 				{
 					if (v_Wll[j][0].wall.getPosition().x > _ptr[i]->obj.getPosition().x)
 					{
-						int toY = static_cast<int>(target[j] - _ptr[i]->obj.getPosition().y);
-						/*if (toY > 0) toY = 1;
-						else if (toY < 0) toY = -1;*/
-						_ptr[i]->net.SPECmA(1, toY * 0.01);
-						//bool non = false;
-						std::vector<double> values;
+						double toY = target[j] - _ptr[i]->obj.getPosition().y;
+						::std::vector<double> packet;
+						packet.reserve(2);
+						packet.emplace_back(1);
+						packet.emplace_back(toY * 0.01);
+						_ptr[i]->net.SPECmA(packet);
+						::std::vector<double> values;
 						for (size_t uy = 0; uy < _ptr[i]->net.data.back().size(); ++uy)
 						{
 							values.emplace_back(_ptr[i]->net.data.back()[uy].data);
 						}
 						_ptr[i]->mA(values);
-						/*for (size_t uy = 0; uy < _ptr[i]->net.data.back().size(); ++uy)
-						{
-							values.emplace_back(_ptr[i]->net.data.back()[uy].data);
-							if (values.back() > 0)
-							{
-								if (values.back() > KF) non = true;
-							}
-							else
-							{
-								if (values.back() < -KF) non = true;
-							}
-						}
-						if(non)	_ptr[i]->mA(values);
-						else	mT(_ptr[i]->net.weight, _ptr[i]->net.weight.size(), _ptr[i]->net.weight.back().size());*/
 						break;
 					}
 				}
@@ -241,12 +233,11 @@ int main()
 				mI = _ptr[11]->i;
 				mP = _ptr[11]->score;
 			}
-			mA_gen(_ptr, topology__);
+			mA_gen(_ptr, 3);
 
 			for (size_t i = 0; i < v_Obj.size(); ++i)
 			{
 				v_Obj[i].obj.setPosition(static_cast<float>(POSX), static_cast<float>(POSY));
-				//v_Obj[i].obj.setPosition(static_cast<float>(POSX - v_Obj[i].i * 20), static_cast<float>(POSY));
 				v_Obj[i].life = true;
 				v_Obj[i].score = 0;
 			}
@@ -256,7 +247,7 @@ int main()
 			tmpy = nndx::randT() % 4;
 			wposx = 470.0f;
 			target.emplace_back(POSY_WALL + 20 + tmpy * 20);
-			v_Wll.push_back(std::vector<Wall>());
+			v_Wll.push_back(::std::vector<Wall>());
 			v_Wll.back().emplace_back(t, wposx, static_cast<float>(POSY_WALL));
 			for (int i = 0; i < _NUM_ACTIVE_WALL; ++i)
 			{
@@ -287,7 +278,7 @@ int main()
 
 	for (int i = 0; i < _SIZE_; ++i)
 	{
-		std::string s = "net_";
+		::std::string s = "output/net_";
 		char ch;
 		if (i < 10)
 		{
@@ -305,23 +296,23 @@ int main()
 		v_Obj[i].net.saveF(s);
 	}
 
-	std::ofstream out("output/log.txt");
+	::std::ofstream out("output/log.txt");
 	for (int i = 0; i < _SIZE_; ++i)
 	{
-		out << "net_" << i << " - " << v_Obj[i].score << std::endl;
+		out << "net_" << i << " - " << v_Obj[i].score << ::std::endl;
 	}
 	out.close();
 
 	return 0;
 }
 
-void radixSort(std::vector<Object*>& a)
+void radixSort(::std::vector<Object*>& a)
 {
 	int d = 8, w = 32;
 	for (int p = 0; p < w / d; p++)
 	{
-		std::vector<int> c(1 << d, 0);
-		std::vector<Object*> b = a;
+		::std::vector<int> c(1 << d, 0);
+		::std::vector<Object*> b = a;
 
 		for (size_t i = 0; i < a.size(); i++)
 			c[ (a[i]->score >> d * p) & ((1 << d) - 1) ]++;
@@ -333,7 +324,7 @@ void radixSort(std::vector<Object*>& a)
 	}
 }
 
-void mA_gen(std::vector<Object*>& obj, std::vector<int>& tg)
+void mA_gen(::std::vector<Object*>& obj, const int& tg)
 {
 	size_t index;
 	obj[8]->net.weight = obj[10]->net.weight;
@@ -348,23 +339,23 @@ void mA_gen(std::vector<Object*>& obj, std::vector<int>& tg)
 	mT(obj[5]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
 	mT(obj[4]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
 
-	for (size_t i = 0; i < tg.size() - 2; ++i)
+	for (size_t i = 0; i < tg - 2; ++i)
 	{
 		obj[3]->net.weight[i] = obj[11]->net.weight[i];
 	}
-	if(nndx::randT() % 2 == 1)	obj[3]->net.weight[tg.size() - 2] = obj[10]->net.weight[tg.size() - 2];
-	else	obj[3]->net.weight[tg.size() - 2] = obj[9]->net.weight[tg.size() - 2];
+	if(nndx::randT() % 2 == 1)	obj[3]->net.weight[tg - 2] = obj[10]->net.weight[tg - 2];
+	else	obj[3]->net.weight[tg - 2] = obj[9]->net.weight[tg - 2];
 	if (nndx::randT() % 3 == 2)
 	{
 		index = nndx::randT() % obj[3]->net.weight.size();
 		mT(obj[3]->net.weight, index, nndx::randT() % obj[3]->net.weight[index].size());
 	}
 
-	for (size_t i = 0; i < tg.size() - 2; ++i)
+	for (size_t i = 0; i < tg - 2; ++i)
 	{
 		obj[2]->net.weight[i] = obj[10]->net.weight[i];
 	}
-	obj[2]->net.weight[tg.size() - 2] = obj[9]->net.weight[tg.size() - 2];
+	obj[2]->net.weight[tg - 2] = obj[9]->net.weight[tg - 2];
 	if (nndx::randT() % 3 == 2)
 	{
 		index = nndx::randT() % obj[2]->net.weight.size();
@@ -375,15 +366,23 @@ void mA_gen(std::vector<Object*>& obj, std::vector<int>& tg)
 	mT(obj[0]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
 }
 
-void mT(std::vector<nndx::dataW>& v, size_t index1, size_t index2)
+void mT(::std::vector<nndx::dataW>& v, size_t index1, size_t index2)
 {
 	for (size_t i = 0; i < index1; ++i)
 	{
-		for (size_t j = 0; j < index2; ++j)
+		if (i != index1 - 1)
 		{
-			v[i][j].wg = static_cast<double>(nndx::randT() % 6) - 2;
-			//v[i][j].wg = static_cast<double>((nndx::randT() % 101) * 0.01);
-			//v[i][j].wg = static_cast<double>(nndx::randT() * 0.001);
+			for (size_t j = 0; j < v[i].size(); ++j)
+			{
+				v[i][j].wg = static_cast<double>(nndx::randT() % 6) - 2;
+			}
+		}
+		else
+		{
+			for (size_t j = 0; j < index2; ++j)
+			{
+				v[i][j].wg = static_cast<double>(nndx::randT() % 6) - 2;
+			}
 		}
 	}
 }

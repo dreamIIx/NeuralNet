@@ -4,13 +4,13 @@
 #include <vector>
 #include "SFML/Graphics.hpp"
 
-#ifndef _ERR_FL_
-#define _ERR_FL_
-#define S(x) #x
-#define S_(x) S(x)
-#define S__LINE__ S_(__LINE__)
-#define FILELINE (__FILE__  " line " S__LINE__)
-#define ERROR_ ::std::cout << FILELINE << ::std::endl;
+#ifndef def_ERR_FL_
+#define def_ERR_FL_
+#define def_XTT_S(x) #x
+#define def_XTT_S_(x) def_XTT_S(x)
+#define def_XTT_S__LINE__ def_XTT_S_(__LINE__)
+#define def__FILELINE (__FILE__  " line " def_XTT_S__LINE__)
+#define ERROR_ ::std::cout << def__FILELINE << ::std::endl;
 #endif
 
 #include "NN.h"

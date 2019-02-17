@@ -217,7 +217,7 @@ namespace nndx
 			}
 			else
 			{
-				::std::cout << "ERROR || !@#$" << ::std::endl;
+				ERROR_
 				system("pause");
 			}
 		}

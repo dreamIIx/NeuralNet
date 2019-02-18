@@ -31,7 +31,6 @@ int def_FIi(::std::ifstream& read_cont__)
 #endif
 
 #include "NN.h"
-#include "MainH.h"
 
 #define def_WIN_X 1000
 #define def_WIN_Y 400
@@ -52,10 +51,10 @@ class Object
 public:
 	sf::Sprite obj;
 	nndx::neuronet net;
-	int score, i;
+	int score, stepA;
 	bool life;
 
-	Object(sf::Texture& t, const nndx::dy_tpl& tpl, int i) : obj(t), net(tpl, true), score(0), life(true), i(i)
+	Object(sf::Texture& t, const nndx::dy_tpl& tpl, int i) : obj(t), net(tpl, true), score(0), life(true), stepA(5)
 	{
 		//if (i != 0)	net.SPECinit(topology);
 		obj.setTextureRect(sf::IntRect(0, def_TEXTURE_OBJ_Y * i, def_TEXTURE_OBJ_X, def_TEXTURE_OBJ_Y));
@@ -65,10 +64,15 @@ public:
 
 	void mA(::std::vector<double>& args)
 	{
+		bool step_forward = true;
 		if (args[0] > def_KF)
 		{
 			obj.move(20.0f, 0.0f);
 			score += 20;
+		}
+		else
+		{
+			step_forward = false;
 		}
 		if (args[1] > def_KF)
 		{
@@ -76,6 +80,10 @@ public:
 			{
 				obj.move(0.0f, 20.0f);
 				score += 5;
+			}
+			else
+			{
+				--stepA;
 			}
 		}
 		else if(args[1] < -def_KF)
@@ -85,6 +93,14 @@ public:
 				obj.move(0.0f, -20.0f);
 				score += 5;
 			}
+			else
+			{
+				--stepA;
+			}
+		}
+		else
+		{
+			if (!step_forward)	--stepA;
 		}
 	}
 };
@@ -105,7 +121,7 @@ public:
 void radixSort(::std::vector<Object*>&);
 void mA_gen(::std::vector<Object*>&, const int&);
 void mT(::std::vector<nndx::dataW>&, size_t, size_t);
-void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, sf::Int32&, bool&);
+void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, bool&, bool&, bool&);
 
 int main()
 {
@@ -131,8 +147,11 @@ int main()
 	target_.reserve(def_SIZE_VECTOR_WALL);
 
 	bool isOpen = true;
+	bool runA = true;
+	bool newA = true;
 
-	::std::thread mainThread(mainA, ::std::ref(win), ::std::ref(v_Obj_), ::std::ref(v_Wll_), ::std::ref(target_), ::std::ref(t_), ::std::ref(TIMESET_), ::std::ref(isOpen));
+	::std::thread mainThread(mainA, ::std::ref(win), ::std::ref(v_Obj_), ::std::ref(v_Wll_), ::std::ref(target_), ::std::ref(t_), ::std::ref(isOpen),
+		::std::ref(runA), ::std::ref(newA));
 
 	while (isOpen)
 	{
@@ -143,6 +162,20 @@ int main()
 			{
 				isOpen = false;
 				break;
+			}
+			else if (event.type == sf::Event::KeyPressed)
+			{
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+				{
+					runA = true;
+				}
+			}
+			else if (event.type == sf::Event::KeyPressed)
+			{
+				if ((sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) || (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)))
+				{
+					newA = true;
+				}
 			}
 		}
 	}
@@ -188,8 +221,9 @@ void mainA
 	::std::vector<::std::vector<Wall>>& v_Wll,
 	::std::vector<int>& target,
 	sf::Texture& t,
-	sf::Int32& TIMESET,
-	bool& is_Open
+	bool& is_Open,
+	bool& run_,
+	bool& newA_
 )
 {
 	win.setActive(true);
@@ -217,11 +251,18 @@ void mainA
 	tmpy = next;
 	wposx += 20.0f;
 
-	size_t bufsizeO;
-	dx::TimeGet tm;
-
 	while (is_Open)
 	{
+		while (!run_)
+		{
+			if (!is_Open)
+			{
+				run_ = true;
+				break;
+			}
+		}
+		run_ = false;
+
 		::std::vector<Object*> _ptr;
 		for (int i = 0; i < def__SIZE_; ++i)
 		{
@@ -258,8 +299,7 @@ void mainA
 			wposx += 20.0f;
 		}
 
-		bufsizeO = _ptr.size();
-		if ((_ptr.size()) && (bufsizeO == _ptr.size() ? *tm < TIMESET : 1))
+		if ((_ptr.size()) && (!newA_))
 		{
 			for (size_t i = 0; i < _ptr.size(); ++i)
 			{
@@ -293,11 +333,14 @@ void mainA
 						if (_ptr[i]->obj.getGlobalBounds().intersects(v_Wll[j][k].wall.getGlobalBounds()))	_ptr[i]->life = false;
 					}
 				}
+				if (_ptr[i]->stepA < 1)	_ptr[i]->life = false;
 			}
 
 		}
 		else
 		{
+			newA_ = false;
+
 			for (int i = 0; i < def__SIZE_; ++i)
 			{
 				_ptr.emplace_back(&v_Obj[i]);
@@ -310,6 +353,7 @@ void mainA
 				v_Obj[i].obj.setPosition(static_cast<float>(def_POSX), static_cast<float>(def_POSY));
 				v_Obj[i].life = true;
 				v_Obj[i].score = 0;
+				v_Obj[i].stepA = 5;
 			}
 			maxposx_obj = def_POSX;
 			v_Wll.clear();
@@ -326,7 +370,6 @@ void mainA
 			}
 			v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL + 100));
 			wposx += 20.0f;
-			tm.restart();
 		}
 
 		view.setCenter(static_cast<float>(maxposx_obj), 250.0f);

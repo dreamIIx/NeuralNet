@@ -5,23 +5,8 @@
 #include <vector>
 #include "SFML/Graphics.hpp"
 
-#ifndef def_ERR_FL_
-#define def_ERR_FL_
-#define def_XTT_S(x) #x
-#define def_XTT_S_(x) def_XTT_S(x)
-#define def_XTT_S__LINE__ def_XTT_S_(__LINE__)
-#define def__FILELINE (__FILE__  " line " def_XTT_S__LINE__)
-#define ERROR_ ::std::cout << def__FILELINE << ::std::endl;
-#endif
-
 #ifndef def_XTT_fast_ifstream
 #define def_XTT_fast_ifstream
-::std::string def_FIs(::std::ifstream& read_cont__)
-{
-	::std::string temp_string__;
-	read_cont__ >> temp_string__;
-	return temp_string__;
-}
 int def_FIi(::std::ifstream& read_cont__)
 {
 	int temp_int__;
@@ -45,94 +30,31 @@ int def_FIi(::std::ifstream& read_cont__)
 #define def_POSY_WALL 140
 #define def_KF 0.6
 
+#define def_XTT_KEY_PROG
 
-class Object
-{
-public:
-	sf::Sprite obj;
-	nndx::neuronet net;
-	int score, stepA;
-	bool life;
-
-	Object(sf::Texture& t, const nndx::dy_tpl& tpl, int i) : obj(t), net(tpl, true), score(0), life(true), stepA(5)
-	{
-		//if (i != 0)	net.SPECinit(topology);
-		obj.setTextureRect(sf::IntRect(0, def_TEXTURE_OBJ_Y * i, def_TEXTURE_OBJ_X, def_TEXTURE_OBJ_Y));
-		obj.setPosition(static_cast<float>(def_POSX), static_cast<float>(def_POSY));
-		obj.setOrigin(sf::Vector2f(def_TEXTURE_OBJ_X / 2.0f, def_TEXTURE_OBJ_Y / 2.0f));
-	}
-
-	void mA(::std::vector<double>& args)
-	{
-		bool step_forward = true;
-		if (args[0] > def_KF)
-		{
-			obj.move(20.0f, 0.0f);
-			score += 20;
-		}
-		else
-		{
-			step_forward = false;
-		}
-		if (args[1] > def_KF)
-		{
-			if (obj.getPosition().y < 240)
-			{
-				obj.move(0.0f, 20.0f);
-				score += 5;
-			}
-			else
-			{
-				--stepA;
-			}
-		}
-		else if(args[1] < -def_KF)
-		{
-			if (obj.getPosition().y > 140)
-			{
-				obj.move(0.0f, -20.0f);
-				score += 5;
-			}
-			else
-			{
-				--stepA;
-			}
-		}
-		else
-		{
-			if (!step_forward)	--stepA;
-		}
-	}
-};
-
-class Wall
-{
-public:
-	sf::Sprite wall;
-
-	Wall(sf::Texture& t, float x, float y) : wall(t)
-	{
-		wall.setTextureRect(sf::IntRect(def_TEXTURE_OBJ_X, 0, def_TEXTURE_OBJ_X, def_TEXTURE_OBJ_Y));
-		wall.setPosition(x, y);
-		wall.setOrigin(sf::Vector2f(def_TEXTURE_OBJ_X / 2.0f, def_TEXTURE_OBJ_Y / 2.0f));
-	}
-};
+#include "Object.h"
 
 void radixSort(::std::vector<Object*>&);
 void mA_gen(::std::vector<Object*>&, const int&);
 void mT(::std::vector<nndx::dataW>&, size_t, size_t);
+#ifdef def_XTT_KEY_PROG
 void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, bool&, bool&, bool&);
+#else
+void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, sf::Int32&, bool&);
+#endif
 
 int main()
 {
-	::std::ifstream _tempRead("inf.cfg");
-	sf::Int32 TIMESET_;
 	sf::RenderWindow win({ def_WIN_X, def_WIN_Y }, "NN");
-	win.setFramerateLimit(def_FIi(_tempRead));
 	win.setVerticalSyncEnabled(true);
 	win.setActive(false);
+#ifndef def_XTT_KEY_PROG
+	::std::ifstream _tempRead("inf.cfg");
+	sf::Int32 TIMESET_;
+	win.setFramerateLimit(def_FIi(_tempRead));
 	TIMESET_ = static_cast<sf::Int32>(def_FIi(_tempRead));
 	_tempRead.close();
+#endif
 
 	sf::Image image_;
 	image_.loadFromFile(def_FILEIMAGE);
@@ -147,11 +69,17 @@ int main()
 	target_.reserve(def_SIZE_VECTOR_WALL);
 
 	bool isOpen = true;
+#ifdef def_XTT_KEY_PROG
 	bool runA = true;
 	bool newA = true;
+#endif
 
+#ifdef def_XTT_KEY_PROG
 	::std::thread mainThread(mainA, ::std::ref(win), ::std::ref(v_Obj_), ::std::ref(v_Wll_), ::std::ref(target_), ::std::ref(t_), ::std::ref(isOpen),
 		::std::ref(runA), ::std::ref(newA));
+#else
+	::std::thread mainThread(mainA, ::std::ref(win), ::std::ref(v_Obj_), ::std::ref(v_Wll_), ::std::ref(target_), ::std::ref(t_), ::std::ref(TIMESET_), ::std::ref(isOpen));
+#endif
 
 	while (isOpen)
 	{
@@ -161,22 +89,25 @@ int main()
 			if (event.type == sf::Event::Closed)
 			{
 				isOpen = false;
+#ifdef def_XTT_KEY_PROG
+				runA = true;
+#endif
 				break;
 			}
+#ifdef def_XTT_KEY_PROG
 			else if (event.type == sf::Event::KeyPressed)
 			{
 				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
 				{
 					runA = true;
 				}
-			}
-			else if (event.type == sf::Event::KeyPressed)
-			{
-				if ((sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) || (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)))
+				else if ((sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) || (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)))
 				{
 					newA = true;
+					runA = true;
 				}
 			}
+#endif
 		}
 	}
 
@@ -221,9 +152,14 @@ void mainA
 	::std::vector<::std::vector<Wall>>& v_Wll,
 	::std::vector<int>& target,
 	sf::Texture& t,
+#ifdef def_XTT_KEY_PROG
 	bool& is_Open,
 	bool& run_,
 	bool& newA_
+#else
+	sf::Int32& TIMESET,
+	bool& is_Open
+#endif
 )
 {
 	win.setActive(true);
@@ -251,17 +187,20 @@ void mainA
 	tmpy = next;
 	wposx += 20.0f;
 
+#ifndef def_XTT_KEY_PROG
+	size_t bufsizeO = def__SIZE_;
+	TimeGet tm;
+#endif
+
 	while (is_Open)
 	{
+#ifdef def_XTT_KEY_PROG
 		while (!run_)
 		{
-			if (!is_Open)
-			{
-				run_ = true;
-				break;
-			}
+			Sleep(1);
 		}
 		run_ = false;
+#endif
 
 		::std::vector<Object*> _ptr;
 		for (int i = 0; i < def__SIZE_; ++i)
@@ -299,8 +238,14 @@ void mainA
 			wposx += 20.0f;
 		}
 
+#ifdef def_XTT_KEY_PROG
 		if ((_ptr.size()) && (!newA_))
 		{
+#else
+		if ((_ptr.size()) && ((bufsizeO == _ptr.size()) ? *tm < TIMESET : tm.restart()))
+		{
+			bufsizeO = _ptr.size();
+#endif
 			for (size_t i = 0; i < _ptr.size(); ++i)
 			{
 				for (size_t j = 0; j < target.size(); ++j)
@@ -339,7 +284,9 @@ void mainA
 		}
 		else
 		{
+#ifdef def_XTT_KEY_PROG
 			newA_ = false;
+#endif
 
 			for (int i = 0; i < def__SIZE_; ++i)
 			{
@@ -370,6 +317,10 @@ void mainA
 			}
 			v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL + 100));
 			wposx += 20.0f;
+#ifndef def_XTT_KEY_PROG
+			bufsizeO = def__SIZE_;
+			tm.restart();
+#endif
 		}
 
 		view.setCenter(static_cast<float>(maxposx_obj), 250.0f);

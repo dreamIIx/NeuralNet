@@ -52,7 +52,7 @@ namespace nndx
 	public:
 		double wg;
 		double dwg;
-		//double grad;
+		double grad; //
 
 		wWw();
 		wWw(const double&);
@@ -65,8 +65,8 @@ namespace nndx
 	{
 	public:
 		bool BIfunc;
-		//double moment = 0.05; // 0.05
-		//double u = 15; // 0.1
+		double moment = 0.05; // 0.05 //
+		double u = 15; // 0.1 //
 		::std::vector<dataA> data;
 		::std::vector<dataW> weight;
 		::std::vector<int> topology_save;
@@ -77,11 +77,11 @@ namespace nndx
 		neuronet(bool);
 		neuronet(const dy_tpl&, bool);
 		void saveF(::std::string&);
-		//void mA();
+		void mA(); //
 		void SPECmA(::std::vector<double>&);
-		//void init();
+		//void init(); //
 		void activationF();
-		//void backProp(::std::vector<double>&);
+		void backProp(::std::vector<double>&); //
 		//void funcHebb();
 	};
 }

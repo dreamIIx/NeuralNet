@@ -110,34 +110,35 @@ namespace nndx
 		::std::cout << "Weights is saved!(File - " << s << ")" << ::std::endl;
 	}
 
-	/*void neuronet::mA()
+	void neuronet::mA()
 	{
 		::std::ifstream read(nameT);
 		if (!read.is_open())
 		{
 			::std::cout << "Error of opening file - " << nameT << ::std::endl;
 			read.close();
-			system("pause"); // after this moment, need to close programm
+			ERROR_
+			system("pause"); // error
 		}
 
 		int num = 0;
 		int nums;
 		read >> nums;
 
-		int *k = new int(0);
-		read >> *k;
-		if (*k != data[0].size() - 1)
+		int k;
+		read >> k;
+		if (k != data[0].size() - 1)
 		{
 			::std::cout << "Error, wrong training data!" << ::std::endl;
-			delete k;
-			system("pause"); // after this moment, need to close programm
+			ERROR_
+			system("pause"); // error
 		}
-		read >> *k;
-		if (*k != data.back().size())
+		read >> k;
+		if (k != data.back().size())
 		{
 			::std::cout << "Error, wrong number of output neurons!" << ::std::endl;
-			delete k;
-			system("pause"); // after this moment, need to close programm
+			ERROR_
+			system("pause"); // error
 		}
 
 		system("cls");
@@ -165,10 +166,10 @@ namespace nndx
 			backProp(errDat);
 
 			num++;
-			::std::cout << "------------" << ::std::endl;
+			//::std::cout << "------------" << ::std::endl;
 		}
 		read.close();
-	}*/
+	}
 
 	void neuronet::SPECmA(::std::vector<double>& dataT)
 	{
@@ -177,44 +178,50 @@ namespace nndx
 			for (size_t i = 0; i < data[0].size() - 1; i++)
 			{
 				data[0][i].data = dataT[i];
-				if (!data[0][i].BIAS)	data[0][i].goF();
-				else ::std::cout << "checkout here!" << ::std::endl;
+				if (!data[0][i].BIAS)
+				{
+					data[0][i].goF();
+				}
+				else
+				{
+					::std::cout << "checkout here!" << ::std::endl;
+					ERROR_
+					system("pause");
+				}
 			}
 			activationF();
 		}
 		else
 		{
 			ERROR_
-				system("pause");
+			system("pause");
 		}
 	}
 
 	/*void neuronet::init()
 	{
-		int* a = new int(-1);
+		int a = -1;
 
 		::std::cout << "Write -1000 for new topology, or any number for init topology from file: ";
-		::std::cin >> *a;
-		if (*a == -1000)
+		::std::cin >> a;
+		if (a == -1000)
 		{
-			while (*a != 0)
+			while (a != 0)
 			{
 				system("cls");
 				::std::cout << "Please write topology(size of every layer)" << ::std::endl;
-				::std::cin >> *a;
-				if (*a > 0)
+				::std::cin >> a;
+				if (a > 0)
 				{
-
 					data.push_back(dataA());
 
-					for (int i = 0; i < *a; i++)
+					for (int i = 0; i < a; i++)
 					{
 						data.back().push_back(0);
 					}
-					topology_save.push_back(*a);
+					topology_save.push_back(a);
 				}
 			}
-			delete a;
 
 			for (size_t i = 0; i < data.size() - 1; i++)
 			{
@@ -235,33 +242,33 @@ namespace nndx
 			{
 				weight.back().push_back((nndx::randT() % 6) - 2);
 			}
-			::std::cout << "Training file(default): " << nameT << ::std::endl;
+			::std::cout << "Training file(is defined as): " << nameT << ::std::endl;
 			::std::cout << "SUCCESS! Press anykey to start..." << ::std::endl;
 		}
 		else
 		{
-			::std::ifstream read(nameF + ".txt");
+			::std::ifstream read(nameF);
 			if (!read.is_open())
 			{
 				::std::cout << "Wrong filename! ERROR" << ::std::endl;
 				read.close();
-				system("pause"); // after this moment, need to close programm
+				ERROR_
+				system("pause"); // error
 			}
-			read >> *a;
-			while (*a != 0)
+			read >> a;
+			while (a != 0)
 			{
-				::std::cout << *a << ::std::endl;
+				::std::cout << a << ::std::endl;
 				data.push_back(dataA());
 
-				for (int i = 0; i < *a; i++)
+				for (int i = 0; i < a; i++)
 				{
 					data.back().push_back(0);
 				}
-				topology_save.push_back(*a);
+				topology_save.push_back(a);
 
-				read >> *a;
+				read >> a;
 			}
-			delete a;
 			double w;
 
 			for (size_t i = 0; i < data.size() - 1; i++)
@@ -288,7 +295,8 @@ namespace nndx
 				{
 					::std::cout << "check = " << check << ::std::endl;
 					::std::cout << "ERROR! CHECKOUT!" << ::std::endl;
-					system("pause"); // after this moment, need to close programm
+					ERROR_
+					system("pause"); // error
 				}
 			}
 			weight.push_back(dataW());
@@ -307,7 +315,8 @@ namespace nndx
 			{
 				::std::cout << "check = " << check << ::std::endl;
 				::std::cout << "ERROR! CHECKOUT!" << ::std::endl;
-				system("pause"); // after this moment, need to close programm
+				ERROR_
+				system("pause"); // error
 			}
 			read >> nameT;
 			read.close();
@@ -382,7 +391,7 @@ namespace nndx
 		}
 	}
 
-	/*void neuronet::backProp(::std::vector<double>& d)
+	void neuronet::backProp(::std::vector<double>& d)
 	{
 		typedef ::std::vector<double> dw;
 		::std::vector<dw> errR;
@@ -395,6 +404,7 @@ namespace nndx
 		for (size_t i = 0; i < data.back().size(); i++)
 		{
 			errR.back().push_back((d[i] - data.back()[i].data) * data.back()[i].funcBP);
+			::std::cout << abs(errR.back().back()) << ::std::endl;
 		}
 
 		double local_sum = 0;
@@ -441,7 +451,7 @@ namespace nndx
 				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].wg += weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg;
 			}
 		}
-	}*/
+	}
 
 	/*void neuronet::funcHebb()
 	{

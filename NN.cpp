@@ -16,40 +16,78 @@ namespace nndx
 		va_end(args);
 	}
 
+	size_t dy_tpl::size() const noexcept
+	{
+		return tempDATA.size();
+	}
+
+	const int* dy_tpl::data() const
+	{
+		return tempDATA.data();
+	}
+
 	dy_tpl::~dy_tpl()
 	{
 		tempDATA.clear();
 	}
 
-	neuron::neuron(const double& num) : data(num), prevdata(0.0), funcBP(0.0), BIAS(false) {}
-
-	void neuron::goF()
+	neuron::neuron(const double& num, _dCRTYPEFUNC _afunc_) : data(num), prevdata(0.0), funcDRV(0.0), BIAS(false)
 	{
-		funcBP = data * (1 - data);
+		switch (_afunc_)
+		{
+		case _fnSIGMOID:
+			RunDefaultFunc_T = &this->_m_fnSIGMOID_;
+			break;
+		case _fnTANH:
+			RunDefaultFunc_T = &this->_m_fnTANH_;
+			break;
+		default:
+#ifdef _fnDEFAULTFUNC // as default, able to change
+			RunDefaultFunc_T = &this->_fnSDEFAULTFUNC;
+#else
+			RunDefaultFunc_T = nullptr;
+#endif
+		}
 	}
 
-	void neuron::goF_BI()
+	void neuron::_m_fnSIGMOID_(neuron& n)
 	{
-		funcBP = 1 - data * data;
+		n.funcDRV = n.data * (1 - n.data);
 	}
 
-	void neuron::is_bias()
+	void neuron::_m_fnTANH_(neuron& n)
+	{
+		n.funcDRV = 1 - n.data * n.data;
+	}
+
+	void neuron::is_bias() noexcept
 	{
 		BIAS = true;
+		RunDefaultFunc_T = nullptr;
 	}
 
-	wWw::wWw() {}
+	wWw::wWw(const double& num) : wg(num), dwg(0.0), grad(0.0) {}
 
-	wWw::wWw(const double& num) : wg(num), dwg(0.0) {}
+	neuronet::neuronet() noexcept : funcInstance(_fnDEFAULTFUNC) {}
 
-	neuronet::neuronet() : BIfunc(false) {}
-
-	neuronet::neuronet(bool setBIfunc) : BIfunc(setBIfunc) {}
-
-	neuronet::neuronet(const dy_tpl& temp, bool setBIfunc) : BIfunc(setBIfunc)
+	neuronet::neuronet(neuronet&& anet)
 	{
-		const int* pos = temp.tempDATA.data();
-		for (int i = 0; i < temp.tempDATA.size(); i++)
+		funcInstance = ::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
+		moment = ::std::forward<decltype(anet.moment)>(anet.moment);
+		u = ::std::forward<decltype(anet.u)>(anet.u);
+		data = ::std::forward<decltype(anet.data)>(anet.data);
+		weight = ::std::forward<decltype(anet.weight)>(anet.weight);
+		topology_save = ::std::forward<decltype(anet.topology_save)>(anet.topology_save);
+		nameF = ::std::forward<decltype(anet.nameF)>(anet.nameF);
+		nameT = ::std::forward<decltype(anet.nameT)>(anet.nameT);
+	}
+
+	neuronet::neuronet(_dCRTYPEFUNC fnIns) noexcept : funcInstance(fnIns) {}
+
+	neuronet::neuronet(const dy_tpl& temp, _dCRTYPEFUNC fnIns) : funcInstance(fnIns)
+	{
+		const int* pos = temp.data();
+		for (int i = 0; i < temp.size(); i++)
 		{
 			int a = *pos++;
 			if (a > 0)
@@ -58,7 +96,7 @@ namespace nndx
 
 				for (int i = 0; i < a; i++)
 				{
-					data.back().push_back(0);
+					data.back().push_back(neuron(0, funcInstance));
 				}
 				topology_save.push_back(a);
 			}
@@ -66,7 +104,7 @@ namespace nndx
 
 		for (size_t i = 0; i < data.size() - 1; i++)
 		{
-			data[i].push_back(1);
+			data[i].push_back(neuron(1, funcInstance));
 			data[i].back().is_bias();
 		}
 
@@ -85,7 +123,7 @@ namespace nndx
 		}
 	}
 
-	void neuronet::saveF(::std::string& s)
+	void neuronet::saveF(const ::std::string& s)
 	{
 		::std::cout << "Outputing weights..." << ::std::endl;
 
@@ -145,16 +183,13 @@ namespace nndx
 
 		while (num < nums)
 		{
+
 			for (int i = 0; i < data[0].size() - 1; i++)
 			{
 				read >> data[0][i].data;
-				if (!data[0][i].BIAS)	data[0][i].goF();
+				if (!data[0][i].BIAS)	data[0][i].RunDefaultFunc_T(data[0][i]);
 			}
 			activationF();
-			for (int i = 0; i < data.back().size(); i++)
-			{
-				::std::cout << data.back()[i].data << ::std::endl;
-			}
 
 			::std::vector<double> errDat;
 			for (int i = 0; i < data.back().size(); i++)
@@ -164,9 +199,7 @@ namespace nndx
 				errDat.push_back(j);
 			}
 			backProp(errDat);
-
 			num++;
-			//::std::cout << "------------" << ::std::endl;
 		}
 		read.close();
 	}
@@ -180,7 +213,7 @@ namespace nndx
 				data[0][i].data = dataT[i];
 				if (!data[0][i].BIAS)
 				{
-					data[0][i].goF();
+					data[0][i].RunDefaultFunc_T(data[0][i]);
 				}
 				else
 				{
@@ -198,7 +231,35 @@ namespace nndx
 		}
 	}
 
-	/*void neuronet::init()
+	void neuronet::SPECmA(const dy_tpl& temp)
+	{
+		const int* pos = temp.data();
+		if (temp.size() == data[0].size() - 1)
+		{
+			for (size_t i = 0; i < data[0].size() - 1; i++)
+			{
+				data[0][i].data = *pos++;
+				if (!data[0][i].BIAS)
+				{
+					data[0][i].RunDefaultFunc_T(data[0][i]);
+				}
+				else
+				{
+					::std::cout << "checkout here!" << ::std::endl;
+					ERROR_
+						system("pause");
+				}
+			}
+			activationF();
+		}
+		else
+		{
+			ERROR_
+				system("pause");
+		}
+	}
+
+	void neuronet::init()
 	{
 		int a = -1;
 
@@ -217,7 +278,7 @@ namespace nndx
 
 					for (int i = 0; i < a; i++)
 					{
-						data.back().push_back(0);
+						data.back().push_back(neuron(0, funcInstance));
 					}
 					topology_save.push_back(a);
 				}
@@ -225,7 +286,7 @@ namespace nndx
 
 			for (size_t i = 0; i < data.size() - 1; i++)
 			{
-				data[i].push_back(1);
+				data[i].push_back(neuron(1, funcInstance));
 				data[i].back().is_bias();
 			}
 
@@ -263,7 +324,7 @@ namespace nndx
 
 				for (int i = 0; i < a; i++)
 				{
-					data.back().push_back(0);
+					data.back().push_back(neuron(0, funcInstance));
 				}
 				topology_save.push_back(a);
 
@@ -273,7 +334,7 @@ namespace nndx
 
 			for (size_t i = 0; i < data.size() - 1; i++)
 			{
-				data[i].push_back(1);
+				data[i].push_back(neuron(1, funcInstance));
 				data[i].back().is_bias();
 			}
 			::std::cout << "Init weights from file..." << ::std::endl;
@@ -324,7 +385,7 @@ namespace nndx
 			::std::cout << "SUCCESS! The neuronet already...(press anykey to start)" << ::std::endl;
 			system("pause");
 		}
-	}*/
+	}
 
 	void neuronet::activationF()
 	{
@@ -347,15 +408,16 @@ namespace nndx
 					}
 					//::std::cout << ::std::endl;
 					data[i][j].prevdata = data[i][j].data;
-					if (!BIfunc)
+					switch(funcInstance)
 					{
+					case _fnSIGMOID:
 						data[i][j].data = 1 / (1 + exp(-local_sum));
-						data[i][j].goF();
-					}
-					else
-					{
+						data[i][j].RunDefaultFunc_T(data[i][j]);
+						break;
+					case _fnTANH:
 						data[i][j].data = tanh(local_sum);
-						data[i][j].goF_BI();
+						data[i][j].RunDefaultFunc_T(data[i][j]);
+						break;
 					}
 				}
 				//else ::std::cout << "- is BIAS | " << ::std::endl;
@@ -376,15 +438,16 @@ namespace nndx
 				}
 				//::std::cout << ::std::endl;
 				data.back()[j].prevdata = data.back()[j].data;
-				if (!BIfunc)
+				switch (funcInstance)
 				{
+				case _fnSIGMOID:
 					data.back()[j].data = 1 / (1 + exp(-local_sum));
-					data.back()[j].goF();
-				}
-				else
-				{
+					data.back()[j].RunDefaultFunc_T(data.back()[j]);
+					break;
+				case _fnTANH:
 					data.back()[j].data = tanh(local_sum);
-					data.back()[j].goF_BI();
+					data.back()[j].RunDefaultFunc_T(data.back()[j]);
+					break;
 				}
 			}
 			//else ::std::cout << "- is BIAS | " << ::std::endl;
@@ -403,8 +466,7 @@ namespace nndx
 
 		for (size_t i = 0; i < data.back().size(); i++)
 		{
-			errR.back().push_back((d[i] - data.back()[i].data) * data.back()[i].funcBP);
-			::std::cout << abs(errR.back().back()) << ::std::endl;
+			errR.back().push_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
 		}
 
 		double local_sum = 0;
@@ -416,9 +478,9 @@ namespace nndx
 				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data[data.size() - 1].size() * j + next].wg;
 				weight[data.size() - 2][data[data.size() - 1].size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
 			}
-			errR[data.size() - 2].push_back(local_sum * data[data.size() - 2][j].funcBP);
+			errR[data.size() - 2].push_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}
-		for (int i = data.size() - 3; i >= 0; i--) // обязательно  -> int <-, 'cause число может быть отрицательным(для выхода из цикла)
+		for (int i = data.size() - 3; i >= 0; i--) // обязательно  -> signed <-, 'cause число может быть отрицательным(для выхода из цикла)
 		{
 			for (size_t j = 0; j < data[i].size(); j++)
 			{
@@ -428,7 +490,7 @@ namespace nndx
 					local_sum += errR[i + 1][next] * weight[i][(data[i + 1].size() - 1) * j + next].wg;
 					weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data;
 				}
-				errR[i].push_back(local_sum * data[i][j].funcBP);
+				errR[i].push_back(local_sum * data[i][j].funcDRV);
 			}
 		}
 
@@ -453,7 +515,7 @@ namespace nndx
 		}
 	}
 
-	/*void neuronet::funcHebb()
+	void neuronet::funcHebb()
 	{
 		for (size_t i = 0; i < data.size() - 2; ++i)
 		{
@@ -472,7 +534,7 @@ namespace nndx
 				weight[data.size() - 2][j * data.back().size() + next].wg = weight[data.size() - 2][j * data.back().size() + next].wg + u * (data[data.size() - 2][j].prevdata - data[data.size() - 2][j].data) * (data.back()[next].prevdata - data.back()[next].data);
 			}
 		}
-	}*/
+	}
 
 	int inline randT()
 	{

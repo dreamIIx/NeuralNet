@@ -60,7 +60,7 @@ namespace nndx
 		n.funcDRV = 1 - n.data * n.data;
 	}
 
-	void neuron::is_bias() noexcept
+	void neuron::setAsBias() noexcept
 	{
 		BIAS = true;
 		RunDefaultFunc_T = nullptr;
@@ -68,123 +68,368 @@ namespace nndx
 
 	wWw::wWw(const double& num) : wg(num), dwg(0.0), grad(0.0) {}
 
-	neuronet::neuronet() noexcept : funcInstance(_fnDEFAULTFUNC) {}
+	neuronet::neuronet() noexcept : funcInstance(_fnDEFAULTFUNC), moment(0.0), u(0.0), isReady(false) {}
 
 	neuronet::neuronet(neuronet&& anet)
 	{
-		funcInstance = ::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
-		moment = ::std::forward<decltype(anet.moment)>(anet.moment);
-		u = ::std::forward<decltype(anet.u)>(anet.u);
-		data = ::std::forward<decltype(anet.data)>(anet.data);
-		weight = ::std::forward<decltype(anet.weight)>(anet.weight);
-		topology_save = ::std::forward<decltype(anet.topology_save)>(anet.topology_save);
-		nameF = ::std::forward<decltype(anet.nameF)>(anet.nameF);
-		nameT = ::std::forward<decltype(anet.nameT)>(anet.nameT);
+		this->isReady = false;
+		try
+		{
+			if (!anet.getState())
+			{
+				throw 12;
+			}
+			else
+			{
+				this->funcInstance = ::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
+				this->moment = ::std::forward<decltype(anet.moment)>(anet.moment);
+				this->u = ::std::forward<decltype(anet.u)>(anet.u);
+				this->data = ::std::forward<decltype(anet.data)>(anet.data);
+				this->weight = ::std::forward<decltype(anet.weight)>(anet.weight);
+				this->topology_save = ::std::forward<decltype(anet.topology_save)>(anet.topology_save);
+				this->nDataNet = ::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
+				this->nTrainNote = ::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
+				this->isReady = true;
+			}
+		}
+		catch (int x)
+		{
+			if (x == 12)
+			{
+				::std::cout << "Argument of function-constructor is rvalue/notReady!" << ::std::endl;
+			}
+		}
 	}
 
-	neuronet::neuronet(_dCRTYPEFUNC fnIns) noexcept : funcInstance(fnIns) {}
+	neuronet::neuronet(_dCRTYPEFUNC fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false) {}
 
-	neuronet::neuronet(const dy_tpl& temp, _dCRTYPEFUNC fnIns) : funcInstance(fnIns)
+	neuronet::neuronet(dy_tpl&& temp, _dCRTYPEFUNC fnIns) : funcInstance(fnIns)
 	{
-		const int* pos = temp.data();
+		this->isReady = false;
+
+		auto pos = temp.data();
 		for (int i = 0; i < temp.size(); i++)
 		{
 			int a = *pos++;
 			if (a > 0)
 			{
-				data.push_back(dataA());
+
+				data.reserve(data.capacity() + 1);
+				data.emplace_back(dataA());
 
 				for (int i = 0; i < a; i++)
 				{
-					data.back().push_back(neuron(0, funcInstance));
+					data.back().reserve(data.back().capacity() + 1);
+					data.back().emplace_back(neuron(0, funcInstance));
 				}
-				topology_save.push_back(a);
+				topology_save.reserve(topology_save.capacity() + 1);
+				topology_save.emplace_back(a);
+			}
+			else
+			{
+				ERROR_
+				system("pause"); // ERROR <---
 			}
 		}
 
 		for (size_t i = 0; i < data.size() - 1; i++)
 		{
-			data[i].push_back(neuron(1, funcInstance));
-			data[i].back().is_bias();
+			data[i].reserve(data[i].capacity() + 1);
+			data[i].emplace_back(neuron(1, funcInstance));
+			data[i].back().setAsBias();
 		}
 
 		for (size_t i = 0; i < data.size() - 2; i++)
 		{
-			weight.push_back(dataW());
+			weight.reserve(weight.capacity() + 1);
+			weight.emplace_back(dataW());
 			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); j++)
 			{
-				weight.back().push_back((nndx::randT() % 6) - 2);
+				weight.back().reserve(weight.back().capacity() + 1);
+				weight.back().emplace_back((nndx::randT() % 6) - 2);
 			}
 		}
-		weight.push_back(dataW());
+		weight.reserve(weight.capacity() + 1);
+		weight.emplace_back(dataW());
 		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); j++)
 		{
-			weight.back().push_back((nndx::randT() % 6) - 2);
+			weight.back().reserve(weight.back().capacity() + 1);
+			weight.back().emplace_back((nndx::randT() % 6) - 2);
 		}
+
+		this->isReady = true;
 	}
 
-	void neuronet::saveF(const ::std::string& s)
+	neuronet::~neuronet()
 	{
-		::std::cout << "Outputing weights..." << ::std::endl;
+		this->isReady = false;
+		data.clear();
+		weight.clear();
+		topology_save.clear();
+	}
 
-		::std::ofstream f(s);
-		for (size_t i = 0; i < topology_save.size(); i++)
+	void neuronet::operator=(neuronet&& anet)
+	{
+		this->isReady = false;
+		try
 		{
-			f << topology_save[i] << " ";
-		}
-		f << "0" << ::std::endl;
-
-		for (size_t i = 0; i < weight.size(); i++)
-		{
-			for (size_t j = 0; j < weight[i].size(); j++)
+			if (!anet.getState())
 			{
-				f << weight[i][j].wg << ::std::endl;
-				f << weight[i][j].dwg << ::std::endl;
+				throw 12;
 			}
-			f << "-----" << ::std::endl;
+			else
+			{
+				this->funcInstance = ::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
+				this->moment = ::std::forward<decltype(anet.moment)>(anet.moment);
+				this->u = ::std::forward<decltype(anet.u)>(anet.u);
+				this->data = ::std::forward<decltype(anet.data)>(anet.data);
+				this->weight = ::std::forward<decltype(anet.weight)>(anet.weight);
+				this->topology_save = ::std::forward<decltype(anet.topology_save)>(anet.topology_save);
+				this->nDataNet = ::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
+				this->nTrainNote = ::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
+				this->isReady = true;
+			}
 		}
-		f << s;
-		f.close();
-		::std::cout << "Weights is saved!(File - " << s << ")" << ::std::endl;
+		catch (int x)
+		{
+			if (x == 12)
+			{
+				::std::cout << "Argument of function-constructor is rvalue/notReady!" << ::std::endl;
+			}
+		}
 	}
 
-	void neuronet::mA()
+	bool neuronet::init(dy_tpl&& temp, _dCRTYPEFUNC fnIns)
 	{
-		::std::ifstream read(nameT);
+		this->isReady = false;
+
+		auto pos = temp.data();
+		for (int i = 0; i < temp.size(); ++i)
+		{
+			int a = *pos++;
+			if (a > 0)
+			{
+				data.reserve(data.capacity() + 1);
+				data.emplace_back(dataA());
+
+				for (int i = 0; i < a; ++i)
+				{
+					data.back().reserve(data.back().capacity() + 1);
+					data.back().emplace_back(neuron(0, funcInstance));
+				}
+				topology_save.reserve(topology_save.capacity() + 1);
+				topology_save.emplace_back(a);
+			}
+			else
+			{
+				ERROR_
+				return false;
+			}
+		}
+
+		for (size_t i = 0; i < data.size() - 1; ++i)
+		{
+			data[i].reserve(data[i].capacity() + 1);
+			data[i].emplace_back(neuron(1, funcInstance));
+			data[i].back().setAsBias();
+		}
+
+		for (size_t i = 0; i < data.size() - 2; ++i)
+		{
+			weight.reserve(weight.capacity() + 1);
+			weight.emplace_back(dataW());
+			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			{
+				weight.back().reserve(weight.back().capacity() + 1);
+				weight.back().emplace_back((nndx::randT() % 6) - 2);
+			}
+		}
+		weight.reserve(weight.capacity() + 1);
+		weight.emplace_back(dataW());
+		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		{
+			weight.back().reserve(weight.back().capacity() + 1);
+			weight.back().emplace_back((nndx::randT() % 6) - 2);
+		}
+
+		this->isReady = true;
+		return true;
+	}
+
+	bool neuronet::initFromKeyboard()
+	{
+		::std::cout << "Please write topology(size of every layer)" << ::std::endl;
+
+		auto a = -1;
+		do
+		{
+			::std::cin >> a;
+			if (a > 0)
+			{
+				data.reserve(data.capacity() + 1);
+				data.emplace_back(dataA());
+
+				for (int i = 0; i < a; ++i)
+				{
+					data.back().reserve(data.back().capacity() + 1);
+					data.back().emplace_back(neuron(0, funcInstance));
+				}
+				topology_save.reserve(topology_save.capacity() + 1);
+				topology_save.emplace_back(a);
+			}
+			else
+			{
+				ERROR_
+				return false;
+			}
+		} while (a);
+
+		for (size_t i = 0; i < data.size() - 1; ++i)
+		{
+			data[i].reserve(data[i].capacity() + 1);
+			data[i].emplace_back(neuron(1, funcInstance));
+			data[i].back().setAsBias();
+		}
+
+		for (size_t i = 0; i < data.size() - 2; ++i)
+		{
+			weight.reserve(weight.capacity() + 1);
+			weight.emplace_back(dataW());
+			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			{
+				weight.back().reserve(weight.back().capacity() + 1);
+				weight.back().emplace_back((nndx::randT() % 6) - 2);
+			}
+		}
+		weight.reserve(weight.capacity() + 1);
+		weight.emplace_back(dataW());
+		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		{
+			weight.back().reserve(weight.back().capacity() + 1);
+			weight.back().emplace_back((nndx::randT() % 6) - 2);
+		}
+
+		::std::cout << "SUCCESS! Press anykey to start..." << ::std::endl;
+		return true;
+	}
+
+	bool neuronet::initFromFile()
+	{
+		::std::ifstream read(nDataNet);
 		if (!read.is_open())
 		{
-			::std::cout << "Error of opening file - " << nameT << ::std::endl;
 			read.close();
 			ERROR_
-			system("pause"); // error
+			return false;
 		}
 
-		int num = 0;
+		auto a = 0;
+		do
+		{
+			read >> a;
+			data.reserve(data.capacity() + 1);
+			data.emplace_back(dataA());
+
+			for (int i = 0; i < a; ++i)
+			{
+				data.back().reserve(data.back().capacity() + 1);
+				data.back().emplace_back(neuron(0, funcInstance));
+			}
+			topology_save.reserve(topology_save.capacity() + 1);
+			topology_save.emplace_back(a);
+		} while (a);
+
+		for (size_t i = 0; i < data.size() - 1; ++i)
+		{
+			data[i].reserve(data[i].capacity() + 1);
+			data[i].emplace_back(neuron(1, funcInstance));
+			data[i].back().setAsBias();
+		}
+
+		auto w = 0.0;
+		for (size_t i = 0; i < data.size() - 2; ++i)
+		{
+			weight.reserve(weight.capacity() + 1);
+			weight.emplace_back(dataW());
+			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			{
+				weight.back().reserve(weight.back().capacity() + 1);
+
+				read >> w;
+				weight.back().emplace_back(w);
+
+				read >> w;
+				weight.back().back().dwg = w;
+			}
+
+			::std::string check;
+			read >> check;
+			if (check != "-----")
+			{
+				read.close();
+				ERROR_
+				return false;
+			}
+		}
+
+		weight.reserve(weight.capacity() + 1);
+		weight.emplace_back(dataW());
+		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		{
+			weight.back().reserve(weight.back().capacity() + 1);
+
+			read >> w;
+			weight.back().emplace_back(w);
+
+			read >> w;
+			weight.back().back().dwg = w;
+		}
+
+		::std::string check;
+		read >> check;
+		if (check != "-----")
+		{
+			read.close();
+			ERROR_
+			return false;
+		}
+
+		read >> nTrainNote;
+		read.close();
+		return true;
+	}
+
+	bool neuronet::RunTraining()
+	{
+		::std::ifstream read(nTrainNote);
+		if (!read.is_open())
+		{
+			read.close();
+			ERROR_
+				return false;
+		}
+
+		auto num = 0;
 		int nums;
 		read >> nums;
 
-		int k;
-		read >> k;
-		if (k != data[0].size() - 1)
+		read >> num;
+		if (num != data[0].size() - 1)
 		{
-			::std::cout << "Error, wrong training data!" << ::std::endl;
 			ERROR_
-			system("pause"); // error
+				return false;
 		}
-		read >> k;
-		if (k != data.back().size())
+		read >> num;
+		if (num != data.back().size())
 		{
-			::std::cout << "Error, wrong number of output neurons!" << ::std::endl;
 			ERROR_
-			system("pause"); // error
+				return false;
 		}
 
-		system("cls");
-
+		num = 0;
 		while (num < nums)
 		{
-
-			for (int i = 0; i < data[0].size() - 1; i++)
+			for (int i = 0; i < data[0].size() - 1; ++i)
 			{
 				read >> data[0][i].data;
 				if (!data[0][i].BIAS)	data[0][i].RunDefaultFunc_T(data[0][i]);
@@ -192,23 +437,25 @@ namespace nndx
 			activationF();
 
 			::std::vector<double> errDat;
-			for (int i = 0; i < data.back().size(); i++)
+			for (int i = 0; i < data.back().size(); ++i)
 			{
 				double j;
 				read >> j;
 				errDat.push_back(j);
 			}
 			backProp(errDat);
-			num++;
+			++num;
 		}
 		read.close();
+
+		return true;
 	}
 
-	void neuronet::SPECmA(::std::vector<double>& dataT)
+	bool neuronet::SPECmA(::std::vector<double>& dataT)
 	{
 		if (dataT.size() == data[0].size() - 1)
 		{
-			for (size_t i = 0; i < data[0].size() - 1; i++)
+			for (size_t i = 0; i < data[0].size() - 1; ++i)
 			{
 				data[0][i].data = dataT[i];
 				if (!data[0][i].BIAS)
@@ -217,26 +464,26 @@ namespace nndx
 				}
 				else
 				{
-					::std::cout << "checkout here!" << ::std::endl;
 					ERROR_
-					system("pause");
+						return false;
 				}
 			}
 			activationF();
+			return true;
 		}
 		else
 		{
 			ERROR_
-			system("pause");
+				return false;
 		}
 	}
 
-	void neuronet::SPECmA(const dy_tpl& temp)
+	/*bool neuronet::SPECmA(dy_tpl&& temp)
 	{
 		const int* pos = temp.data();
 		if (temp.size() == data[0].size() - 1)
 		{
-			for (size_t i = 0; i < data[0].size() - 1; i++)
+			for (size_t i = 0; i < data[0].size() - 1; ++i)
 			{
 				data[0][i].data = *pos++;
 				if (!data[0][i].BIAS)
@@ -245,163 +492,66 @@ namespace nndx
 				}
 				else
 				{
-					::std::cout << "checkout here!" << ::std::endl;
 					ERROR_
-						system("pause");
+						return false;
 				}
 			}
 			activationF();
+			return true;
 		}
 		else
 		{
 			ERROR_
-				system("pause");
+				return false;
 		}
-	}
+	}*/
 
-	void neuronet::init()
+	bool neuronet::saveF(::std::string&& s)
 	{
-		int a = -1;
-
-		::std::cout << "Write -1000 for new topology, or any number for init topology from file: ";
-		::std::cin >> a;
-		if (a == -1000)
+		::std::ofstream f(s);
+		if (!f.is_open())
 		{
-			while (a != 0)
-			{
-				system("cls");
-				::std::cout << "Please write topology(size of every layer)" << ::std::endl;
-				::std::cin >> a;
-				if (a > 0)
-				{
-					data.push_back(dataA());
-
-					for (int i = 0; i < a; i++)
-					{
-						data.back().push_back(neuron(0, funcInstance));
-					}
-					topology_save.push_back(a);
-				}
-			}
-
-			for (size_t i = 0; i < data.size() - 1; i++)
-			{
-				data[i].push_back(neuron(1, funcInstance));
-				data[i].back().is_bias();
-			}
-
-			for (size_t i = 0; i < data.size() - 2; i++)
-			{
-				weight.push_back(dataW());
-				for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); j++)
-				{
-					weight.back().push_back((nndx::randT() % 6) - 2);
-				}
-			}
-			weight.push_back(dataW());
-			for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); j++)
-			{
-				weight.back().push_back((nndx::randT() % 6) - 2);
-			}
-			::std::cout << "Training file(is defined as): " << nameT << ::std::endl;
-			::std::cout << "SUCCESS! Press anykey to start..." << ::std::endl;
+			f.close();
+			ERROR_
+				return false;
 		}
-		else
+
+		for (size_t i = 0; i < topology_save.size(); ++i)
 		{
-			::std::ifstream read(nameF);
-			if (!read.is_open())
-			{
-				::std::cout << "Wrong filename! ERROR" << ::std::endl;
-				read.close();
-				ERROR_
-				system("pause"); // error
-			}
-			read >> a;
-			while (a != 0)
-			{
-				::std::cout << a << ::std::endl;
-				data.push_back(dataA());
-
-				for (int i = 0; i < a; i++)
-				{
-					data.back().push_back(neuron(0, funcInstance));
-				}
-				topology_save.push_back(a);
-
-				read >> a;
-			}
-			double w;
-
-			for (size_t i = 0; i < data.size() - 1; i++)
-			{
-				data[i].push_back(neuron(1, funcInstance));
-				data[i].back().is_bias();
-			}
-			::std::cout << "Init weights from file..." << ::std::endl;
-			for (size_t i = 0; i < data.size() - 2; i++)
-			{
-				weight.push_back(dataW());
-				for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); j++)
-				{
-					read >> w;
-					weight.back().push_back(w);
-					::std::cout << w << ::std::endl;
-					read >> w;
-					weight.back().back().dwg = w;
-					::std::cout << w << ::std::endl;
-				}
-				::std::string check;
-				read >> check;
-				if (check != "-----")
-				{
-					::std::cout << "check = " << check << ::std::endl;
-					::std::cout << "ERROR! CHECKOUT!" << ::std::endl;
-					ERROR_
-					system("pause"); // error
-				}
-			}
-			weight.push_back(dataW());
-			for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); j++)
-			{
-				read >> w;
-				weight.back().push_back(w);
-				::std::cout << w << ::std::endl;
-				read >> w;
-				weight.back().back().dwg = w;
-				::std::cout << w << ::std::endl;
-			}
-			::std::string check;
-			read >> check;
-			if (check != "-----")
-			{
-				::std::cout << "check = " << check << ::std::endl;
-				::std::cout << "ERROR! CHECKOUT!" << ::std::endl;
-				ERROR_
-				system("pause"); // error
-			}
-			read >> nameT;
-			read.close();
-			::std::cout << "Name of training file: " << nameT << " (check)" << ::std::endl;
-			::std::cout << "SUCCESS! The neuronet already...(press anykey to start)" << ::std::endl;
-			system("pause");
+			f << topology_save[i] << " ";
 		}
+		f << "0" << ::std::endl;
+
+		for (size_t i = 0; i < weight.size(); ++i)
+		{
+			for (size_t j = 0; j < weight[i].size(); ++j)
+			{
+				f << weight[i][j].wg << ::std::endl;
+				f << weight[i][j].dwg << ::std::endl;
+			}
+			f << "-----" << ::std::endl;
+		}
+		f << s;
+		f.close();
+
+		return true;
 	}
 
 	void neuronet::activationF()
 	{
 		double local_sum = 0;
 
-		for (size_t i = 1; i < data.size() - 1; i++)
+		for (size_t i = 1; i < data.size() - 1; ++i)
 		{
 			//::std::cout << "----------------  data.size - " << data.size() << "   now - " << i << ::std::endl;
-			for (size_t j = 0; j < data[i].size(); j++)
+			for (size_t j = 0; j < data[i].size(); ++j)
 			{
 				//::std::cout << "----------------  data[" << i <<  "].size - " << data[i].size() << "  now - " << j << "   ";
 				if (!data[i][j].BIAS)
 				{
 					//::std::cout << "- is not BIAS | ";
 					local_sum = 0;
-					for (size_t prev = 0; prev < data[i - 1].size(); prev++)
+					for (size_t prev = 0; prev < data[i - 1].size(); ++prev)
 					{
 						//::std::cout << prev * (data[i].size() - 1) + j << " ";
 						local_sum += data[i - 1][prev].data * weight[i - 1][prev * (data[i].size() - 1) + j].wg;
@@ -424,14 +574,14 @@ namespace nndx
 			}
 		}
 		//::std::cout << "----------------  data.size - " << data.size() << "   now - last" << ::std::endl;
-		for (size_t j = 0; j < data.back().size(); j++)
+		for (size_t j = 0; j < data.back().size(); ++j)
 		{
 			//::std::cout << "----------------  data[last].size - " << data[data.size() - 1].size() << "  now - " << j << "   ";
 			if (!data.back()[j].BIAS)
 			{
 				//::std::cout << "- is not BIAS | ";
 				local_sum = 0;
-				for (size_t prev = 0; prev < data[data.size() - 2].size(); prev++)
+				for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
 				{
 					//::std::cout << prev * data.back().size() + j << " ";
 					local_sum += data[data.size() - 2][prev].data * weight[data.size() - 2][prev * data.back().size() + j].wg;
@@ -459,33 +609,33 @@ namespace nndx
 		typedef ::std::vector<double> dw;
 		::std::vector<dw> errR;
 
-		for (size_t i = 0; i < data.size(); i++)
+		for (size_t i = 0; i < data.size(); ++i)
 		{
 			errR.push_back(dw());
 		}
 
-		for (size_t i = 0; i < data.back().size(); i++)
+		for (size_t i = 0; i < data.back().size(); ++i)
 		{
 			errR.back().push_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
 		}
 
 		double local_sum = 0;
-		for (size_t j = 0; j < data[data.size() - 2].size(); j++)
+		for (size_t j = 0; j < data[data.size() - 2].size(); ++j)
 		{
 			local_sum = 0;
-			for (size_t next = 0; next < data[data.size() - 1].size(); next++)
+			for (size_t next = 0; next < data[data.size() - 1].size(); ++next)
 			{
 				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data[data.size() - 1].size() * j + next].wg;
 				weight[data.size() - 2][data[data.size() - 1].size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
 			}
 			errR[data.size() - 2].push_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}
-		for (int i = data.size() - 3; i >= 0; i--) // обязательно  -> signed <-, 'cause число может быть отрицательным(для выхода из цикла)
+		for (int i = data.size() - 3; i >= 0; --i) // обязательно  -> signed <-, 'cause число может быть отрицательным(для выхода из цикла)
 		{
-			for (size_t j = 0; j < data[i].size(); j++)
+			for (size_t j = 0; j < data[i].size(); ++j)
 			{
 				local_sum = 0;
-				for (size_t next = 0; next < data[i + 1].size() - 1; next++)
+				for (size_t next = 0; next < data[i + 1].size() - 1; ++next)
 				{
 					local_sum += errR[i + 1][next] * weight[i][(data[i + 1].size() - 1) * j + next].wg;
 					weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data;
@@ -494,20 +644,20 @@ namespace nndx
 			}
 		}
 
-		for (size_t i = 1; i < data.size() - 1; i++)
+		for (size_t i = 1; i < data.size() - 1; ++i)
 		{
-			for (size_t j = 0; j < data[i].size() - 1; j++)
+			for (size_t j = 0; j < data[i].size() - 1; ++j)
 			{
-				for (size_t prev = 0; prev < data[i - 1].size(); prev++)
+				for (size_t prev = 0; prev < data[i - 1].size(); ++prev)
 				{
 					weight[i - 1][prev * (data[i].size() - 1) + j].dwg = u * weight[i - 1][prev * (data[i].size() - 1) + j].grad + (moment * weight[i - 1][prev * (data[i].size() - 1) + j].dwg);
 					weight[i - 1][prev * (data[i].size() - 1) + j].wg += weight[i - 1][prev * (data[i].size() - 1) + j].dwg;
 				}
 			}
 		}
-		for (size_t j = 0; j < data[data.size() - 1].size(); j++)
+		for (size_t j = 0; j < data[data.size() - 1].size(); ++j)
 		{
-			for (size_t prev = 0; prev < data[data.size() - 2].size(); prev++)
+			for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
 			{
 				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg = u * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].grad + (moment * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg);
 				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].wg += weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg;
@@ -534,6 +684,22 @@ namespace nndx
 				weight[data.size() - 2][j * data.back().size() + next].wg = weight[data.size() - 2][j * data.back().size() + next].wg + u * (data[data.size() - 2][j].prevdata - data[data.size() - 2][j].data) * (data.back()[next].prevdata - data.back()[next].data);
 			}
 		}
+	}
+
+	bool neuronet::getState() const noexcept
+	{
+		return this->isReady;
+	}
+
+	::std::vector<double> neuronet::getResults() const
+	{
+		::std::vector<double> temp;
+		temp.reserve(data.back().size());
+		for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			temp.emplace_back(data.back()[i].data);
+		}
+		return temp;
 	}
 
 	int inline randT()

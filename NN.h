@@ -67,7 +67,7 @@ namespace nndx
 
 	public:
 		neuron(const double&, _dCRTYPEFUNC);
-		void is_bias() noexcept;
+		void setAsBias() noexcept;
 	};
 
 	class wWw
@@ -75,7 +75,7 @@ namespace nndx
 	public:
 		double wg;
 		double dwg;
-		double grad; //
+		double grad;
 
 	public:
 		wWw(const double&);
@@ -88,26 +88,41 @@ namespace nndx
 	{
 	public:
 		_dTYPEFUNC funcInstance;
-		double moment; // 0.05 //
-		double u; // 0.1 //
+		double moment; // 0.05
+		double u; // 0.1
 		::std::vector<dataA> data;
 		::std::vector<dataW> weight;
+		::std::string nDataNet;
+		::std::string nTrainNote;
+
+	private:
+		bool isReady;
 		::std::vector<int> topology_save;
-		::std::string nameF;
-		::std::string nameT;
 
 	public:
 		neuronet() noexcept;
 		neuronet(neuronet&&);
 		neuronet(_dCRTYPEFUNC) noexcept;
-		neuronet(const dy_tpl&, _dCRTYPEFUNC);
-		void init(); //
-		void mA(); //
-		void SPECmA(::std::vector<double>&);
-		void SPECmA(const dy_tpl&);
-		void saveF(const ::std::string&);
+		neuronet(dy_tpl&&, _dCRTYPEFUNC);
+		~neuronet();
+
+		void operator=(neuronet&&);
+
+		bool init(dy_tpl&&, _dCRTYPEFUNC);
+		bool initFromKeyboard();
+		bool initFromFile();
+
+		bool RunTraining();
+		bool SPECmA(::std::vector<double>&);
+		//bool SPECmA(dy_tpl&&); // args type is INT!!!
+
+		bool saveF(::std::string&&);
+
 		void activationF();
-		void backProp(::std::vector<double>&); //
-		void funcHebb(); //
+		void backProp(::std::vector<double>&);
+		void funcHebb();
+
+		bool getState() const noexcept;
+		::std::vector<double> getResults() const;
 	};
 }

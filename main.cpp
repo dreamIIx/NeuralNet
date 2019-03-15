@@ -28,9 +28,10 @@ int def_FIi(::std::ifstream& read_cont__)
 #define def_POSX 410
 #define def_POSY 200
 #define def_POSY_WALL 140
-#define def_KF 0.6
+#define def_KF 0.5
+#define def_TOPOLOGYSZ 3
 
-#define def_XTT_KEY_PROG
+//#define def_XTT_KEY_PROG
 
 #include "Object.h"
 
@@ -132,7 +133,7 @@ int main()
 			s += ch;
 			s += ".txt";
 		}
-		v_Obj_[i].net.saveF(s);
+		v_Obj_[i].net.saveF(::std::move(s));
 	}
 
 	::std::ofstream out("output/log.txt");
@@ -168,7 +169,8 @@ void mainA
 
 	for (int i = 0; i < def__SIZE_; ++i)
 	{
-		v_Obj.emplace_back(t, nndx::dy_tpl(3, 2, 3, 2), i);
+		v_Obj.emplace_back(t, nndx::dy_tpl(def_TOPOLOGYSZ, 2, 4, 2), i);
+		if (!v_Obj.back().net.getState()) ERROR_
 	}
 
 	int tmpy = nndx::randT() % 4;
@@ -191,6 +193,14 @@ void mainA
 	size_t bufsizeO = def__SIZE_;
 	TimeGet tm;
 #endif
+	int numITER = 0;
+	::std::ofstream endP("output/endpoint_log.txt");
+	if (!endP.is_open())
+	{
+		::std::cout << "error of opening file - endpoint_log.txt" << ::std::endl;
+		ERROR_
+		system("pause");
+	}
 
 	while (is_Open)
 	{
@@ -257,13 +267,15 @@ void mainA
 						packet.reserve(2);
 						packet.emplace_back(1);
 						packet.emplace_back(toY * 0.01);
-						_ptr[i]->net.SPECmA(packet);
-						::std::vector<double> values;
-						for (size_t uy = 0; uy < _ptr[i]->net.data.back().size(); ++uy)
+						bool res = _ptr[i]->net.SPECmA(packet);
+						if (res)
 						{
-							values.emplace_back(_ptr[i]->net.data.back()[uy].data);
+							_ptr[i]->mA(std::move(_ptr[i]->net.getResults()));
 						}
-						_ptr[i]->mA(values);
+						else
+						{
+							ERROR_
+						}
 						break;
 					}
 				}
@@ -293,7 +305,9 @@ void mainA
 				_ptr.emplace_back(&v_Obj[i]);
 			}
 			radixSort(_ptr);
-			mA_gen(_ptr, 3);
+			endP << _ptr.back()->score << ::std::endl;
+			++numITER;
+			mA_gen(_ptr, def_TOPOLOGYSZ);
 
 			for (size_t i = 0; i < v_Obj.size(); ++i)
 			{
@@ -341,6 +355,8 @@ void mainA
 		win.display();
 	}
 
+	endP << numITER;
+	endP.close();
 	win.setActive(false);
 }
 

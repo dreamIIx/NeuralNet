@@ -31,7 +31,7 @@ namespace nndx
 		tempDATA.clear();
 	}
 
-	neuron::neuron(const double& num, _dCRTYPEFUNC _afunc_) : data(num), prevdata(0.0), funcDRV(0.0), BIAS(false)
+	neuron::neuron(const double& num, _dTYPEFUNC _afunc_) : data(num), prevdata(0.0), funcDRV(0.0), BIAS(false)
 	{
 		switch (_afunc_)
 		{
@@ -101,9 +101,9 @@ namespace nndx
 		}
 	}
 
-	neuronet::neuronet(_dCRTYPEFUNC fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false) {}
+	neuronet::neuronet(_dTYPEFUNC fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false) {}
 
-	neuronet::neuronet(dy_tpl&& temp, _dCRTYPEFUNC fnIns) : funcInstance(fnIns)
+	neuronet::neuronet(dy_tpl&& temp, _dTYPEFUNC fnIns) : funcInstance(fnIns)
 	{
 		this->isReady = false;
 
@@ -113,7 +113,6 @@ namespace nndx
 			int a = *pos++;
 			if (a > 0)
 			{
-
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
 
@@ -128,8 +127,78 @@ namespace nndx
 			else
 			{
 				ERROR_
-				system("pause"); // ERROR <---
+					system("pause"); // ERROR <---
 			}
+		}
+
+		if (data.empty())
+		{
+			ERROR_
+				system("pause"); // ERROR <---
+
+		}
+
+		for (size_t i = 0; i < data.size() - 1; i++)
+		{
+			data[i].reserve(data[i].capacity() + 1);
+			data[i].emplace_back(neuron(1, funcInstance));
+			data[i].back().setAsBias();
+		}
+
+		for (size_t i = 0; i < data.size() - 2; i++)
+		{
+			weight.reserve(weight.capacity() + 1);
+			weight.emplace_back(dataW());
+			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); j++)
+			{
+				weight.back().reserve(weight.back().capacity() + 1);
+				weight.back().emplace_back((nndx::randT() % 6) - 2);
+			}
+		}
+		weight.reserve(weight.capacity() + 1);
+		weight.emplace_back(dataW());
+		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); j++)
+		{
+			weight.back().reserve(weight.back().capacity() + 1);
+			weight.back().emplace_back((nndx::randT() % 6) - 2);
+		}
+
+		this->isReady = true;
+	}
+
+	neuronet::neuronet(dy_tpl&& temp) : funcInstance(_fnDEFAULTFUNC)
+	{
+		this->isReady = false;
+
+		auto pos = temp.data();
+		for (int i = 0; i < temp.size(); i++)
+		{
+			int a = *pos++;
+			if (a > 0)
+			{
+				data.reserve(data.capacity() + 1);
+				data.emplace_back(dataA());
+
+				for (int i = 0; i < a; i++)
+				{
+					data.back().reserve(data.back().capacity() + 1);
+					data.back().emplace_back(neuron(0, funcInstance));
+				}
+				topology_save.reserve(topology_save.capacity() + 1);
+				topology_save.emplace_back(a);
+			}
+			else
+			{
+				ERROR_
+					system("pause"); // ERROR <---
+			}
+		}
+
+		if (data.empty())
+		{
+			ERROR_
+				system("pause"); // ERROR <---
+
 		}
 
 		for (size_t i = 0; i < data.size() - 1; i++)
@@ -170,7 +239,6 @@ namespace nndx
 
 	void neuronet::operator=(neuronet&& anet)
 	{
-		this->isReady = false;
 		try
 		{
 			if (!anet.getState())
@@ -199,9 +267,16 @@ namespace nndx
 		}
 	}
 
-	bool neuronet::init(dy_tpl&& temp, _dCRTYPEFUNC fnIns)
+	bool neuronet::init(dy_tpl&& temp, _dTYPEFUNC fnIns)
 	{
-		this->isReady = false;
+		this->funcInstance = fnIns;
+		if (this->isReady)
+		{
+			data.clear();
+			weight.clear();
+			topology_save.clear();
+			this->isReady = false;
+		}
 
 		auto pos = temp.data();
 		for (int i = 0; i < temp.size(); ++i)
@@ -225,6 +300,230 @@ namespace nndx
 				ERROR_
 				return false;
 			}
+		}
+
+		if (data.empty())
+		{
+			ERROR_
+				return false;
+		}
+
+		for (size_t i = 0; i < data.size() - 1; ++i)
+		{
+			data[i].reserve(data[i].capacity() + 1);
+			data[i].emplace_back(neuron(1, funcInstance));
+			data[i].back().setAsBias();
+		}
+
+		for (size_t i = 0; i < data.size() - 2; ++i)
+		{
+			weight.reserve(weight.capacity() + 1);
+			weight.emplace_back(dataW());
+			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			{
+				weight.back().reserve(weight.back().capacity() + 1);
+				weight.back().emplace_back((nndx::randT() % 6) - 2);
+			}
+		}
+		weight.reserve(weight.capacity() + 1);
+		weight.emplace_back(dataW());
+		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		{
+			weight.back().reserve(weight.back().capacity() + 1);
+			weight.back().emplace_back((nndx::randT() % 6) - 2);
+		}
+
+		this->isReady = true;
+		return true;
+	}
+
+	bool neuronet::init(dy_tpl&& temp)
+	{
+		if (this->isReady)
+		{
+			data.clear();
+			weight.clear();
+			topology_save.clear();
+			this->isReady = false;
+		}
+
+		auto pos = temp.data();
+		for (int i = 0; i < temp.size(); ++i)
+		{
+			int a = *pos++;
+			if (a > 0)
+			{
+				data.reserve(data.capacity() + 1);
+				data.emplace_back(dataA());
+
+				for (int i = 0; i < a; ++i)
+				{
+					data.back().reserve(data.back().capacity() + 1);
+					data.back().emplace_back(neuron(0, funcInstance));
+				}
+				topology_save.reserve(topology_save.capacity() + 1);
+				topology_save.emplace_back(a);
+			}
+			else
+			{
+				ERROR_
+					return false;
+			}
+		}
+
+		if (data.empty())
+		{
+			ERROR_
+				return false;
+		}
+
+		for (size_t i = 0; i < data.size() - 1; ++i)
+		{
+			data[i].reserve(data[i].capacity() + 1);
+			data[i].emplace_back(neuron(1, funcInstance));
+			data[i].back().setAsBias();
+		}
+
+		for (size_t i = 0; i < data.size() - 2; ++i)
+		{
+			weight.reserve(weight.capacity() + 1);
+			weight.emplace_back(dataW());
+			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			{
+				weight.back().reserve(weight.back().capacity() + 1);
+				weight.back().emplace_back((nndx::randT() % 6) - 2);
+			}
+		}
+		weight.reserve(weight.capacity() + 1);
+		weight.emplace_back(dataW());
+		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		{
+			weight.back().reserve(weight.back().capacity() + 1);
+			weight.back().emplace_back((nndx::randT() % 6) - 2);
+		}
+
+		this->isReady = true;
+		return true;
+	}
+
+	bool neuronet::init(::std::vector<int>&& temp, _dTYPEFUNC fnIns)
+	{
+		if (temp.empty())
+		{
+			ERROR_
+				return false;
+		}
+		this->funcInstance = fnIns;
+		if (this->isReady)
+		{
+			data.clear();
+			weight.clear();
+			topology_save.clear();
+			this->isReady = false;
+		}
+
+		auto pos = temp.data();
+		for (int i = 0; i < temp.size(); ++i)
+		{
+			int a = *pos++;
+			if (a > 0)
+			{
+				data.reserve(data.capacity() + 1);
+				data.emplace_back(dataA());
+
+				for (int i = 0; i < a; ++i)
+				{
+					data.back().reserve(data.back().capacity() + 1);
+					data.back().emplace_back(neuron(0, funcInstance));
+				}
+				topology_save.reserve(topology_save.capacity() + 1);
+				topology_save.emplace_back(a);
+			}
+			else
+			{
+				ERROR_
+					return false;
+			}
+		}
+
+		if (data.empty())
+		{
+			ERROR_
+				return false;
+		}
+
+		for (size_t i = 0; i < data.size() - 1; ++i)
+		{
+			data[i].reserve(data[i].capacity() + 1);
+			data[i].emplace_back(neuron(1, funcInstance));
+			data[i].back().setAsBias();
+		}
+
+		for (size_t i = 0; i < data.size() - 2; ++i)
+		{
+			weight.reserve(weight.capacity() + 1);
+			weight.emplace_back(dataW());
+			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			{
+				weight.back().reserve(weight.back().capacity() + 1);
+				weight.back().emplace_back((nndx::randT() % 6) - 2);
+			}
+		}
+		weight.reserve(weight.capacity() + 1);
+		weight.emplace_back(dataW());
+		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		{
+			weight.back().reserve(weight.back().capacity() + 1);
+			weight.back().emplace_back((nndx::randT() % 6) - 2);
+		}
+
+		this->isReady = true;
+		return true;
+	}
+
+	bool neuronet::init(::std::vector<int>&& temp)
+	{
+		if (temp.empty())
+		{
+			ERROR_
+				return false;
+		}
+		if (this->isReady)
+		{
+			data.clear();
+			weight.clear();
+			topology_save.clear();
+			this->isReady = false;
+		}
+
+		auto pos = temp.data();
+		for (int i = 0; i < temp.size(); ++i)
+		{
+			int a = *pos++;
+			if (a > 0)
+			{
+				data.reserve(data.capacity() + 1);
+				data.emplace_back(dataA());
+
+				for (int i = 0; i < a; ++i)
+				{
+					data.back().reserve(data.back().capacity() + 1);
+					data.back().emplace_back(neuron(0, funcInstance));
+				}
+				topology_save.reserve(topology_save.capacity() + 1);
+				topology_save.emplace_back(a);
+			}
+			else
+			{
+				ERROR_
+					return false;
+			}
+		}
+
+		if (data.empty())
+		{
+			ERROR_
+				return false;
 		}
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
@@ -258,12 +557,20 @@ namespace nndx
 
 	bool neuronet::initFromKeyboard()
 	{
-		::std::cout << "Please write topology(size of every layer)" << ::std::endl;
+		if (this->isReady)
+		{
+			data.clear();
+			weight.clear();
+			topology_save.clear();
+			this->isReady = false;
+		}
+		::std::cout << "Please write topology(size of every layer, !PRESS '0' to stop!)" << ::std::endl;
 
 		auto a = -1;
 		do
 		{
 			::std::cin >> a;
+			if (a == 0) continue;
 			if (a > 0)
 			{
 				data.reserve(data.capacity() + 1);
@@ -283,6 +590,12 @@ namespace nndx
 				return false;
 			}
 		} while (a);
+
+		if (data.empty())
+		{
+			ERROR_
+				return false;
+		}
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
 		{
@@ -310,34 +623,51 @@ namespace nndx
 		}
 
 		::std::cout << "SUCCESS! Press anykey to start..." << ::std::endl;
+		this->isReady = true;
 		return true;
 	}
 
 	bool neuronet::initFromFile()
 	{
+		if (this->isReady)
+		{
+			data.clear();
+			weight.clear();
+			topology_save.clear();
+			this->isReady = false;
+		}
 		::std::ifstream read(nDataNet);
 		if (!read.is_open())
 		{
 			read.close();
 			ERROR_
-			return false;
+				return false;
 		}
 
 		auto a = 0;
 		do
 		{
 			read >> a;
-			data.reserve(data.capacity() + 1);
-			data.emplace_back(dataA());
-
-			for (int i = 0; i < a; ++i)
+			if (a != 0)
 			{
-				data.back().reserve(data.back().capacity() + 1);
-				data.back().emplace_back(neuron(0, funcInstance));
+				data.reserve(data.capacity() + 1);
+				data.emplace_back(dataA());
+
+				for (int i = 0; i < a; ++i)
+				{
+					data.back().reserve(data.back().capacity() + 1);
+					data.back().emplace_back(neuron(0, funcInstance));
+				}
+				topology_save.reserve(topology_save.capacity() + 1);
+				topology_save.emplace_back(a);
 			}
-			topology_save.reserve(topology_save.capacity() + 1);
-			topology_save.emplace_back(a);
 		} while (a);
+
+		if (data.empty())
+		{
+			ERROR_
+				return false;
+		}
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
 		{
@@ -368,7 +698,7 @@ namespace nndx
 			{
 				read.close();
 				ERROR_
-				return false;
+					return false;
 			}
 		}
 
@@ -391,16 +721,45 @@ namespace nndx
 		{
 			read.close();
 			ERROR_
-			return false;
+				return false;
 		}
 
 		read >> nTrainNote;
 		read.close();
+		this->isReady = true;
 		return true;
 	}
 
-	bool neuronet::RunTraining()
+	bool neuronet::setFunc(_dTYPEFUNC afn) noexcept
 	{
+		this->funcInstance = afn;
+		return true;
+	}
+
+	bool neuronet::setParams(double amoment, double au)
+	{
+		if ((amoment == 0) || (au == 0))
+		{
+			ERROR_
+				return false;
+		}
+		this->moment = amoment;
+		this->u = au;
+		return true;
+	}
+
+	bool neuronet::RunTraining(bool acomments)
+	{
+		if (!this->isReady)
+		{
+			ERROR_
+				return false;
+		}
+		if ((this->moment == 0) || (this->u == 0))
+		{
+			ERROR_
+				return false;
+		}
 		::std::ifstream read(nTrainNote);
 		if (!read.is_open())
 		{
@@ -409,25 +768,25 @@ namespace nndx
 				return false;
 		}
 
-		auto num = 0;
-		int nums;
+		int numT = 0;
+		int nums = 0;
 		read >> nums;
 
-		read >> num;
-		if (num != data[0].size() - 1)
+		read >> numT;
+		if (numT != data[0].size() - 1)
 		{
 			ERROR_
 				return false;
 		}
-		read >> num;
-		if (num != data.back().size())
+		read >> numT;
+		if (numT != data.back().size())
 		{
 			ERROR_
 				return false;
 		}
 
-		num = 0;
-		while (num < nums)
+		numT = 0;
+		while (numT < nums)
 		{
 			for (int i = 0; i < data[0].size() - 1; ++i)
 			{
@@ -442,9 +801,11 @@ namespace nndx
 				double j;
 				read >> j;
 				errDat.push_back(j);
+				if (acomments) ::std::cout << abs(j - data.back()[i].data) << ::std::endl;
 			}
+
 			backProp(errDat);
-			++num;
+			++numT;
 		}
 		read.close();
 
@@ -453,6 +814,11 @@ namespace nndx
 
 	bool neuronet::SPECmA(::std::vector<double>& dataT)
 	{
+		if (!this->isReady)
+		{
+			ERROR_
+				return false;
+		}
 		if (dataT.size() == data[0].size() - 1)
 		{
 			for (size_t i = 0; i < data[0].size() - 1; ++i)
@@ -480,6 +846,11 @@ namespace nndx
 
 	/*bool neuronet::SPECmA(dy_tpl&& temp)
 	{
+		if (!this->isReady)
+		{
+			ERROR_
+				return false;
+		}
 		const int* pos = temp.data();
 		if (temp.size() == data[0].size() - 1)
 		{
@@ -508,6 +879,11 @@ namespace nndx
 
 	bool neuronet::saveF(::std::string&& s)
 	{
+		if (!this->isReady)
+		{
+			ERROR_
+				return false;
+		}
 		::std::ofstream f(s);
 		if (!f.is_open())
 		{
@@ -531,7 +907,7 @@ namespace nndx
 			}
 			f << "-----" << ::std::endl;
 		}
-		f << s;
+		f << this->nTrainNote;
 		f.close();
 
 		return true;
@@ -563,10 +939,12 @@ namespace nndx
 					case _fnSIGMOID:
 						data[i][j].data = 1 / (1 + exp(-local_sum));
 						data[i][j].RunDefaultFunc_T(data[i][j]);
+						//::std::cout << "SIGMOID" << ::std::endl;
 						break;
 					case _fnTANH:
 						data[i][j].data = tanh(local_sum);
 						data[i][j].RunDefaultFunc_T(data[i][j]);
+						//::std::cout << "TANH" << ::std::endl;
 						break;
 					}
 				}
@@ -593,10 +971,12 @@ namespace nndx
 				case _fnSIGMOID:
 					data.back()[j].data = 1 / (1 + exp(-local_sum));
 					data.back()[j].RunDefaultFunc_T(data.back()[j]);
+					//::std::cout << "SIGMOID" << ::std::endl;
 					break;
 				case _fnTANH:
 					data.back()[j].data = tanh(local_sum);
 					data.back()[j].RunDefaultFunc_T(data.back()[j]);
+					//::std::cout << "TANH" << ::std::endl;
 					break;
 				}
 			}
@@ -691,8 +1071,23 @@ namespace nndx
 		return this->isReady;
 	}
 
+	_dTYPEFUNC neuronet::getSetFunc() const noexcept
+	{
+		return this->funcInstance;
+	}
+
+	::std::pair<double, double> neuronet::getParams() const noexcept
+	{
+		return ::std::make_pair(this->moment, this->u);
+	}
+
 	::std::vector<double> neuronet::getResults() const
 	{
+		if (!this->isReady)
+		{
+			ERROR_
+				return {};
+		}
 		::std::vector<double> temp;
 		temp.reserve(data.back().size());
 		for (size_t i = 0; i < data.back().size(); ++i)

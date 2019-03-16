@@ -22,9 +22,6 @@
 
 #ifndef _dTYPEFUNC
 #define _dTYPEFUNC	unsigned short int
-#ifndef _dCRTYPEFUNC
-#define _dCRTYPEFUNC const unsigned short int&
-#endif
 #endif
 
 #define _fnSIGMOID	0b0000
@@ -66,7 +63,7 @@ namespace nndx
 		static void _m_fnTANH_(neuron&);
 
 	public:
-		neuron(const double&, _dCRTYPEFUNC);
+		neuron(const double&, _dTYPEFUNC);
 		void setAsBias() noexcept;
 	};
 
@@ -87,42 +84,50 @@ namespace nndx
 	class neuronet
 	{
 	public:
-		_dTYPEFUNC funcInstance;
-		double moment; // 0.05
-		double u; // 0.1
 		::std::vector<dataA> data;
 		::std::vector<dataW> weight;
 		::std::string nDataNet;
 		::std::string nTrainNote;
 
 	private:
+		_dTYPEFUNC funcInstance;
+		double moment; // 0.05
+		double u; // 0.1
 		bool isReady;
 		::std::vector<int> topology_save;
 
 	public:
-		neuronet() noexcept;
-		neuronet(neuronet&&);
-		neuronet(_dCRTYPEFUNC) noexcept;
-		neuronet(dy_tpl&&, _dCRTYPEFUNC);
-		~neuronet();
+		neuronet() noexcept; // ch
+		neuronet(neuronet&&); // ch
+		neuronet(_dTYPEFUNC) noexcept; // ch
+		neuronet(dy_tpl&&, _dTYPEFUNC); // ch
+		neuronet(dy_tpl&&); // ch
+		~neuronet(); // ch
 
 		void operator=(neuronet&&);
 
-		bool init(dy_tpl&&, _dCRTYPEFUNC);
-		bool initFromKeyboard();
-		bool initFromFile();
+		bool init(dy_tpl&&, _dTYPEFUNC); // ch
+		bool init(dy_tpl&&); // ch
+		bool init(::std::vector<int>&&, _dTYPEFUNC); // ch
+		bool init(::std::vector<int>&&); // ch
+		bool initFromKeyboard(); // ch
+		bool initFromFile(); // ch
+		bool setFunc(_dTYPEFUNC) noexcept; // ch
+		bool setParams(double, double); // ch
 
-		bool RunTraining();
+		bool RunTraining(bool); // ch
 		bool SPECmA(::std::vector<double>&);
 		//bool SPECmA(dy_tpl&&); // args type is INT!!!
 
-		bool saveF(::std::string&&);
+		bool saveF(::std::string&&); // ch
 
-		void activationF();
-		void backProp(::std::vector<double>&);
+		void activationF(); // work
+		void backProp(::std::vector<double>&); // work
 		void funcHebb();
 
-		bool getState() const noexcept;
-		::std::vector<double> getResults() const;
+		bool getState() const noexcept; // ch
+		_dTYPEFUNC getSetFunc() const noexcept; // ch
+		::std::pair<double, double> getParams() const noexcept; // ch
+		::std::vector<double> getResults() const; // ch
 	};
 }

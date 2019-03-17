@@ -54,23 +54,23 @@ namespace nndx
 
 	class neuron
 	{
+		friend class neuronet;
 	public:
 		double data;
 		double prevdata;
 		double funcDRV;
-		void(*RunFunc_T)(neuron&, const double&);
-		void(*RunDRVFunc_T)(neuron&);
 
 	private:
 		bool BIAS;
-		static void _m_fnSIGMOID(neuron& n, const double&);
+
+	protected:
+		static void _m_fnSIGMOID(neuron&, const double&);
 		static void _m_fnSIGMOID_DRV(neuron&);
-		static void _m_fnTANH(neuron& n, const double&);
+		static void _m_fnTANH(neuron&, const double&);
 		static void _m_fnTANH_DRV(neuron&);
 
 	public:
-		neuron(const double&, _dTYPEFUNC);
-		void ResetFunc(_dTYPEFUNC);
+		explicit neuron(const double&) noexcept;
 		void setAsBias() noexcept;
 		bool isBias() const noexcept;
 	};
@@ -83,7 +83,7 @@ namespace nndx
 		double grad;
 
 	public:
-		wWw(double) noexcept;
+		explicit wWw(double) noexcept;
 	};
 
 	typedef ::std::vector<neuron> dataA;
@@ -103,9 +103,11 @@ namespace nndx
 		double u; // 0.1
 		bool isReady;
 		::std::vector<int> topology_save;
+		void (*RunFunc_T)(neuron&, const double&);
+		void (*RunDRVFunc_T)(neuron&);
 
 	public:
-		neuronet() noexcept; // ch
+		explicit neuronet() noexcept; // ch
 		neuronet(_dTYPEFUNC) noexcept; // ch
 		neuronet(neuronet&&); // ch
 		neuronet(const dy_tpl&, _dTYPEFUNC); // ch
@@ -124,7 +126,6 @@ namespace nndx
 
 		bool RunTraining(bool); // ch
 		bool SPECmA(const ::std::vector<double>&);
-		//bool SPECmA(dy_tpl&&); // args type is INT!!!
 
 		bool saveF(const ::std::string&); // ch
 
@@ -133,7 +134,7 @@ namespace nndx
 		void funcHebb();
 
 		bool getState() const noexcept; // ch
-		_dTYPEFUNC getSetFunc() noexcept; // ch
+		_dTYPEFUNC getSetFunc() const noexcept; // ch
 		::std::pair<double, double> getParams() const noexcept; // ch
 		::std::vector<double> getResults() const; // ch
 	};

@@ -21,7 +21,7 @@ namespace nndx
 		return tempDATA.size();
 	}
 
-	const int* dy_tpl::data() const
+	auto dy_tpl::data() const noexcept
 	{
 		return tempDATA.data();
 	}
@@ -36,26 +36,63 @@ namespace nndx
 		switch (_afunc_)
 		{
 		case _fnSIGMOID:
-			RunDefaultFunc_T = &this->_m_fnSIGMOID_;
+			RunFunc_T = &this->_m_fnSIGMOID;
+			RunDRVFunc_T = &this->_m_fnSIGMOID_DRV;
 			break;
 		case _fnTANH:
-			RunDefaultFunc_T = &this->_m_fnTANH_;
+			RunFunc_T = &this->_m_fnTANH;
+			RunDRVFunc_T = &this->_m_fnTANH_DRV;
 			break;
 		default:
 #ifdef _fnDEFAULTFUNC // as default, able to change
-			RunDefaultFunc_T = &this->_fnSDEFAULTFUNC;
+			RunFunc_T = &this->_fnSDEFAULTFUNC;
+			RunDRVFunc_T = &this->_fnSDRVDEFFUNC;
 #else
-			RunDefaultFunc_T = nullptr;
+			RunFunc_T = nullptr;
+			RunDRVFunc_T = nullptr;
 #endif
 		}
 	}
 
-	void neuron::_m_fnSIGMOID_(neuron& n)
+	void neuron::ResetFunc(_dTYPEFUNC _afunc_)
+	{
+		switch (_afunc_)
+		{
+		case _fnSIGMOID:
+			RunFunc_T = &this->_m_fnSIGMOID;
+			RunDRVFunc_T = &this->_m_fnSIGMOID_DRV;
+			break;
+		case _fnTANH:
+			RunFunc_T = &this->_m_fnTANH;
+			RunDRVFunc_T = &this->_m_fnTANH_DRV;
+			break;
+		default:
+#ifdef _fnDEFAULTFUNC // as default, able to change
+			RunFunc_T = &this->_fnSDEFAULTFUNC;
+			RunDRVFunc_T = &this->_fnSDRVDEFFUNC;
+#else
+			RunFunc_T = nullptr;
+			RunDRVFunc_T = nullptr;
+#endif
+		}
+	}
+
+	void neuron::_m_fnSIGMOID(neuron& n, const double& value)
+	{
+		n.data = 1 / (1 + exp(-value));
+	}
+
+	void neuron::_m_fnSIGMOID_DRV(neuron& n)
 	{
 		n.funcDRV = n.data * (1 - n.data);
 	}
 
-	void neuron::_m_fnTANH_(neuron& n)
+	void neuron::_m_fnTANH(neuron& n, const double& value)
+	{
+		n.data = tanh(value);
+	}
+
+	void neuron::_m_fnTANH_DRV(neuron& n)
 	{
 		n.funcDRV = 1 - n.data * n.data;
 	}
@@ -63,12 +100,20 @@ namespace nndx
 	void neuron::setAsBias() noexcept
 	{
 		BIAS = true;
-		RunDefaultFunc_T = nullptr;
+		RunFunc_T = nullptr;
+		RunDRVFunc_T = nullptr;
 	}
 
-	wWw::wWw(const double& num) : wg(num), dwg(0.0), grad(0.0) {}
+	bool neuron::isBias() const noexcept
+	{
+		return this->BIAS;
+	}
+
+	wWw::wWw(double num) noexcept : wg(num), dwg(0.0), grad(0.0) {}
 
 	neuronet::neuronet() noexcept : funcInstance(_fnDEFAULTFUNC), moment(0.0), u(0.0), isReady(false) {}
+
+	neuronet::neuronet(_dTYPEFUNC fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false) {}
 
 	neuronet::neuronet(neuronet&& anet)
 	{
@@ -101,72 +146,7 @@ namespace nndx
 		}
 	}
 
-	neuronet::neuronet(_dTYPEFUNC fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false) {}
-
-	neuronet::neuronet(dy_tpl&& temp, _dTYPEFUNC fnIns) : funcInstance(fnIns)
-	{
-		this->isReady = false;
-
-		auto pos = temp.data();
-		for (int i = 0; i < temp.size(); i++)
-		{
-			int a = *pos++;
-			if (a > 0)
-			{
-				data.reserve(data.capacity() + 1);
-				data.emplace_back(dataA());
-
-				for (int i = 0; i < a; i++)
-				{
-					data.back().reserve(data.back().capacity() + 1);
-					data.back().emplace_back(neuron(0, funcInstance));
-				}
-				topology_save.reserve(topology_save.capacity() + 1);
-				topology_save.emplace_back(a);
-			}
-			else
-			{
-				ERROR_
-					system("pause"); // ERROR <---
-			}
-		}
-
-		if (data.empty())
-		{
-			ERROR_
-				system("pause"); // ERROR <---
-
-		}
-
-		for (size_t i = 0; i < data.size() - 1; i++)
-		{
-			data[i].reserve(data[i].capacity() + 1);
-			data[i].emplace_back(neuron(1, funcInstance));
-			data[i].back().setAsBias();
-		}
-
-		for (size_t i = 0; i < data.size() - 2; i++)
-		{
-			weight.reserve(weight.capacity() + 1);
-			weight.emplace_back(dataW());
-			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); j++)
-			{
-				weight.back().reserve(weight.back().capacity() + 1);
-				weight.back().emplace_back((nndx::randT() % 6) - 2);
-			}
-		}
-		weight.reserve(weight.capacity() + 1);
-		weight.emplace_back(dataW());
-		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); j++)
-		{
-			weight.back().reserve(weight.back().capacity() + 1);
-			weight.back().emplace_back((nndx::randT() % 6) - 2);
-		}
-
-		this->isReady = true;
-	}
-
-	neuronet::neuronet(dy_tpl&& temp) : funcInstance(_fnDEFAULTFUNC)
+	neuronet::neuronet(const dy_tpl& temp, _dTYPEFUNC fnIns) : funcInstance(fnIns)
 	{
 		this->isReady = false;
 
@@ -267,7 +247,7 @@ namespace nndx
 		}
 	}
 
-	bool neuronet::init(dy_tpl&& temp, _dTYPEFUNC fnIns)
+	bool neuronet::init(const dy_tpl& temp, _dTYPEFUNC fnIns)
 	{
 		this->funcInstance = fnIns;
 		if (this->isReady)
@@ -337,7 +317,7 @@ namespace nndx
 		return true;
 	}
 
-	bool neuronet::init(dy_tpl&& temp)
+	bool neuronet::init(const dy_tpl& temp)
 	{
 		if (this->isReady)
 		{
@@ -406,7 +386,7 @@ namespace nndx
 		return true;
 	}
 
-	bool neuronet::init(::std::vector<int>&& temp, _dTYPEFUNC fnIns)
+	bool neuronet::init(const ::std::vector<int>& temp, _dTYPEFUNC fnIns)
 	{
 		if (temp.empty())
 		{
@@ -481,7 +461,7 @@ namespace nndx
 		return true;
 	}
 
-	bool neuronet::init(::std::vector<int>&& temp)
+	bool neuronet::init(const ::std::vector<int>& temp)
 	{
 		if (temp.empty())
 		{
@@ -730,9 +710,20 @@ namespace nndx
 		return true;
 	}
 
-	bool neuronet::setFunc(_dTYPEFUNC afn) noexcept
+	bool neuronet::setFunc(_dTYPEFUNC afn)
 	{
 		this->funcInstance = afn;
+		for (size_t i = 0; i < data.size() - 1; ++i)
+		{
+			for (size_t j = 0; j < data[i].size() - 1; ++j)
+			{
+				data[i][j].ResetFunc(afn);
+			}
+		}
+		for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			data.back()[i].ResetFunc(afn);
+		}
 		return true;
 	}
 
@@ -791,7 +782,7 @@ namespace nndx
 			for (int i = 0; i < data[0].size() - 1; ++i)
 			{
 				read >> data[0][i].data;
-				if (!data[0][i].BIAS)	data[0][i].RunDefaultFunc_T(data[0][i]);
+				if (!data[0][i].isBias())	data[0][i].RunDRVFunc_T(data[0][i]);
 			}
 			activationF();
 
@@ -812,7 +803,7 @@ namespace nndx
 		return true;
 	}
 
-	bool neuronet::SPECmA(::std::vector<double>& dataT)
+	bool neuronet::SPECmA(const ::std::vector<double>& dataT)
 	{
 		if (!this->isReady)
 		{
@@ -824,9 +815,9 @@ namespace nndx
 			for (size_t i = 0; i < data[0].size() - 1; ++i)
 			{
 				data[0][i].data = dataT[i];
-				if (!data[0][i].BIAS)
+				if (!data[0][i].isBias())
 				{
-					data[0][i].RunDefaultFunc_T(data[0][i]);
+					data[0][i].RunDRVFunc_T(data[0][i]);
 				}
 				else
 				{
@@ -857,7 +848,7 @@ namespace nndx
 			for (size_t i = 0; i < data[0].size() - 1; ++i)
 			{
 				data[0][i].data = *pos++;
-				if (!data[0][i].BIAS)
+				if (!data[0][i].isBias())
 				{
 					data[0][i].RunDefaultFunc_T(data[0][i]);
 				}
@@ -877,7 +868,7 @@ namespace nndx
 		}
 	}*/
 
-	bool neuronet::saveF(::std::string&& s)
+	bool neuronet::saveF(const ::std::string& s)
 	{
 		if (!this->isReady)
 		{
@@ -915,7 +906,7 @@ namespace nndx
 
 	void neuronet::activationF()
 	{
-		double local_sum = 0;
+		double local_sum = 0.0;
 
 		for (size_t i = 1; i < data.size() - 1; ++i)
 		{
@@ -923,7 +914,7 @@ namespace nndx
 			for (size_t j = 0; j < data[i].size(); ++j)
 			{
 				//::std::cout << "----------------  data[" << i <<  "].size - " << data[i].size() << "  now - " << j << "   ";
-				if (!data[i][j].BIAS)
+				if (!data[i][j].isBias())
 				{
 					//::std::cout << "- is not BIAS | ";
 					local_sum = 0;
@@ -934,19 +925,8 @@ namespace nndx
 					}
 					//::std::cout << ::std::endl;
 					data[i][j].prevdata = data[i][j].data;
-					switch(funcInstance)
-					{
-					case _fnSIGMOID:
-						data[i][j].data = 1 / (1 + exp(-local_sum));
-						data[i][j].RunDefaultFunc_T(data[i][j]);
-						//::std::cout << "SIGMOID" << ::std::endl;
-						break;
-					case _fnTANH:
-						data[i][j].data = tanh(local_sum);
-						data[i][j].RunDefaultFunc_T(data[i][j]);
-						//::std::cout << "TANH" << ::std::endl;
-						break;
-					}
+					data[i][j].RunFunc_T(data[i][j], local_sum);
+					data[i][j].RunDRVFunc_T(data[i][j]);
 				}
 				//else ::std::cout << "- is BIAS | " << ::std::endl;
 			}
@@ -955,7 +935,7 @@ namespace nndx
 		for (size_t j = 0; j < data.back().size(); ++j)
 		{
 			//::std::cout << "----------------  data[last].size - " << data[data.size() - 1].size() << "  now - " << j << "   ";
-			if (!data.back()[j].BIAS)
+			if (!data.back()[j].isBias())
 			{
 				//::std::cout << "- is not BIAS | ";
 				local_sum = 0;
@@ -966,25 +946,14 @@ namespace nndx
 				}
 				//::std::cout << ::std::endl;
 				data.back()[j].prevdata = data.back()[j].data;
-				switch (funcInstance)
-				{
-				case _fnSIGMOID:
-					data.back()[j].data = 1 / (1 + exp(-local_sum));
-					data.back()[j].RunDefaultFunc_T(data.back()[j]);
-					//::std::cout << "SIGMOID" << ::std::endl;
-					break;
-				case _fnTANH:
-					data.back()[j].data = tanh(local_sum);
-					data.back()[j].RunDefaultFunc_T(data.back()[j]);
-					//::std::cout << "TANH" << ::std::endl;
-					break;
-				}
+				data.back()[j].RunFunc_T(data.back()[j], local_sum);
+				data.back()[j].RunDRVFunc_T(data.back()[j]);
 			}
 			//else ::std::cout << "- is BIAS | " << ::std::endl;
 		}
 	}
 
-	void neuronet::backProp(::std::vector<double>& d)
+	void neuronet::backProp(const ::std::vector<double>& d)
 	{
 		typedef ::std::vector<double> dw;
 		::std::vector<dw> errR;
@@ -1071,8 +1040,12 @@ namespace nndx
 		return this->isReady;
 	}
 
-	_dTYPEFUNC neuronet::getSetFunc() const noexcept
+	_dTYPEFUNC neuronet::getSetFunc() noexcept
 	{
+		if ((this->funcInstance != _fnSIGMOID) && (this->funcInstance != _fnTANH))
+		{
+			this->funcInstance = _fnDEFAULTFUNC;
+		}
 		return this->funcInstance;
 	}
 

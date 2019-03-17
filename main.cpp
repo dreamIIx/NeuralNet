@@ -44,7 +44,7 @@ void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vecto
 void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, sf::Int32&, bool&);
 #endif
 
-int main()
+int mainT()
 {
 	sf::RenderWindow win({ def_WIN_X, def_WIN_Y }, "NN");
 	win.setVerticalSyncEnabled(true);

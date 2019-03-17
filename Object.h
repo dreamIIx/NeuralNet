@@ -32,7 +32,7 @@ private:
 	sf::Clock *c = new sf::Clock();
 };
 
-Object::Object(sf::Texture& t, nndx::dy_tpl&& tpl, int i) : obj(t), net(::std::move(tpl), _fnTANH), score(0), life(true), stepA(6)
+Object::Object(sf::Texture& t, nndx::dy_tpl&& tpl, int i) : obj(t), net(::std::move(tpl), []() -> double {return (nndx::randT() % 6) - 3; }, _fnTANH), score(0), life(true), stepA(6)
 {
 	//if (i != 0)	net.SPECinit(topology);
 	obj.setTextureRect(sf::IntRect(0, def_TEXTURE_OBJ_Y * i, def_TEXTURE_OBJ_X, def_TEXTURE_OBJ_Y));

@@ -2,7 +2,9 @@
 
 //Autor -dreamIIx
 //GitHub - https://github.com/dreamIIx
-//Release on GitHub 27.01.2019
+//Release [v0.1] on GitHub 27.09.2018
+//Actual version 2.3
+//The library include functions and classes to provide support the work with Neural Networks
 
 #include <Windows.h>
 #include <iostream>
@@ -37,8 +39,8 @@
 
 namespace nndx
 {
-	int inline randT();
-	int inline randB();
+	int randT();
+	int randB();
 
 	struct dy_tpl
 	{
@@ -105,15 +107,17 @@ namespace nndx
 		::std::vector<int> topology_save;
 		void (*RunFunc_T)(neuron&, const double&);
 		void (*RunDRVFunc_T)(neuron&);
+		double(*GenWeight)();
 
 	public:
 		explicit neuronet() noexcept; // ch
 		neuronet(_dTYPEFUNC) noexcept; // ch
 		neuronet(neuronet&&); // ch
-		neuronet(const dy_tpl&, _dTYPEFUNC); // ch
+		neuronet(const dy_tpl&, double(), _dTYPEFUNC); // ch
 		~neuronet(); // ch
 
-		void operator=(neuronet&&);
+		neuronet& operator=(const neuronet&);
+		neuronet& operator=(neuronet&&);
 
 		bool init(const dy_tpl&, _dTYPEFUNC); // ch
 		bool init(const dy_tpl&); // ch
@@ -122,20 +126,26 @@ namespace nndx
 		bool initFromKeyboard(); // ch
 		bool initFromFile(); // ch
 		bool setFunc(_dTYPEFUNC); // ch
+		bool setGenWeightsFunc(double());
 		bool setParams(double, double); // ch
 
 		bool RunTraining(bool); // ch
-		bool SPECmA(const ::std::vector<double>&);
-
+		bool SPECmA(const ::std::vector<double>&); // ch
+		bool fillInput(const ::std::vector<double>&); // ch
 		bool saveF(const ::std::string&); // ch
 
-		void activationF(); // work
-		void backProp(const ::std::vector<double>&); // work
-		void funcHebb();
+		bool callActivationF();
+		bool callBackProp(const ::std::vector<double>&);
+		bool callFuncHebb();
 
 		bool getState() const noexcept; // ch
 		_dTYPEFUNC getSetFunc() const noexcept; // ch
 		::std::pair<double, double> getParams() const noexcept; // ch
 		::std::vector<double> getResults() const; // ch
+
+	private:
+		void activationF(); // work
+		void backProp(const ::std::vector<double>&); // work
+		void funcHebb();
 	};
 }

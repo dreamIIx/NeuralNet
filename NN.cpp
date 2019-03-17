@@ -2,6 +2,126 @@
 
 namespace nndx
 {
+	int randT()
+	{
+		HCRYPTPROV hProv;
+
+		BYTE Buf1;
+		BYTE Buf2;
+
+		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		{
+			if (GetLastError() == NTE_BAD_KEYSET)
+			{
+				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
+				{
+					::std::cout << "Error ... [crypt]" << ::std::endl;
+					ERROR_
+						system("pause");
+					return 0;
+				}
+				else
+				{
+					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
+					CryptReleaseContext(hProv, 0);
+				}
+			}
+		}
+		else
+		{
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
+			CryptReleaseContext(hProv, 0);
+		}
+
+		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		{
+			if (GetLastError() == NTE_BAD_KEYSET)
+			{
+				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
+				{
+					::std::cout << "Error ... [crypt]" << ::std::endl;
+					ERROR_
+						system("pause");
+					return 0;
+				}
+				else
+				{
+					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
+					CryptReleaseContext(hProv, 0);
+				}
+			}
+		}
+		else
+		{
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
+			CryptReleaseContext(hProv, 0);
+		}
+
+		int i = (int)Buf1;
+		i += (int)Buf2;
+
+		return i;
+	}
+
+	int randB()
+	{
+		HCRYPTPROV hProv;
+
+		BYTE Buf1;
+		BYTE Buf2;
+		int i;
+
+		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		{
+			if (GetLastError() == NTE_BAD_KEYSET)
+			{
+				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
+				{
+					//Error
+					return 0;
+				}
+				else
+				{
+					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
+					CryptReleaseContext(hProv, 0);
+					i = static_cast<int>(Buf1);
+				}
+			}
+		}
+		else
+		{
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
+			CryptReleaseContext(hProv, 0);
+			i = static_cast<int>(Buf1);
+		}
+
+		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		{
+			if (GetLastError() == NTE_BAD_KEYSET)
+			{
+				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
+				{
+					//Error
+					return 0;
+				}
+				else
+				{
+					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
+					CryptReleaseContext(hProv, 0);
+					i <<= static_cast<int>(Buf2 % 24);
+				}
+			}
+		}
+		else
+		{
+			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
+			CryptReleaseContext(hProv, 0);
+			i <<= static_cast<int>(Buf2 % 24);
+		}
+
+		return i;
+	}
+
 	dy_tpl::dy_tpl(int size, ...)
 	{
 		va_list args;
@@ -69,6 +189,7 @@ namespace nndx
 	{
 			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
+			GenWeight = nullptr;
 	}
 
 	neuronet::neuronet(_dTYPEFUNC fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false)
@@ -88,6 +209,7 @@ namespace nndx
 			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
 		}
+		GenWeight = nullptr;
 	}
 
 	neuronet::neuronet(neuronet&& anet)
@@ -111,7 +233,9 @@ namespace nndx
 				this->nTrainNote = ::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
 				this->RunDRVFunc_T = ::std::forward<decltype(anet.RunDRVFunc_T)>(anet.RunDRVFunc_T);
 				this->RunFunc_T = ::std::forward<decltype(anet.RunFunc_T)>(anet.RunFunc_T);
+				this->GenWeight = ::std::forward<decltype(anet.GenWeight)>(anet.GenWeight);
 				this->isReady = true;
+				anet.isReady = false;
 			}
 		}
 		catch (int x)
@@ -123,8 +247,14 @@ namespace nndx
 		}
 	}
 
-	neuronet::neuronet(const dy_tpl& temp, _dTYPEFUNC fnIns) : funcInstance(fnIns)
+	neuronet::neuronet(const dy_tpl& temp, double func(), _dTYPEFUNC fnIns) : funcInstance(fnIns)
 	{
+		this->GenWeight = func;
+		if (this->GenWeight == nullptr)
+		{
+			ERROR_
+				system("pause"); // ERROR <---
+		}
 		this->isReady = false;
 
 		switch (fnIns)
@@ -188,7 +318,7 @@ namespace nndx
 			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); j++)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
-				weight.back().emplace_back((nndx::randT() % 6) - 2);
+				weight.back().emplace_back(this->GenWeight());
 			}
 		}
 		weight.reserve(weight.capacity() + 1);
@@ -196,7 +326,7 @@ namespace nndx
 		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); j++)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
-			weight.back().emplace_back((nndx::randT() % 6) - 2);
+			weight.back().emplace_back(this->GenWeight());
 		}
 
 		this->isReady = true;
@@ -204,15 +334,16 @@ namespace nndx
 
 	neuronet::~neuronet()
 	{
-		this->isReady = false;
+		isReady = false;
 		RunDRVFunc_T = nullptr;
 		RunFunc_T = nullptr;
+		GenWeight = nullptr;
 		data.clear();
 		weight.clear();
 		topology_save.clear();
 	}
 
-	void neuronet::operator=(neuronet&& anet)
+	neuronet& neuronet::operator=(const neuronet& anet)
 	{
 		try
 		{
@@ -222,17 +353,67 @@ namespace nndx
 			}
 			else
 			{
-				this->funcInstance = ::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
-				this->moment = ::std::forward<decltype(anet.moment)>(anet.moment);
-				this->u = ::std::forward<decltype(anet.u)>(anet.u);
-				this->data = ::std::forward<decltype(anet.data)>(anet.data);
-				this->weight = ::std::forward<decltype(anet.weight)>(anet.weight);
-				this->topology_save = ::std::forward<decltype(anet.topology_save)>(anet.topology_save);
-				this->nDataNet = ::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
-				this->nTrainNote = ::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
-				this->RunDRVFunc_T = ::std::forward<decltype(anet.RunDRVFunc_T)>(anet.RunDRVFunc_T);
-				this->RunFunc_T = ::std::forward<decltype(anet.RunFunc_T)>(anet.RunFunc_T);
+				if (this == &anet)
+				{
+					return *this;
+				}
+
+				this->funcInstance = anet.funcInstance;
+				this->moment = anet.moment;
+				this->u = anet.u;
+				this->data = anet.data;
+				this->weight = anet.weight;
+				this->topology_save = anet.topology_save;
+				this->nDataNet = anet.nDataNet;
+				this->nTrainNote = anet.nTrainNote;
+				this->RunDRVFunc_T = anet.RunDRVFunc_T;
+				this->RunFunc_T = anet.RunFunc_T;
+				this->GenWeight = anet.GenWeight;
 				this->isReady = true;
+				return *this;
+			}
+		}
+		catch (int x)
+		{
+			if (x == 12)
+			{
+				::std::cout << "Argument of function-constructor is rvalue/notReady!" << ::std::endl;
+			}
+		}
+	}
+
+	neuronet& neuronet::operator=(neuronet&& anet)
+	{
+		try
+		{
+			if (!anet.getState())
+			{
+				throw 12;
+			}
+			else
+			{
+				if (this == &anet)
+				{
+					return *this;
+				}
+				else
+				{
+					this->funcInstance = ::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
+					this->moment = ::std::forward<decltype(anet.moment)>(anet.moment);
+					this->u = ::std::forward<decltype(anet.u)>(anet.u);
+					this->data = ::std::forward<decltype(anet.data)>(anet.data);
+					this->weight = ::std::forward<decltype(anet.weight)>(anet.weight);
+					this->topology_save = ::std::forward<decltype(anet.topology_save)>(anet.topology_save);
+					this->nDataNet = ::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
+					this->nTrainNote = ::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
+					this->RunDRVFunc_T = ::std::forward<decltype(anet.RunDRVFunc_T)>(anet.RunDRVFunc_T);
+					this->RunFunc_T = ::std::forward<decltype(anet.RunFunc_T)>(anet.RunFunc_T);
+					this->GenWeight = ::std::forward<decltype(anet.GenWeight)>(anet.GenWeight);
+					this->isReady = true;
+					anet.isReady = false;
+
+					return *this;
+				}
 			}
 		}
 		catch (int x)
@@ -246,6 +427,12 @@ namespace nndx
 
 	bool neuronet::init(const dy_tpl& temp, _dTYPEFUNC fnIns)
 	{
+		if (this->GenWeight == nullptr)
+		{
+			ERROR_
+				return false;
+		}
+
 		funcInstance = fnIns;
 		switch (funcInstance)
 		{
@@ -315,7 +502,7 @@ namespace nndx
 			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
-				weight.back().emplace_back((nndx::randT() % 6) - 2);
+				weight.back().emplace_back(this->GenWeight());
 			}
 		}
 		weight.reserve(weight.capacity() + 1);
@@ -323,7 +510,7 @@ namespace nndx
 		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
-			weight.back().emplace_back((nndx::randT() % 6) - 2);
+			weight.back().emplace_back(this->GenWeight());
 		}
 
 		this->isReady = true;
@@ -332,6 +519,11 @@ namespace nndx
 	
 	bool neuronet::init(const dy_tpl& temp)
 	{
+		if (this->GenWeight == nullptr)
+		{
+			ERROR_
+				return false;
+		}
 		if (this->isReady)
 		{
 			data.clear();
@@ -384,7 +576,7 @@ namespace nndx
 			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
-				weight.back().emplace_back((nndx::randT() % 6) - 2);
+				weight.back().emplace_back(this->GenWeight());
 			}
 		}
 		weight.reserve(weight.capacity() + 1);
@@ -392,7 +584,7 @@ namespace nndx
 		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
-			weight.back().emplace_back((nndx::randT() % 6) - 2);
+			weight.back().emplace_back(this->GenWeight());
 		}
 
 		this->isReady = true;
@@ -406,6 +598,11 @@ namespace nndx
 			ERROR_
 				return false;
 		}
+		if (this->GenWeight == nullptr)
+		{
+			ERROR_
+				return false;
+		}
 
 		funcInstance = fnIns;
 		switch (funcInstance)
@@ -476,7 +673,7 @@ namespace nndx
 			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
-				weight.back().emplace_back((nndx::randT() % 6) - 2);
+				weight.back().emplace_back(this->GenWeight());
 			}
 		}
 		weight.reserve(weight.capacity() + 1);
@@ -484,7 +681,7 @@ namespace nndx
 		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
-			weight.back().emplace_back((nndx::randT() % 6) - 2);
+			weight.back().emplace_back(this->GenWeight());
 		}
 
 		this->isReady = true;
@@ -494,6 +691,11 @@ namespace nndx
 	bool neuronet::init(const ::std::vector<int>& temp)
 	{
 		if (temp.empty())
+		{
+			ERROR_
+				return false;
+		}
+		if (this->GenWeight == nullptr)
 		{
 			ERROR_
 				return false;
@@ -551,7 +753,7 @@ namespace nndx
 			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
-				weight.back().emplace_back((nndx::randT() % 6) - 2);
+				weight.back().emplace_back(this->GenWeight());
 			}
 		}
 		weight.reserve(weight.capacity() + 1);
@@ -559,7 +761,7 @@ namespace nndx
 		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
-			weight.back().emplace_back((nndx::randT() % 6) - 2);
+			weight.back().emplace_back(this->GenWeight());
 		}
 
 		this->isReady = true;
@@ -568,6 +770,11 @@ namespace nndx
 
 	bool neuronet::initFromKeyboard()
 	{
+		if (this->GenWeight == nullptr)
+		{
+			ERROR_
+				return false;
+		}
 		if (this->isReady)
 		{
 			data.clear();
@@ -622,7 +829,7 @@ namespace nndx
 			for (size_t j = 0; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
-				weight.back().emplace_back((nndx::randT() % 6) - 2);
+				weight.back().emplace_back(this->GenWeight());
 			}
 		}
 		weight.reserve(weight.capacity() + 1);
@@ -630,7 +837,7 @@ namespace nndx
 		for (size_t j = 0; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
-			weight.back().emplace_back((nndx::randT() % 6) - 2);
+			weight.back().emplace_back(this->GenWeight());
 		}
 
 		::std::cout << "SUCCESS! Press anykey to start..." << ::std::endl;
@@ -762,6 +969,12 @@ namespace nndx
 		return true;
 	}
 
+	bool neuronet::setGenWeightsFunc(double func())
+	{
+		this->GenWeight = func;
+		return true;
+	}
+
 	bool neuronet::setParams(double amoment, double au)
 	{
 		if ((amoment == 0) || (au == 0))
@@ -872,6 +1085,32 @@ namespace nndx
 		}
 	}
 
+	bool neuronet::fillInput(const ::std::vector<double>& dataT)
+	{
+		if (dataT.size() == data[0].size() - 1)
+		{
+			for (size_t i = 0; i < data[0].size() - 1; ++i)
+			{
+				data[0][i].data = dataT[i];
+				if (!data[0][i].isBias())
+				{
+					RunDRVFunc_T(data[0][i]);
+				}
+				else
+				{
+					ERROR_
+						return false;
+				}
+			}
+			return true;
+		}
+		else
+		{
+			ERROR_
+				return false;
+		}
+	}
+
 	bool neuronet::saveF(const ::std::string& s)
 	{
 		if (!this->isReady)
@@ -905,6 +1144,49 @@ namespace nndx
 		f << this->nTrainNote;
 		f.close();
 
+		return true;
+	}
+
+	bool neuronet::callActivationF()
+	{
+		if (!this->isReady)
+		{
+			ERROR_
+				return false;
+		}
+		activationF();
+		return true;
+	}
+
+	bool neuronet::callBackProp(const ::std::vector<double>& d)
+	{
+		if (!this->isReady)
+		{
+			ERROR_
+				return false;
+		}
+		if ((this->moment == 0) || (this->u == 0))
+		{
+			ERROR_
+				return false;
+		}
+		backProp(d);
+		return true;
+	}
+
+	bool neuronet::callFuncHebb()
+	{
+		if (!this->isReady)
+		{
+			ERROR_
+				return false;
+		}
+		if (this->u == 0)
+		{
+			ERROR_
+				return false;
+		}
+		funcHebb();
 		return true;
 	}
 
@@ -1068,125 +1350,5 @@ namespace nndx
 			temp.emplace_back(data.back()[i].data);
 		}
 		return temp;
-	}
-
-	int inline randT()
-	{
-		HCRYPTPROV hProv;
-
-		BYTE Buf1;
-		BYTE Buf2;
-
-		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
-		{
-			if (GetLastError() == NTE_BAD_KEYSET)
-			{
-				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
-				{
-					::std::cout << "Error ... [crypt]" << ::std::endl;
-					ERROR_
-						system("pause");
-					return 0;
-				}
-				else
-				{
-					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
-					CryptReleaseContext(hProv, 0);
-				}
-			}
-		}
-		else
-		{
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
-			CryptReleaseContext(hProv, 0);
-		}
-
-		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
-		{
-			if (GetLastError() == NTE_BAD_KEYSET)
-			{
-				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
-				{
-					::std::cout << "Error ... [crypt]" << ::std::endl;
-					ERROR_
-						system("pause");
-					return 0;
-				}
-				else
-				{
-					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
-					CryptReleaseContext(hProv, 0);
-				}
-			}
-		}
-		else
-		{
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
-			CryptReleaseContext(hProv, 0);
-		}
-
-		int i = (int)Buf1;
-		i += (int)Buf2;
-
-		return i;
-	}
-
-	int inline randB()
-	{
-		HCRYPTPROV hProv;
-
-		BYTE Buf1;
-		BYTE Buf2;
-		int i;
-
-		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
-		{
-			if (GetLastError() == NTE_BAD_KEYSET)
-			{
-				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
-				{
-					//Error
-					return 0;
-				}
-				else
-				{
-					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
-					CryptReleaseContext(hProv, 0);
-					i = static_cast<int>(Buf1);
-				}
-			}
-		}
-		else
-		{
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
-			CryptReleaseContext(hProv, 0);
-			i = static_cast<int>(Buf1);
-		}
-
-		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
-		{
-			if (GetLastError() == NTE_BAD_KEYSET)
-			{
-				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
-				{
-					//Error
-					return 0;
-				}
-				else
-				{
-					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
-					CryptReleaseContext(hProv, 0);
-					i <<= static_cast<int>(Buf2 % 24);
-				}
-			}
-		}
-		else
-		{
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
-			CryptReleaseContext(hProv, 0);
-			i <<= static_cast<int>(Buf2 % 24);
-		}
-
-		return i;
 	}
 }

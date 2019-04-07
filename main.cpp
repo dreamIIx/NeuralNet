@@ -108,6 +108,26 @@ int mainT()
 					runA = true;
 				}
 			}
+#else
+			else if (event.type == sf::Event::KeyPressed)
+			{
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
+				{
+					win.setFramerateLimit(1);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
+				{
+					win.setFramerateLimit(2);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
+				{
+					win.setFramerateLimit(5);
+				}
+				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num6))
+				{
+					win.setFramerateLimit(60);
+				}
+			}
 #endif
 		}
 	}

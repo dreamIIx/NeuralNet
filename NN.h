@@ -11,6 +11,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <SFML/Graphics.hpp>
 
 #ifndef def_ERR_FL_
 #define def_ERR_FL_

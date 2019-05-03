@@ -1192,7 +1192,7 @@ namespace nndx
 
 	void neuronet::activationF()
 	{
-		double local_sum = 0.0;
+		double local_sum = 0.;
 
 		for (size_t i = 1; i < data.size() - 1; ++i)
 		{
@@ -1203,7 +1203,7 @@ namespace nndx
 				if (!data[i][j].isBias())
 				{
 					//::std::cout << "- is not BIAS | ";
-					local_sum = 0;
+					local_sum = 0.;
 					for (size_t prev = 0; prev < data[i - 1].size(); ++prev)
 					{
 						//::std::cout << prev * (data[i].size() - 1) + j << " ";
@@ -1224,7 +1224,7 @@ namespace nndx
 			if (!data.back()[j].isBias())
 			{
 				//::std::cout << "- is not BIAS | ";
-				local_sum = 0;
+				local_sum = 0.;
 				for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
 				{
 					//::std::cout << prev * data.back().size() + j << " ";
@@ -1244,38 +1244,42 @@ namespace nndx
 		typedef ::std::vector<double> dw;
 		::std::vector<dw> errR;
 
+		errR.reserve(data.size());
 		for (size_t i = 0; i < data.size(); ++i)
 		{
-			errR.push_back(dw());
+			errR.emplace_back(dw());
 		}
 
+		errR.back().reserve(data.back().size());
 		for (size_t i = 0; i < data.back().size(); ++i)
 		{
-			errR.back().push_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
+			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
 		}
 
-		double local_sum = 0;
+		double local_sum = 0.;
+		errR[data.size() - 2].reserve(data[data.size() - 2].size());
 		for (size_t j = 0; j < data[data.size() - 2].size(); ++j)
 		{
-			local_sum = 0;
+			local_sum = 0.;
 			for (size_t next = 0; next < data[data.size() - 1].size(); ++next)
 			{
 				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data[data.size() - 1].size() * j + next].wg;
 				weight[data.size() - 2][data[data.size() - 1].size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
 			}
-			errR[data.size() - 2].push_back(local_sum * data[data.size() - 2][j].funcDRV);
+			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}
 		for (int i = data.size() - 3; i >= 0; --i) // обязательно  -> signed <-, 'cause число может быть отрицательным(для выхода из цикла)
 		{
+			errR[i].reserve(data[i].size());
 			for (size_t j = 0; j < data[i].size(); ++j)
 			{
-				local_sum = 0;
+				local_sum = 0.;
 				for (size_t next = 0; next < data[i + 1].size() - 1; ++next)
 				{
 					local_sum += errR[i + 1][next] * weight[i][(data[i + 1].size() - 1) * j + next].wg;
 					weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data;
 				}
-				errR[i].push_back(local_sum * data[i][j].funcDRV);
+				errR[i].emplace_back(local_sum * data[i][j].funcDRV);
 			}
 		}
 

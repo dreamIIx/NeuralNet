@@ -28,12 +28,12 @@
 #define _fnSIGMOID	static_cast<_dTYPEFUNC>(0b0000)
 #define _fnTANH		static_cast<_dTYPEFUNC>(0b0001)
 #ifndef _fnDEFAULTFUNC // as default, able to change
-//#define _fnDEFAULTFUNC _fnSIGMOID
-//#define _fnDRVDEFFUNC _m_fnSIGMOID_DRV
-//#define _fnSDEFAULTFUNC _m_fnSIGMOID
-#define _fnDEFAULTFUNC _fnTANH
-#define _fnSDRVDEFFUNC _m_fnTANH_DRV
-#define _fnSDEFAULTFUNC _m_fnTANH
+#define _fnDEFAULTFUNC _fnSIGMOID
+#define _fnSDRVDEFFUNC _m_fnSIGMOID_DRV
+#define _fnSDEFAULTFUNC _m_fnSIGMOID
+//#define _fnDEFAULTFUNC _fnTANH
+//#define _fnSDRVDEFFUNC _m_fnTANH_DRV
+//#define _fnSDEFAULTFUNC _m_fnTANH
 #endif
 
 namespace nndx

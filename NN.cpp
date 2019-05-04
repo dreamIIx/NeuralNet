@@ -1170,6 +1170,11 @@ namespace nndx
 			ERROR_
 				return false;
 		}
+		if (d.size() != data.back().size())
+		{
+			ERROR_
+				return false;
+		}
 		backProp(d);
 		return true;
 	}

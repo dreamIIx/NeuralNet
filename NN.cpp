@@ -155,12 +155,12 @@ namespace nndx
 
 	void neuron::_m_fnSIGMOID(neuron& n, const double& value)
 	{
-		n.data = 1 / (1 + exp(-value));
+		n.data = 1. / (1. + exp(-value));
 	}
 
 	void neuron::_m_fnSIGMOID_DRV(neuron& n)
 	{
-		n.funcDRV = n.data * (1 - n.data);
+		n.funcDRV = n.data * (1. - n.data);
 	}
 
 	void neuron::_m_fnTANH(neuron& n, const double& value)
@@ -170,7 +170,7 @@ namespace nndx
 
 	void neuron::_m_fnTANH_DRV(neuron& n)
 	{
-		n.funcDRV = 1 - n.data * n.data;
+		n.funcDRV = 1. - n.data * n.data;
 	}
 
 	void neuron::setAsBias() noexcept

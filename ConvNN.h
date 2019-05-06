@@ -243,6 +243,7 @@ namespace nndx
 					vinLayer[y].emplace_back(R, G, B);
 				}
 			}
+			return true;
 		}
 
 		bool initKrnl(size_t idx_, size_t idxKernel, unsigned int sizex, unsigned int sizey, ...)
@@ -675,14 +676,19 @@ namespace nndx
 				}
 				::std::cout << temp2 << ::std::endl;
 
-				resT = net.callBackProp(results[i % 10]);
+				resT = net.callBackProp(results[func(i)]);
 				if (!resT)
 				{
 					ERROR_
 						return false;
 				}
 			}
-			net.saveF(outputF + "net.txt");
+			resT = net.saveF(outputF + "net.txt");
+			if (!resT)
+			{
+				ERROR_
+					return false;
+			}
 			return true;
 		}
 
@@ -738,18 +744,11 @@ namespace nndx
 			}
 
 			int temp1 = 0;
-			int temp2 = 0;
-			double maxTemp = -2.;
 			for (auto& x : net.getResults())
 			{
-				if (x > maxTemp)
-				{
-					maxTemp = x;
-					temp2 = temp1;
-				}
-				++temp1;
+				if (temp1 == 10) temp1 == 0;
+				::std::cout << temp1++ << " " << x << ::std::endl;
 			}
-			::std::cout << temp2 << ::std::endl;
 			return true;
 		}
 

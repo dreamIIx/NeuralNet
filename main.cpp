@@ -39,13 +39,15 @@ void radixSort(::std::vector<Object*>&);
 void mA_gen(::std::vector<Object*>&, const int&);
 void mT(::std::vector<nndx::dataW>&, size_t, size_t);
 #ifdef def_XTT_KEY_PROG
-void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, bool&, bool&, bool&);
+void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, bool&, volatile bool&, bool&);
 #else
 void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, sf::Int32&, bool&);
 #endif
 
-int mainT()
+int main()
 {
+	ShowWindow(GetConsoleWindow(), SW_HIDE);
+
 	sf::RenderWindow win({ def_WIN_X, def_WIN_Y }, "NN");
 	win.setVerticalSyncEnabled(true);
 	win.setActive(false);
@@ -71,7 +73,7 @@ int mainT()
 
 	bool isOpen = true;
 #ifdef def_XTT_KEY_PROG
-	bool runA = true;
+	volatile bool runA = true;
 	bool newA = true;
 #endif
 
@@ -175,7 +177,7 @@ void mainA
 	sf::Texture& t,
 #ifdef def_XTT_KEY_PROG
 	bool& is_Open,
-	bool& run_,
+	volatile bool& run_,
 	bool& newA_
 #else
 	sf::Int32& TIMESET,
@@ -189,7 +191,7 @@ void mainA
 
 	for (int i = 0; i < def__SIZE_; ++i)
 	{
-		v_Obj.emplace_back(t, nndx::dy_tpl(def_TOPOLOGYSZ, 2, 4, 2), i);
+		v_Obj.emplace_back(t, nndx::dy_tpl(def_TOPOLOGYSZ, 2, 3, 2), i);
 		if (!v_Obj.back().net.getState()) ERROR_
 	}
 
@@ -225,10 +227,7 @@ void mainA
 	while (is_Open)
 	{
 #ifdef def_XTT_KEY_PROG
-		while (!run_)
-		{
-			Sleep(1);
-		}
+		while (!run_) {}
 		run_ = false;
 #endif
 

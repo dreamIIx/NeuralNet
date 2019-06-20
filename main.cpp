@@ -1,3 +1,9 @@
+//Autor - -dreamIIx
+//GitHub - https://github.com/dreamIIx
+//Release [v0.1] on GitHub 01.12.2018
+//Actual version 2.5[Uni-v]
+//This project is the embodiment of a neural network with a genetic algorithm to solve the problem of passing a random maze
+
 #include <iostream>
 #include <fstream>
 #include <string>

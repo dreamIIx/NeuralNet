@@ -26,13 +26,14 @@ public:
 	TimeGet() {}
 	~TimeGet();
 	bool restart();
-	sf::Int32 operator*();
+	int operator*();
 	void operator()();
 private:
 	sf::Clock *c = new sf::Clock();
 };
 
-Object::Object(sf::Texture& t, nndx::dy_tpl&& tpl, int i) : obj(t), net(::std::move(tpl), []() -> double { return (nndx::randT() % 6) - 3; }, _fnTANH), score(0), life(true), stepA(6)
+Object::Object(sf::Texture& t, nndx::dy_tpl&& tpl, int i)
+	: obj(t), net(::std::move(tpl), []() -> double { return (nndx::randT() % 6) - 3; }, _fnTANH), score(0), life(true), stepA(def_STEPA_)
 {
 	//if (i != 0)	net.SPECinit(topology);
 	obj.setTextureRect(sf::IntRect(0, def_TEXTURE_OBJ_Y * i, def_TEXTURE_OBJ_X, def_TEXTURE_OBJ_Y));
@@ -45,9 +46,9 @@ void Object::mA(::std::vector<double>&& args)
 	bool step_forward = true;
 	if (args[0] > def_KF)
 	{
-		obj.move(20.0f, 0.0f);
+		obj.move(static_cast<float>(def_TEXTURE_OBJ_X), 0.f);
 		score += 20;
-		stepA = 6;
+		stepA = def_STEPA_;
 	}
 	else
 	{
@@ -55,9 +56,9 @@ void Object::mA(::std::vector<double>&& args)
 	}
 	if (args[1] > def_KF)
 	{
-		if (obj.getPosition().y < 240)
+		if (obj.getPosition().y < def_POSY_WALL + def_TEXTURE_WLL_Y + def_TEXTURE_WLL_Y * def__NUM_ACTIVE_WALL)
 		{
-			obj.move(0.0f, 20.0f);
+			obj.move(0.f, static_cast<float>(def_TEXTURE_OBJ_Y));
 			score += 5;
 			if (!step_forward)	--stepA;
 		}
@@ -68,9 +69,9 @@ void Object::mA(::std::vector<double>&& args)
 	}
 	else if (args[1] < -def_KF)
 	{
-		if (obj.getPosition().y > 140)
+		if (obj.getPosition().y > def_POSY_WALL)
 		{
-			obj.move(0.0f, -20.0f);
+			obj.move(0.f, static_cast<float>(-def_TEXTURE_OBJ_Y));
 			score += 5;
 			if (!step_forward)	--stepA;
 		}
@@ -103,9 +104,9 @@ bool TimeGet::restart()
 	return true;
 }
 
-sf::Int32 TimeGet::operator*()
+int TimeGet::operator*()
 {
-	return c->getElapsedTime().asMilliseconds();
+	return static_cast<int>(c->getElapsedTime().asMilliseconds());
 }
 
 void TimeGet::operator()()

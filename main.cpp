@@ -1,7 +1,7 @@
 //Autor - -dreamIIx
 //GitHub - https://github.com/dreamIIx
 //Release [v0.1] on GitHub 01.12.2018
-//Actual version 2.5[Uni-v]
+//Actual version 2.6[Uni-v]
 //This project is the embodiment of a neural network with a genetic algorithm to solve the problem of passing a random maze
 
 #include <iostream>
@@ -37,9 +37,9 @@ T def_FI(::std::ifstream& read_cont__)
 #define def_TEXTURE_WLL_Y 20
 #define def_SIZE_VECTOR_WALL (def_WIN_X / def_TEXTURE_OBJ_X) + 1
 #define def_POSX 410
-#define def_POSY 200
-#define def_POSX_WALL 470
+#define def_POSX_WALL (def_POSX + 60)
 #define def_POSY_WALL 140
+#define def_POSY (def_POSY_WALL + 80)
 #define def_KF 0.5
 #define def_SZ_TOPOLOGY 3
 #define def_PRE_DISTANCE 200
@@ -49,7 +49,7 @@ T def_FI(::std::ifstream& read_cont__)
 void radixSort(::std::vector<Object*>&);
 void mA_gen(::std::vector<Object*>&, const int&);
 void mT(::std::vector<nndx::dataW>&, size_t, size_t);
-void mainA(sf::RenderWindow&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, volatile ::std::atomic_uint&,
+void mainA(sf::RenderWindow&, sf::View&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, volatile ::std::atomic_uint&,
 	volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&);
 
 int main(int argc, char** argv)
@@ -85,6 +85,9 @@ int main(int argc, char** argv)
 	sf::Texture t_;
 	t_.loadFromImage(image_);
 
+	sf::View view;
+	view.reset(sf::FloatRect(0.0f, 0.0f, static_cast<float>(def_WIN_X), static_cast<float>(def_WIN_Y)));
+
 	::std::vector<Object> v_Obj_;
 	::std::vector<::std::vector<Wall>> v_Wll_;
 	::std::vector<int> target_;
@@ -97,7 +100,7 @@ int main(int argc, char** argv)
 	volatile ::std::atomic_bool newA = false;
 	volatile ::std::atomic_bool auto_move = true;
 
-	::std::thread mainThread(mainA, ::std::ref(win), ::std::ref(v_Obj_), ::std::ref(v_Wll_), ::std::ref(target_), ::std::ref(t_), ::std::ref(TIMESET_), ::std::ref(isOpen),
+	::std::thread mainThread(mainA, ::std::ref(win), ::std::ref(view), ::std::ref(v_Obj_), ::std::ref(v_Wll_), ::std::ref(target_), ::std::ref(t_), ::std::ref(TIMESET_), ::std::ref(isOpen),
 		::std::ref(runA), ::std::ref(newA), ::std::ref(auto_move));
 
 	while (isOpen.load())
@@ -172,6 +175,10 @@ int main(int argc, char** argv)
 					}
 				}
 			}
+			else if (event.type == sf::Event::Resized)
+			{
+				view.reset(sf::FloatRect(0.0f, 0.0f, win.getSize().x, win.getSize().y));
+			}
 		}
 	}
 
@@ -212,6 +219,7 @@ int main(int argc, char** argv)
 void mainA
 (
 	sf::RenderWindow& win,
+	sf::View& view,
 	::std::vector<Object>& v_Obj,
 	::std::vector<::std::vector<Wall>>& v_Wll,
 	::std::vector<int>& target,
@@ -224,8 +232,6 @@ void mainA
 )
 {
 	win.setActive(true);
-	sf::View view;
-	view.reset(sf::FloatRect(0.0f, 0.0f, static_cast<float>(def_WIN_X), static_cast<float>(def_WIN_Y)));
 
 	for (int i = 0; i < def__SIZE_; ++i)
 	{

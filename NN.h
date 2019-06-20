@@ -1,9 +1,9 @@
 #pragma once
 
-//Autor -dreamIIx
+//Autor - -dreamIIx
 //GitHub - https://github.com/dreamIIx
 //Release [v0.1] on GitHub 27.09.2018
-//Actual version 2.3
+//Actual version 3.5
 //The library include functions and classes to provide support the work with Neural Networks
 
 #include <Windows.h>

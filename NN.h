@@ -110,7 +110,7 @@ namespace nndx
 
 	public:
 		explicit neuronet() noexcept; // ch
-		neuronet(_dTYPEFUNC) noexcept; // ch
+		explicit neuronet(_dTYPEFUNC) noexcept; // ch
 		neuronet(neuronet&&); // ch
 		neuronet(const dy_tpl&, double(), _dTYPEFUNC); // ch
 		~neuronet(); // ch

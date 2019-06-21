@@ -12,16 +12,8 @@
 #include <atomic>
 #include "SFML/Graphics.hpp"
 
-#ifndef def_XTT_fast_ifstream
-#define def_XTT_fast_ifstream
 template <typename T>
-T def_FI(::std::ifstream& read_cont__)
-{
-	T temp_int__;
-	read_cont__ >> temp_int__;
-	return temp_int__;
-}
-#endif
+T def_FI(::std::ifstream&);
 
 #include "NN.h"
 
@@ -62,15 +54,8 @@ int main(int argc, char** argv)
 
 	/* default filename with settings - inf.cfg*/
 	::std::ifstream _tempRead;
-	if (argc > 1)
-	{
-		_tempRead.open(argv[1]);
-	}
-	else if (argc == 1)
-	{
-		_tempRead.open("inf.cfg");
-	}
-	else
+	_tempRead.open("inf.cfg");
+	if (!_tempRead.is_open())
 	{
 		ERROR_
 			return 1;
@@ -426,6 +411,14 @@ void mainA
 	endP << numITER;
 	endP.close();
 	win.setActive(false);
+}
+
+template <typename T>
+T def_FI(::std::ifstream& read_cont__)
+{
+	T temp_int__;
+	read_cont__ >> temp_int__;
+	return temp_int__;
 }
 
 void radixSort(::std::vector<Object*>& a)

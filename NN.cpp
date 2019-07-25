@@ -2,14 +2,18 @@
 
 namespace nndx
 {
-	int randT()
+	int randT(BCRYPT_ALG_HANDLE hProv)
 	{
-		HCRYPTPROV hProv;
+		//HCRYPTPROV hProv;
 
-		BYTE Buf1;
-		BYTE Buf2;
+		PUCHAR Buf1 = 0b0;
+		PUCHAR Buf2 = 0b0;
 
-		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		//if (BCryptOpenAlgorithmProvider(&hProv, BCRYPT_3DES_ALGORITHM, MS_PRIMITIVE_PROVIDER, NULL)) {}
+		BCryptGenRandom(hProv, Buf1, sizeof(Buf1), NULL);
+		BCryptGenRandom(hProv, Buf2, sizeof(Buf2), NULL);
+
+		/*if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
 		{
 			if (GetLastError() == NTE_BAD_KEYSET)
 			{
@@ -55,7 +59,7 @@ namespace nndx
 		{
 			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
 			CryptReleaseContext(hProv, 0);
-		}
+		}*/
 
 		int i = (int)Buf1;
 		i += (int)Buf2;
@@ -1273,7 +1277,7 @@ namespace nndx
 			}
 			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}
-		for (int i = data.size() - 3; i >= 0; --i) // обязательно  -> signed <-, 'cause число может быть отрицательным(для выхода из цикла)
+		for (int i = static_cast<int>(data.size() - 3); i >= 0; --i) // обязательно  -> signed <-, 'cause число может быть отрицательным(для выхода из цикла)
 		{
 			errR[i].reserve(data[i].size());
 			for (size_t j = 0; j < data[i].size(); ++j)

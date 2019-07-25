@@ -7,10 +7,14 @@
 //The library include functions and classes to provide support the work with Neural Networks
 
 #include <Windows.h>
+#include <bcrypt.h>
+
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
+
+#pragma comment(lib, "Bcrypt.lib")
 
 #ifndef def_ERR_FL_
 #define def_ERR_FL_
@@ -38,7 +42,7 @@
 
 namespace nndx
 {
-	int randT();
+	int randT(BCRYPT_ALG_HANDLE);
 	int randB();
 
 	struct dy_tpl

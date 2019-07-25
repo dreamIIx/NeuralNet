@@ -39,7 +39,7 @@ T def_FI(::std::ifstream&);
 #include "Object.h"
 
 void radixSort(::std::vector<Object*>&);
-void mA_gen(::std::vector<Object*>&, const int&);
+void mA_gen(::std::vector<Object*>&, int);
 void mT(::std::vector<nndx::dataW>&, size_t, size_t);
 void mainA(sf::RenderWindow&, sf::View&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, volatile ::std::atomic_uint&,
 	volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&);
@@ -162,7 +162,7 @@ int main(int argc, char** argv)
 			}
 			else if (event.type == sf::Event::Resized)
 			{
-				view.reset(sf::FloatRect(0.0f, 0.0f, win.getSize().x, win.getSize().y));
+				view.reset(sf::FloatRect(0.f, 0.f, static_cast<float>(win.getSize().x), static_cast<float>(win.getSize().y)));
 			}
 		}
 	}
@@ -423,23 +423,22 @@ T def_FI(::std::ifstream& read_cont__)
 
 void radixSort(::std::vector<Object*>& a)
 {
-	int d = 8;
 	for (int p = 0; p < 4; ++p)
 	{
-		::std::vector<int> c(1 << d, 0);
+		::std::vector<int> c(1 << 8, 0);
 		::std::vector<Object*> b = a;
 
 		for (size_t i = 0; i < a.size(); ++i)
-			c[ (a[i]->score >> d * p) & ((1 << d) - 1) ]++;
-		for (size_t i = 1; i < 1 << d; ++i)
+			c[ (a[i]->score >> 8 * p) & ((1 << 8) - 1) ]++;
+		for (size_t i = 1; i < 1 << 8; ++i)
 			c[i] += c[i - 1];
-		for (int i = a.size() - 1; i >= 0; --i)
-			b[--c[(a[i]->score >> d * p) & ((1 << d) - 1)]] = a[i];
+		for (int i = static_cast<int>(a.size() - 1); i >= 0; --i)
+			b[--c[(a[i]->score >> 8 * p) & ((1 << 8) - 1)]] = a[i];
 		a = b;
 	}
 }
 
-void mA_gen(::std::vector<Object*>& obj, const int& tg)
+void mA_gen(::std::vector<Object*>& obj, int tg)
 {
 	size_t index;
 	obj[8]->net.weight = obj[10]->net.weight;

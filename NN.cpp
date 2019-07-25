@@ -2,26 +2,24 @@
 
 namespace nndx
 {
-	int randT(BCRYPT_ALG_HANDLE hProv)
+	int randT()
 	{
-		//HCRYPTPROV hProv;
+		HCRYPTPROV hProv;
 
-		PUCHAR Buf1 = 0b0;
-		PUCHAR Buf2 = 0b0;
+		BYTE Buf1 = 0b0;
+		BYTE Buf2 = 0b0;
 
 		//if (BCryptOpenAlgorithmProvider(&hProv, BCRYPT_3DES_ALGORITHM, MS_PRIMITIVE_PROVIDER, NULL)) {}
-		BCryptGenRandom(hProv, Buf1, sizeof(Buf1), NULL);
-		BCryptGenRandom(hProv, Buf2, sizeof(Buf2), NULL);
+		//BCryptGenRandom(hProv, Buf1, sizeof(Buf1), NULL);
+		//BCryptGenRandom(hProv, Buf2, sizeof(Buf2), NULL);
 
-		/*if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
 		{
 			if (GetLastError() == NTE_BAD_KEYSET)
 			{
 				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
 				{
-					::std::cout << "Error ... [crypt]" << ::std::endl;
-					ERROR_
-						system("pause");
+					//Error
 					return 0;
 				}
 				else
@@ -43,9 +41,7 @@ namespace nndx
 			{
 				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
 				{
-					::std::cout << "Error ... [crypt]" << ::std::endl;
-					ERROR_
-						system("pause");
+					//Error
 					return 0;
 				}
 				else
@@ -59,7 +55,7 @@ namespace nndx
 		{
 			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
 			CryptReleaseContext(hProv, 0);
-		}*/
+		}
 
 		int i = (int)Buf1;
 		i += (int)Buf2;

@@ -33,12 +33,12 @@ private:
 };
 
 Object::Object(sf::Texture& t, nndx::dy_tpl&& tpl, int i)
-	: obj(t), net(::std::move(tpl), []() -> double { return (nndx::randT() % 6) - 3; }, _fnTANH), score(0), life(true), stepA(def_STEPA_)
+	: obj(t), net(::std::move(tpl), []() -> double { return (nndx::randT(hProv) % 6) - 3; }, nndx::neuron::_func::_fnTANH), score(0), life(true), stepA(idefinitions::def_STEPA_)
 {
 	//if (i != 0)	net.SPECinit(topology);
-	obj.setTextureRect(sf::IntRect(0, def_TEXTURE_OBJ_Y * i, def_TEXTURE_OBJ_X, def_TEXTURE_OBJ_Y));
-	obj.setPosition(static_cast<float>(def_POSX), static_cast<float>(def_POSY));
-	obj.setOrigin(sf::Vector2f(def_TEXTURE_OBJ_X / 2.0f, def_TEXTURE_OBJ_Y / 2.0f));
+	obj.setTextureRect(sf::IntRect(0, idefinitions::def_TEXTURE_OBJ_Y * i, idefinitions::def_TEXTURE_OBJ_X, idefinitions::def_TEXTURE_OBJ_Y));
+	obj.setPosition(static_cast<float>(idefinitions::def_POSX), static_cast<float>(idefinitions::def_POSY));
+	obj.setOrigin(sf::Vector2f(idefinitions::def_TEXTURE_OBJ_X / 2.0f, idefinitions::def_TEXTURE_OBJ_Y / 2.0f));
 }
 
 void Object::mA(::std::vector<double>&& args)
@@ -46,9 +46,9 @@ void Object::mA(::std::vector<double>&& args)
 	bool step_forward = true;
 	if (args[0] > def_KF)
 	{
-		obj.move(static_cast<float>(def_TEXTURE_OBJ_X), 0.f);
+		obj.move(static_cast<float>(idefinitions::def_TEXTURE_OBJ_X), 0.f);
 		score += 20;
-		stepA = def_STEPA_;
+		stepA = idefinitions::def_STEPA_;
 	}
 	else
 	{
@@ -56,9 +56,9 @@ void Object::mA(::std::vector<double>&& args)
 	}
 	if (args[1] > def_KF)
 	{
-		if (obj.getPosition().y < def_POSY_WALL + def_TEXTURE_WLL_Y + def_TEXTURE_WLL_Y * def__NUM_ACTIVE_WALL)
+		if (obj.getPosition().y < idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + idefinitions::def_TEXTURE_WLL_Y * idefinitions::def__NUM_ACTIVE_WALL)
 		{
-			obj.move(0.f, static_cast<float>(def_TEXTURE_OBJ_Y));
+			obj.move(0.f, static_cast<float>(idefinitions::def_TEXTURE_OBJ_Y));
 			score += 5;
 			if (!step_forward)	--stepA;
 		}
@@ -69,9 +69,9 @@ void Object::mA(::std::vector<double>&& args)
 	}
 	else if (args[1] < -def_KF)
 	{
-		if (obj.getPosition().y > def_POSY_WALL)
+		if (obj.getPosition().y > idefinitions::def_POSY_WALL)
 		{
-			obj.move(0.f, static_cast<float>(-def_TEXTURE_OBJ_Y));
+			obj.move(0.f, static_cast<float>(-idefinitions::def_TEXTURE_OBJ_Y));
 			score += 5;
 			if (!step_forward)	--stepA;
 		}
@@ -88,9 +88,9 @@ void Object::mA(::std::vector<double>&& args)
 
 Wall::Wall(sf::Texture& t, float x, float y) : wall(t)
 {
-	wall.setTextureRect(sf::IntRect(def_TEXTURE_OBJ_X, 0, def_TEXTURE_OBJ_X, def_TEXTURE_OBJ_Y));
+	wall.setTextureRect(sf::IntRect(idefinitions::def_TEXTURE_OBJ_X, 0, idefinitions::def_TEXTURE_OBJ_X, idefinitions::def_TEXTURE_OBJ_Y));
 	wall.setPosition(x, y);
-	wall.setOrigin(sf::Vector2f(def_TEXTURE_OBJ_X / 2.0f, def_TEXTURE_OBJ_Y / 2.0f));
+	wall.setOrigin(sf::Vector2f(idefinitions::def_TEXTURE_OBJ_X / 2.0f, idefinitions::def_TEXTURE_OBJ_Y / 2.0f));
 }
 
 TimeGet::~TimeGet()

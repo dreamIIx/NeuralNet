@@ -17,24 +17,30 @@ T def_FI(::std::ifstream&);
 
 #include "NN.h"
 
-#define def_WIN_X 1000
-#define def_WIN_Y 400
-#define def__SIZE_ 12 // const, or edit mA_gen()s
-#define def__NUM_ACTIVE_WALL 7
-#define def_STEPA_ (def__NUM_ACTIVE_WALL + 2)
-#define def_FILEIMAGE "files/image.png"
-#define def_TEXTURE_OBJ_X 20
-#define def_TEXTURE_OBJ_Y 20
-#define def_TEXTURE_WLL_X 20
-#define def_TEXTURE_WLL_Y 20
-#define def_SIZE_VECTOR_WALL (def_WIN_X / def_TEXTURE_OBJ_X) + 1
-#define def_POSX 410
-#define def_POSX_WALL (def_POSX + 60)
-#define def_POSY_WALL 140
-#define def_POSY (def_POSY_WALL + 80)
-#define def_KF 0.5
-#define def_SZ_TOPOLOGY 3
-#define def_PRE_DISTANCE 200
+enum idefinitions : int // in replacement DEFINE
+{
+	def_WIN_X = 1000,
+	def_WIN_Y = 400,
+	def__SIZE_ = 12,
+	def__NUM_ACTIVE_WALL = 7,
+	def_STEPA_ = (def__NUM_ACTIVE_WALL + 2),
+	def_TEXTURE_OBJ_X = 20,
+	def_TEXTURE_OBJ_Y = 20,
+	def_TEXTURE_WLL_X = 20,
+	def_TEXTURE_WLL_Y = 20,
+	def_SIZE_VECTOR_WALL = (def_WIN_X / def_TEXTURE_OBJ_X) + 1,
+	def_POSX = 410,
+	def_POSX_WALL = (def_POSX + 60),
+	def_POSY_WALL = 140,
+	def_POSY = (def_POSY_WALL + 80),
+	def_SZ_TOPOLOGY = 3,
+	def_PRE_DISTANCE = 200
+};
+
+constexpr double def_KF = 0.5; // in replacement DEFINE
+constexpr const char* def_FILEIMAGE = "files/image.png"; // in replacement DEFINE
+
+HCRYPTPROV hProv; // for random number generator(NN.h, Object.h, main.cpp)
 
 #include "Object.h"
 
@@ -44,11 +50,11 @@ void mT(::std::vector<nndx::dataW>&, size_t, size_t);
 void mainA(sf::RenderWindow&, sf::View&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, volatile ::std::atomic_uint&,
 	volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&);
 
-int main(int argc, char** argv)
+int main()
 {
 	ShowWindow(GetConsoleWindow(), SW_HIDE);
 
-	sf::RenderWindow win({ def_WIN_X, def_WIN_Y }, "NN");
+	sf::RenderWindow win({ idefinitions::def_WIN_X, idefinitions::def_WIN_Y }, "NN");
 	win.setVerticalSyncEnabled(true);
 	win.setActive(false);
 
@@ -66,24 +72,33 @@ int main(int argc, char** argv)
 	_tempRead.close();
 
 	sf::Image image_;
-	image_.loadFromFile(def_FILEIMAGE);
+	image_.loadFromFile("files/image.png");
 	sf::Texture t_;
 	t_.loadFromImage(image_);
 
 	sf::View view;
-	view.reset(sf::FloatRect(0.0f, 0.0f, static_cast<float>(def_WIN_X), static_cast<float>(def_WIN_Y)));
+	view.reset(sf::FloatRect(0.0f, 0.0f, static_cast<float>(idefinitions::def_WIN_X), static_cast<float>(idefinitions::def_WIN_Y)));
 
 	::std::vector<Object> v_Obj_;
 	::std::vector<::std::vector<Wall>> v_Wll_;
 	::std::vector<int> target_;
-	v_Obj_.reserve(def__SIZE_);
-	v_Wll_.reserve(def_SIZE_VECTOR_WALL);
-	target_.reserve(def_SIZE_VECTOR_WALL);
+	v_Obj_.reserve(idefinitions::def__SIZE_);
+	v_Wll_.reserve(idefinitions::def_SIZE_VECTOR_WALL);
+	target_.reserve(idefinitions::def_SIZE_VECTOR_WALL);
 
 	volatile ::std::atomic_bool isOpen = true;
 	volatile ::std::atomic_bool runA = false;
 	volatile ::std::atomic_bool newA = false;
 	volatile ::std::atomic_bool auto_move = true;
+
+	if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		if (GetLastError() == NTE_BAD_KEYSET)
+			if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
+			{
+				ERROR_
+					system("pause");
+				return 0;
+			}
 
 	::std::thread mainThread(mainA, ::std::ref(win), ::std::ref(view), ::std::ref(v_Obj_), ::std::ref(v_Wll_), ::std::ref(target_), ::std::ref(t_), ::std::ref(TIMESET_), ::std::ref(isOpen),
 		::std::ref(runA), ::std::ref(newA), ::std::ref(auto_move));
@@ -168,10 +183,11 @@ int main(int argc, char** argv)
 	}
 
 	mainThread.join();
+	CryptReleaseContext(hProv, 0);
 	win.setActive(true);
 	win.close();
 
-	for (int i = 0; i < def__SIZE_; ++i)
+	for (int i = 0; i < idefinitions::def__SIZE_; ++i)
 	{
 		::std::string s = "output/net_";
 		char ch;
@@ -192,7 +208,7 @@ int main(int argc, char** argv)
 	}
 
 	::std::ofstream out("output/log.txt");
-	for (int i = 0; i < def__SIZE_; ++i)
+	for (int i = 0; i < idefinitions::def__SIZE_; ++i)
 	{
 		out << "net_" << i << " - " << v_Obj_[i].score << ::std::endl;
 	}
@@ -218,30 +234,30 @@ void mainA
 {
 	win.setActive(true);
 
-	for (int i = 0; i < def__SIZE_; ++i)
+	for (int i = 0; i < idefinitions::def__SIZE_; ++i)
 	{
-		v_Obj.emplace_back(t, nndx::dy_tpl(def_SZ_TOPOLOGY, 2, 3, 2), i);
+		v_Obj.emplace_back(t, nndx::dy_tpl(idefinitions::def_SZ_TOPOLOGY, 2, 3, 2), i);
 		if (!v_Obj.back().net.getState()) ERROR_
 	}
 
-	int tmpy = nndx::randT() % def__NUM_ACTIVE_WALL;
-	int next = nndx::randT() % def__NUM_ACTIVE_WALL;
-	float wposx = static_cast<float>(def_POSX_WALL);
+	int tmpy = nndx::randT(hProv) % idefinitions::def__NUM_ACTIVE_WALL;
+	int next = nndx::randT(hProv) % idefinitions::def__NUM_ACTIVE_WALL;
+	float wposx = static_cast<float>(idefinitions::def_POSX_WALL);
 
-	target.emplace_back(def_POSY_WALL + def_TEXTURE_WLL_Y + tmpy * def_TEXTURE_WLL_Y);
+	target.emplace_back(idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + tmpy * idefinitions::def_TEXTURE_WLL_Y);
 	v_Wll.emplace_back(::std::vector<Wall>());
-	v_Wll.back().reserve(def__NUM_ACTIVE_WALL + 2);
-	v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL));
-	for (int i = 0; i < def__NUM_ACTIVE_WALL; ++i)
+	v_Wll.back().reserve(idefinitions::def__NUM_ACTIVE_WALL + 2);
+	v_Wll.back().emplace_back(t, wposx, static_cast<float>(idefinitions::def_POSY_WALL));
+	for (int i = 0; i < idefinitions::def__NUM_ACTIVE_WALL; ++i)
 	{
 		if ((i < (tmpy < next ? tmpy : next)) || (i > (tmpy > next ? tmpy : next)))
-			v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL + def_TEXTURE_WLL_Y + i * def_TEXTURE_WLL_Y));
+			v_Wll.back().emplace_back(t, wposx, static_cast<float>(idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + i * idefinitions::def_TEXTURE_WLL_Y));
 	}
-	v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL + def_TEXTURE_WLL_Y + def__NUM_ACTIVE_WALL * def_TEXTURE_WLL_Y));
+	v_Wll.back().emplace_back(t, wposx, static_cast<float>(idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + idefinitions::def__NUM_ACTIVE_WALL * idefinitions::def_TEXTURE_WLL_Y));
 	tmpy = next;
-	wposx += def_TEXTURE_WLL_X;
+	wposx += idefinitions::def_TEXTURE_WLL_X;
 
-	size_t bufsizeO = def__SIZE_;
+	size_t bufsizeO = idefinitions::def__SIZE_;
 	TimeGet tm;
 
 	int numITER = 0;
@@ -266,7 +282,7 @@ void mainA
 		}
 
 		::std::vector<Object*> _ptr;
-		for (int i = 0; i < def__SIZE_; ++i)
+		for (int i = 0; i < idefinitions::def__SIZE_; ++i)
 		{
 			if (v_Obj[i].life)	_ptr.emplace_back(&v_Obj[i]);
 		}
@@ -283,7 +299,7 @@ void mainA
 		{
 			if (v_Wll[0][0].wall.getPosition().x < minposx_obj)
 			{
-				for (auto i = 0; i < static_cast<int>((minposx_obj - v_Wll[0][0].wall.getPosition().x) / def_TEXTURE_WLL_X) - 1; ++i)
+				for (auto i = 0; i < static_cast<int>((minposx_obj - v_Wll[0][0].wall.getPosition().x) / idefinitions::def_TEXTURE_WLL_X) - 1; ++i)
 				{
 					::std::vector<::std::vector<Wall>>::iterator it = v_Wll.begin();
 					it = v_Wll.erase(it);
@@ -291,21 +307,21 @@ void mainA
 					itTg = target.erase(itTg);
 				}
 			}
-			if (static_cast<int>(wposx) - maxposx_obj < def_PRE_DISTANCE)
+			if (static_cast<int>(wposx) - maxposx_obj < idefinitions::def_PRE_DISTANCE)
 			{
 				v_Wll.emplace_back(::std::vector<Wall>());
-				v_Wll.back().reserve(def__NUM_ACTIVE_WALL + 2);
-				v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL));
-				next = nndx::randT() % def__NUM_ACTIVE_WALL;
-				target.emplace_back(def_POSY_WALL + def_TEXTURE_WLL_Y + tmpy * def_TEXTURE_WLL_Y);
-				for (int i = 0; i < def__NUM_ACTIVE_WALL; ++i)
+				v_Wll.back().reserve(idefinitions::def__NUM_ACTIVE_WALL + 2);
+				v_Wll.back().emplace_back(t, wposx, static_cast<float>(idefinitions::def_POSY_WALL));
+				next = nndx::randT(hProv) % idefinitions::def__NUM_ACTIVE_WALL;
+				target.emplace_back(idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + tmpy * idefinitions::def_TEXTURE_WLL_Y);
+				for (int i = 0; i < idefinitions::def__NUM_ACTIVE_WALL; ++i)
 				{
 					if ((i < (tmpy < next ? tmpy : next)) || (i > (tmpy > next ? tmpy : next)))
-						v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL + def_TEXTURE_WLL_Y + i * def_TEXTURE_WLL_Y));
+						v_Wll.back().emplace_back(t, wposx, static_cast<float>(idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + i * idefinitions::def_TEXTURE_WLL_Y));
 				}
-				v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL + def_TEXTURE_WLL_Y + def__NUM_ACTIVE_WALL * def_TEXTURE_WLL_Y));
+				v_Wll.back().emplace_back(t, wposx, static_cast<float>(idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + idefinitions::def__NUM_ACTIVE_WALL * idefinitions::def_TEXTURE_WLL_Y));
 				tmpy = next;
-				wposx += def_TEXTURE_WLL_X;
+				wposx += idefinitions::def_TEXTURE_WLL_X;
 			}
 		}
 
@@ -354,39 +370,39 @@ void mainA
 		{
 			newA_ = false;
 
-			for (int i = 0; i < def__SIZE_; ++i)
+			for (int i = 0; i < idefinitions::def__SIZE_; ++i)
 			{
 				_ptr.emplace_back(&v_Obj[i]);
 			}
 			radixSort(_ptr);
 			endP << _ptr.back()->score << ::std::endl;
 			++numITER;
-			mA_gen(_ptr, def_SZ_TOPOLOGY);
+			mA_gen(_ptr, idefinitions::def_SZ_TOPOLOGY);
 
 			for (size_t i = 0; i < v_Obj.size(); ++i)
 			{
-				v_Obj[i].obj.setPosition(static_cast<float>(def_POSX), static_cast<float>(def_POSY));
+				v_Obj[i].obj.setPosition(static_cast<float>(idefinitions::def_POSX), static_cast<float>(idefinitions::def_POSY));
 				v_Obj[i].life = true;
 				v_Obj[i].score = 0;
-				v_Obj[i].stepA = def_STEPA_;
+				v_Obj[i].stepA = idefinitions::def_STEPA_;
 			}
-			maxposx_obj = def_POSX;
+			maxposx_obj = idefinitions::def_POSX;
 			v_Wll.clear();
 			target.clear();
-			tmpy = nndx::randT() % def__NUM_ACTIVE_WALL;
-			wposx = static_cast<float>(def_POSX_WALL);
-			target.emplace_back(def_POSY_WALL + def_TEXTURE_WLL_Y + tmpy * def_TEXTURE_WLL_Y);
+			tmpy = nndx::randT(hProv) % idefinitions::def__NUM_ACTIVE_WALL;
+			wposx = static_cast<float>(idefinitions::def_POSX_WALL);
+			target.emplace_back(idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + tmpy * idefinitions::def_TEXTURE_WLL_Y);
 			v_Wll.emplace_back(::std::vector<Wall>());
-			v_Wll.back().reserve(def__NUM_ACTIVE_WALL + 2);
-			v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL));
-			for (int i = 0; i < def__NUM_ACTIVE_WALL; ++i)
+			v_Wll.back().reserve(idefinitions::def__NUM_ACTIVE_WALL + 2);
+			v_Wll.back().emplace_back(t, wposx, static_cast<float>(idefinitions::def_POSY_WALL));
+			for (int i = 0; i < idefinitions::def__NUM_ACTIVE_WALL; ++i)
 			{
-				if (i != tmpy)	v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL + def_TEXTURE_WLL_Y + i * def_TEXTURE_WLL_Y));
+				if (i != tmpy)	v_Wll.back().emplace_back(t, wposx, static_cast<float>(idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + i * idefinitions::def_TEXTURE_WLL_Y));
 			}
-			v_Wll.back().emplace_back(t, wposx, static_cast<float>(def_POSY_WALL + def_TEXTURE_WLL_Y + def__NUM_ACTIVE_WALL * def_TEXTURE_WLL_Y));
-			wposx += def_TEXTURE_WLL_X;
+			v_Wll.back().emplace_back(t, wposx, static_cast<float>(idefinitions::def_POSY_WALL + idefinitions::def_TEXTURE_WLL_Y + idefinitions::def__NUM_ACTIVE_WALL * idefinitions::def_TEXTURE_WLL_Y));
+			wposx += idefinitions::def_TEXTURE_WLL_X;
 
-			bufsizeO = def__SIZE_;
+			bufsizeO = idefinitions::def__SIZE_;
 			tm.restart();
 		}
 
@@ -442,12 +458,12 @@ void mA_gen(::std::vector<Object*>& obj, int tg)
 {
 	size_t index;
 	obj[8]->net.weight = obj[10]->net.weight;
-	index = nndx::randT() % obj[10]->net.weight.size();
-	mT(obj[8]->net.weight, index, nndx::randT() % obj[10]->net.weight[index].size());
+	index = nndx::randT(hProv) % obj[10]->net.weight.size();
+	mT(obj[8]->net.weight, index, nndx::randT(hProv) % obj[10]->net.weight[index].size());
 
 	obj[7]->net.weight = obj[9]->net.weight;
-	index = nndx::randT() % obj[9]->net.weight.size();
-	mT(obj[7]->net.weight, index, nndx::randT() % obj[9]->net.weight[index].size());
+	index = nndx::randT(hProv) % obj[9]->net.weight.size();
+	mT(obj[7]->net.weight, index, nndx::randT(hProv) % obj[9]->net.weight[index].size());
 
 	mT(obj[6]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
 	mT(obj[5]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
@@ -457,12 +473,12 @@ void mA_gen(::std::vector<Object*>& obj, int tg)
 	{
 		obj[3]->net.weight[i] = obj[11]->net.weight[i];
 	}
-	if(nndx::randT() % 2 == 1)	obj[3]->net.weight[tg - 2] = obj[10]->net.weight[tg - 2];
+	if(nndx::randT(hProv) % 2 == 1)	obj[3]->net.weight[tg - 2] = obj[10]->net.weight[tg - 2];
 	else	obj[3]->net.weight[tg - 2] = obj[9]->net.weight[tg - 2];
-	if (nndx::randT() % 3 == 2)
+	if (nndx::randT(hProv) % 3 == 2)
 	{
-		index = nndx::randT() % obj[3]->net.weight.size();
-		mT(obj[3]->net.weight, index, nndx::randT() % obj[3]->net.weight[index].size());
+		index = nndx::randT(hProv) % obj[3]->net.weight.size();
+		mT(obj[3]->net.weight, index, nndx::randT(hProv) % obj[3]->net.weight[index].size());
 	}
 
 	for (size_t i = 0; i < tg - 2; ++i)
@@ -470,10 +486,10 @@ void mA_gen(::std::vector<Object*>& obj, int tg)
 		obj[2]->net.weight[i] = obj[10]->net.weight[i];
 	}
 	obj[2]->net.weight[tg - 2] = obj[9]->net.weight[tg - 2];
-	if (nndx::randT() % 3 == 2)
+	if (nndx::randT(hProv) % 3 == 2)
 	{
-		index = nndx::randT() % obj[2]->net.weight.size();
-		mT(obj[2]->net.weight, index, nndx::randT() % obj[2]->net.weight[index].size());
+		index = nndx::randT(hProv) % obj[2]->net.weight.size();
+		mT(obj[2]->net.weight, index, nndx::randT(hProv) % obj[2]->net.weight[index].size());
 	}
 
 	mT(obj[1]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
@@ -488,14 +504,14 @@ void mT(::std::vector<nndx::dataW>& v, size_t index1, size_t index2)
 		{
 			for (size_t j = 0; j < v[i].size(); ++j)
 			{
-				v[i][j].wg = static_cast<double>(nndx::randT() % 6) - 2;
+				v[i][j].wg = static_cast<double>(nndx::randT(hProv) % 6) - 2;
 			}
 		}
 		else
 		{
 			for (size_t j = 0; j < index2; ++j)
 			{
-				v[i][j].wg = static_cast<double>(nndx::randT() % 6) - 2;
+				v[i][j].wg = static_cast<double>(nndx::randT(hProv) % 6) - 2;
 			}
 		}
 	}

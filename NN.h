@@ -3,47 +3,35 @@
 //Autor - -dreamIIx
 //GitHub - https://github.com/dreamIIx
 //Release [v0.1] on GitHub 27.09.2018
-//Actual version 3.5
+//Actual version 4.0[without DEFINE]
 //The library include functions and classes to provide support the work with Neural Networks
 
 #include <Windows.h>
-//#include <bcrypt.h>
 
 #include <iostream>
+#ifndef _DEBUG
+#include <exception>
+#endif
 #include <fstream>
 #include <string>
 #include <vector>
 
-//#pragma comment(lib, "Bcrypt.lib")
-
-#ifndef def_ERR_FL_
-#define def_ERR_FL_
-#define def_XTT_S(x) #x
-#define def_XTT_S_(x) def_XTT_S(x)
-#define def_XTT_S__LINE__ def_XTT_S_(__LINE__)
-#define def__FILELINE (__FILE__  " line " def_XTT_S__LINE__)
-#define ERROR_ ::std::cout << "Error - " << def__FILELINE << ::std::endl;
+#ifdef _DEBUG
+#define def_XTT_S(x)		#x
+#define def_XTT_S_(x)		def_XTT_S(x)
+#define def_XTT_S__LINE__	def_XTT_S_(__LINE__)
+#define def__FILELINE		(__FILE__  " line " def_XTT_S__LINE__)
+#define ERROR_				::std::cout << "Error - " << def__FILELINE << ::std::endl;
+#else
+#define ERROR_				throw ::std::exception((const char*)__LINE__);
 #endif
 
-#ifndef _dTYPEFUNC
-#define _dTYPEFUNC	unsigned short int
-#endif
-
-#define _fnSIGMOID	static_cast<_dTYPEFUNC>(0b0000)
-#define _fnTANH		static_cast<_dTYPEFUNC>(0b0001)
-#ifndef _fnDEFAULTFUNC // as default, able to change
-#define _fnDEFAULTFUNC _fnSIGMOID
-#define _fnSDRVDEFFUNC _m_fnSIGMOID_DRV
-#define _fnSDEFAULTFUNC _m_fnSIGMOID
-//#define _fnDEFAULTFUNC _fnTANH
-//#define _fnSDRVDEFFUNC _m_fnTANH_DRV
-//#define _fnSDEFAULTFUNC _m_fnTANH
-#endif
+typedef unsigned short int _dTYPEFUNC;
 
 namespace nndx
 {
-	int randT();
-	int randB();
+	int randT(HCRYPTPROV);
+	int randB(HCRYPTPROV);
 
 	struct dy_tpl
 	{
@@ -74,7 +62,19 @@ namespace nndx
 		static void _m_fnTANH(neuron&, const double&);
 		static void _m_fnTANH_DRV(neuron&);
 
+#define _fnSDRVDEFFUNC _m_fnSIGMOID_DRV
+#define _fnSDEFAULTFUNC _m_fnSIGMOID
+//#define _fnSDRVDEFFUNC _m_fnTANH_DRV
+//#define _fnSDEFAULTFUNC _m_fnTANH
+
 	public:
+		enum _func : _dTYPEFUNC
+		{
+			_fnSIGMOID = 0b0000,
+			_fnTANH = 0b0001,
+			_fnDEFAULTFUNC = _fnSIGMOID // able to change -> _fnTANH
+		};
+
 		explicit neuron(const double&) noexcept;
 		void setAsBias() noexcept;
 		bool isBias() const noexcept;
@@ -103,7 +103,7 @@ namespace nndx
 		::std::string nTrainNote;
 
 	private:
-		_dTYPEFUNC funcInstance;
+		neuron::_func funcInstance;
 		double moment; // 0.05
 		double u; // 0.1
 		bool isReady;
@@ -114,21 +114,21 @@ namespace nndx
 
 	public:
 		explicit neuronet() noexcept; // ch
-		explicit neuronet(_dTYPEFUNC) noexcept; // ch
+		explicit neuronet(neuron::_func) noexcept; // ch
 		neuronet(neuronet&&); // ch
-		neuronet(const dy_tpl&, double(), _dTYPEFUNC); // ch
+		neuronet(const dy_tpl&, double(void), neuron::_func); // ch
 		~neuronet(); // ch
 
 		neuronet& operator=(const neuronet&);
 		neuronet& operator=(neuronet&&);
 
-		bool init(const dy_tpl&, _dTYPEFUNC); // ch
+		bool init(const dy_tpl&, neuron::_func); // ch
 		bool init(const dy_tpl&); // ch
-		bool init(const ::std::vector<int>&, _dTYPEFUNC); // ch
+		bool init(const ::std::vector<int>&, neuron::_func); // ch
 		bool init(const ::std::vector<int>&); // ch
 		bool initFromKeyboard(); // ch
 		bool initFromFile(); // ch
-		bool setFunc(_dTYPEFUNC); // ch
+		bool setFunc(neuron::_func); // ch
 		bool setGenWeightsFunc(double());
 		bool setParams(double, double); // ch
 
@@ -142,7 +142,7 @@ namespace nndx
 		bool callFuncHebb();
 
 		bool getState() const noexcept; // ch
-		_dTYPEFUNC getSetFunc() const noexcept; // ch
+		neuron::_func getSetFunc() const noexcept; // ch
 		::std::pair<double, double> getParams() const noexcept; // ch
 		::std::vector<double> getResults() const; // ch
 

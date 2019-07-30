@@ -2,124 +2,72 @@
 
 namespace nndx
 {
-	int randT()
+	int randT(HCRYPTPROV hProv)
 	{
-		HCRYPTPROV hProv;
-
 		BYTE Buf1 = 0b0;
-		BYTE Buf2 = 0b0;
 
-		//if (BCryptOpenAlgorithmProvider(&hProv, BCRYPT_3DES_ALGORITHM, MS_PRIMITIVE_PROVIDER, NULL)) {}
-		//BCryptGenRandom(hProv, Buf1, sizeof(Buf1), NULL);
-		//BCryptGenRandom(hProv, Buf2, sizeof(Buf2), NULL);
-
-		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 		{
-			if (GetLastError() == NTE_BAD_KEYSET)
+			int i = static_cast<int>(Buf1);
+			if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 			{
-				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
-				{
-					//Error
-					return 0;
-				}
-				else
-				{
-					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
-					CryptReleaseContext(hProv, 0);
-				}
+				i += static_cast<int>(Buf1);
+				return i;
+			}
+			else
+			{
+				return 0;
 			}
 		}
 		else
 		{
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
-			CryptReleaseContext(hProv, 0);
+			return 0;
 		}
-
-		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
-		{
-			if (GetLastError() == NTE_BAD_KEYSET)
-			{
-				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
-				{
-					//Error
-					return 0;
-				}
-				else
-				{
-					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
-					CryptReleaseContext(hProv, 0);
-				}
-			}
-		}
-		else
-		{
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
-			CryptReleaseContext(hProv, 0);
-		}
-
-		int i = (int)Buf1;
-		i += (int)Buf2;
-
-		return i;
 	}
 
-	int randB()
+	int randB(HCRYPTPROV hProv)
 	{
-		HCRYPTPROV hProv;
+		BYTE Buf1 = 0b0;
 
-		BYTE Buf1;
-		BYTE Buf2;
-		int i;
-
-		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
+		if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 		{
-			if (GetLastError() == NTE_BAD_KEYSET)
+			int i = static_cast<int>(Buf1);
+			i <<= 0b1000;
+
+			if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 			{
-				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
+				i += static_cast<int>(Buf1);
+				i <<= 0b1000;
+
+				if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 				{
-					//Error
-					return 0;
+					i += static_cast<int>(Buf1);
+					i <<= 0b1000; 
+
+					if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
+					{
+						i += static_cast<int>(Buf1);
+						return i;
+					}
+					else
+					{
+						return 0;
+					}
 				}
 				else
 				{
-					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
-					CryptReleaseContext(hProv, 0);
-					i = static_cast<int>(Buf1);
+					return 0;
 				}
+			}
+			else
+			{
+				return 0;
 			}
 		}
 		else
 		{
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1);
-			CryptReleaseContext(hProv, 0);
-			i = static_cast<int>(Buf1);
+			return 0;
 		}
-
-		if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
-		{
-			if (GetLastError() == NTE_BAD_KEYSET)
-			{
-				if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
-				{
-					//Error
-					return 0;
-				}
-				else
-				{
-					CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
-					CryptReleaseContext(hProv, 0);
-					i <<= static_cast<int>(Buf2 % 24);
-				}
-			}
-		}
-		else
-		{
-			CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf2);
-			CryptReleaseContext(hProv, 0);
-			i <<= static_cast<int>(Buf2 % 24);
-		}
-
-		return i;
 	}
 
 	dy_tpl::dy_tpl(int size, ...)
@@ -185,27 +133,27 @@ namespace nndx
 
 	wWw::wWw(double num) noexcept : wg(num), dwg(0.0), grad(0.0) {}
 
-	neuronet::neuronet() noexcept : funcInstance(_fnDEFAULTFUNC), moment(0.0), u(0.0), isReady(false)
+	neuronet::neuronet() noexcept : funcInstance(neuron::_func::_fnDEFAULTFUNC), moment(0.0), u(0.0), isReady(false)
 	{
 			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
 			GenWeight = nullptr;
 	}
 
-	neuronet::neuronet(_dTYPEFUNC fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false)
+	neuronet::neuronet(neuron::_func fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false)
 	{
 		switch (fnIns)
 		{
-		case _fnSIGMOID:
+		case neuron::_func::_fnSIGMOID:
 			RunFunc_T = &neuron::_m_fnSIGMOID;
 			RunDRVFunc_T = &neuron::_m_fnSIGMOID_DRV;
 			break;
-		case _fnTANH:
+		case neuron::_func::_fnTANH:
 			RunFunc_T = &neuron::_m_fnTANH;
 			RunDRVFunc_T = &neuron::_m_fnTANH_DRV;
 			break;
 		default:
-			funcInstance = _fnDEFAULTFUNC;
+			funcInstance = neuron::_func::_fnDEFAULTFUNC;
 			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
 		}
@@ -242,33 +190,32 @@ namespace nndx
 		{
 			if (x == 12)
 			{
-				::std::cout << "Argument of function-constructor is rvalue/notReady!" << ::std::endl;
+				ERROR_
 			}
 		}
 	}
 
-	neuronet::neuronet(const dy_tpl& temp, double func(), _dTYPEFUNC fnIns) : funcInstance(fnIns)
+	neuronet::neuronet(const dy_tpl& temp, double func(void), neuron::_func fnIns) : funcInstance(fnIns)
 	{
 		this->GenWeight = func;
 		if (this->GenWeight == nullptr)
 		{
 			ERROR_
-				system("pause"); // ERROR <---
 		}
 		this->isReady = false;
 
 		switch (fnIns)
 		{
-		case _fnSIGMOID:
+		case neuron::_func::_fnSIGMOID:
 			RunFunc_T = &neuron::_m_fnSIGMOID;
 			RunDRVFunc_T = &neuron::_m_fnSIGMOID_DRV;
 			break;
-		case _fnTANH:
+		case neuron::_func::_fnTANH:
 			RunFunc_T = &neuron::_m_fnTANH;
 			RunDRVFunc_T = &neuron::_m_fnTANH_DRV;
 			break;
 		default:
-			funcInstance = _fnDEFAULTFUNC;
+			funcInstance = neuron::_func::_fnDEFAULTFUNC;
 			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
 		}
@@ -293,15 +240,14 @@ namespace nndx
 			else
 			{
 				ERROR_
-					system("pause"); // ERROR <---
+					system("pause");
 			}
 		}
 
 		if (data.empty())
 		{
 			ERROR_
-				system("pause"); // ERROR <---
-
+				system("pause");
 		}
 
 		for (size_t i = 0; i < data.size() - 1; i++)
@@ -370,16 +316,17 @@ namespace nndx
 				this->RunFunc_T = anet.RunFunc_T;
 				this->GenWeight = anet.GenWeight;
 				this->isReady = true;
-				return *this;
 			}
 		}
 		catch (int x)
 		{
 			if (x == 12)
 			{
-				::std::cout << "Argument of function-constructor is rvalue/notReady!" << ::std::endl;
+				ERROR_
 			}
 		}
+
+		return *this;
 	}
 
 	neuronet& neuronet::operator=(neuronet&& anet)
@@ -411,8 +358,6 @@ namespace nndx
 					this->GenWeight = ::std::forward<decltype(anet.GenWeight)>(anet.GenWeight);
 					this->isReady = true;
 					anet.isReady = false;
-
-					return *this;
 				}
 			}
 		}
@@ -420,12 +365,14 @@ namespace nndx
 		{
 			if (x == 12)
 			{
-				::std::cout << "Argument of function-constructor is rvalue/notReady!" << ::std::endl;
+				ERROR_
 			}
 		}
+
+		return *this;
 	}
 
-	bool neuronet::init(const dy_tpl& temp, _dTYPEFUNC fnIns)
+	bool neuronet::init(const dy_tpl& temp, neuron::_func fnIns)
 	{
 		if (this->GenWeight == nullptr)
 		{
@@ -436,16 +383,16 @@ namespace nndx
 		funcInstance = fnIns;
 		switch (funcInstance)
 		{
-		case _fnSIGMOID:
+		case neuron::_func::_fnSIGMOID:
 			RunFunc_T = &neuron::_m_fnSIGMOID;
 			RunDRVFunc_T = &neuron::_m_fnSIGMOID_DRV;
 			break;
-		case _fnTANH:
+		case neuron::_func::_fnTANH:
 			RunFunc_T = &neuron::_m_fnTANH;
 			RunDRVFunc_T = &neuron::_m_fnTANH_DRV;
 			break;
 		default:
-			funcInstance = _fnDEFAULTFUNC;
+			funcInstance = neuron::_func::_fnDEFAULTFUNC;
 			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
 		}
@@ -591,7 +538,7 @@ namespace nndx
 		return true;
 	}
 
-	bool neuronet::init(const ::std::vector<int>& temp, _dTYPEFUNC fnIns)
+	bool neuronet::init(const ::std::vector<int>& temp, neuron::_func fnIns)
 	{
 		if (temp.empty())
 		{
@@ -607,16 +554,16 @@ namespace nndx
 		funcInstance = fnIns;
 		switch (funcInstance)
 		{
-		case _fnSIGMOID:
+		case neuron::_func::_fnSIGMOID:
 			RunFunc_T = &neuron::_m_fnSIGMOID;
 			RunDRVFunc_T = &neuron::_m_fnSIGMOID_DRV;
 			break;
-		case _fnTANH:
+		case neuron::_func::_fnTANH:
 			RunFunc_T = &neuron::_m_fnTANH;
 			RunDRVFunc_T = &neuron::_m_fnTANH_DRV;
 			break;
 		default:
-			funcInstance = _fnDEFAULTFUNC;
+			funcInstance = neuron::_func::_fnDEFAULTFUNC;
 			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
 		}
@@ -948,21 +895,21 @@ namespace nndx
 		return true;
 	}
 
-	bool neuronet::setFunc(_dTYPEFUNC afn)
+	bool neuronet::setFunc(neuron::_func afn)
 	{
 		funcInstance = afn;
 		switch (funcInstance)
 		{
-		case _fnSIGMOID:
+		case neuron::_func::_fnSIGMOID:
 			RunFunc_T = &neuron::_m_fnSIGMOID;
 			RunDRVFunc_T = &neuron::_m_fnSIGMOID_DRV;
 			break;
-		case _fnTANH:
+		case neuron::_func::_fnTANH:
 			RunFunc_T = &neuron::_m_fnTANH;
 			RunDRVFunc_T = &neuron::_m_fnTANH_DRV;
 			break;
 		default:
-			funcInstance = _fnDEFAULTFUNC;
+			funcInstance = neuron::_func::_fnDEFAULTFUNC;
 			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
 		}
@@ -1042,7 +989,7 @@ namespace nndx
 				read >> j;
 				if (acomments) ::std::cout << "j - " << j << ::std::endl;
 				errDat.emplace_back(static_cast<double>(j));
-				if (acomments) ::std::cout << abs(j - data.back()[i].data) << ::std::endl;
+				if (acomments) ::std::cout << "j - data[" << i << "] = " << abs(j - data.back()[i].data) << ::std::endl;
 			}
 
 			backProp(errDat);
@@ -1335,7 +1282,7 @@ namespace nndx
 		return this->isReady;
 	}
 
-	_dTYPEFUNC neuronet::getSetFunc() const noexcept
+	neuron::_func neuronet::getSetFunc() const noexcept
 	{
 		return this->funcInstance;
 	}

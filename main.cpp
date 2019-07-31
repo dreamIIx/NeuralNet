@@ -19,26 +19,26 @@ T def_FI(::std::ifstream&);
 
 enum idefinitions : int // in replacement DEFINE
 {
-	def_WIN_X = 1000,
-	def_WIN_Y = 400,
-	def__SIZE_ = 12,
-	def__NUM_ACTIVE_WALL = 7,
-	def_STEPA_ = (def__NUM_ACTIVE_WALL + 2),
-	def_TEXTURE_OBJ_X = 20,
-	def_TEXTURE_OBJ_Y = 20,
-	def_TEXTURE_WLL_X = 20,
-	def_TEXTURE_WLL_Y = 20,
-	def_SIZE_VECTOR_WALL = (def_WIN_X / def_TEXTURE_OBJ_X) + 1,
-	def_POSX = 410,
-	def_POSX_WALL = (def_POSX + 60),
-	def_POSY_WALL = 140,
-	def_POSY = (def_POSY_WALL + 80),
-	def_SZ_TOPOLOGY = 3,
-	def_PRE_DISTANCE = 200
+	def_WIN_X				=	1000,
+	def_WIN_Y				=	400,
+	def__SIZE_				=	12,
+	def__NUM_ACTIVE_WALL	=	7,
+	def_STEPA_				=	(def__NUM_ACTIVE_WALL + 2),
+	def_TEXTURE_OBJ_X		=	20,
+	def_TEXTURE_OBJ_Y		=	20,
+	def_TEXTURE_WLL_X		=	20,
+	def_TEXTURE_WLL_Y		=	20,
+	def_SIZE_VECTOR_WALL	=	(def_WIN_X / def_TEXTURE_OBJ_X) + 1,
+	def_POSX				=	410,
+	def_POSX_WALL			=	(def_POSX + 60),
+	def_POSY_WALL			=	140,
+	def_POSY				=	(def_POSY_WALL + 80),
+	def_SZ_TOPOLOGY			=	3,
+	def_PRE_DISTANCE		=	200
 };
 
-constexpr double def_KF = 0.5; // in replacement DEFINE
-constexpr const char* def_FILEIMAGE = "files/image.png"; // in replacement DEFINE
+constexpr double		def_KF				=	0.5; // in replacement DEFINE
+constexpr const char*	def_FILEIMAGE		=	"files/image.png"; // in replacement DEFINE
 
 HCRYPTPROV hProv; // for random number generator(NN.h, Object.h, main.cpp)
 
@@ -86,10 +86,10 @@ int main()
 	v_Wll_.reserve(idefinitions::def_SIZE_VECTOR_WALL);
 	target_.reserve(idefinitions::def_SIZE_VECTOR_WALL);
 
-	volatile ::std::atomic_bool isOpen = true;
-	volatile ::std::atomic_bool runA = false;
-	volatile ::std::atomic_bool newA = false;
-	volatile ::std::atomic_bool auto_move = true;
+	volatile ::std::atomic_bool isOpen		=	true;
+	volatile ::std::atomic_bool runA		=	false;
+	volatile ::std::atomic_bool newA		=	false;
+	volatile ::std::atomic_bool auto_move	=	true;
 
 	if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
 		if (GetLastError() == NTE_BAD_KEYSET)
@@ -448,7 +448,7 @@ void radixSort(::std::vector<Object*>& a)
 			c[ (a[i]->score >> 8 * p) & ((1 << 8) - 1) ]++;
 		for (size_t i = 1; i < 1 << 8; ++i)
 			c[i] += c[i - 1];
-		for (int i = static_cast<int>(a.size() - 1); i >= 0; --i)
+		for (ptrdiff_t i = static_cast<int>(a.size() - 1); i >= 0; --i)
 			b[--c[(a[i]->score >> 8 * p) & ((1 << 8) - 1)]] = a[i];
 		a = b;
 	}

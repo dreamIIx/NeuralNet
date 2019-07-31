@@ -135,9 +135,9 @@ namespace nndx
 
 	neuronet::neuronet() noexcept : funcInstance(neuron::_func::_fnDEFAULTFUNC), moment(0.0), u(0.0), isReady(false)
 	{
-			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
-			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
-			GenWeight = nullptr;
+			RunFunc_T		=	&neuron::_fnSDEFAULTFUNC;
+			RunDRVFunc_T	=	&neuron::_fnSDRVDEFFUNC;
+			GenWeight		=	nullptr;
 	}
 
 	neuronet::neuronet(neuron::_func fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false)
@@ -145,17 +145,17 @@ namespace nndx
 		switch (fnIns)
 		{
 		case neuron::_func::_fnSIGMOID:
-			RunFunc_T = &neuron::_m_fnSIGMOID;
-			RunDRVFunc_T = &neuron::_m_fnSIGMOID_DRV;
+			RunFunc_T		=	&neuron::_m_fnSIGMOID;
+			RunDRVFunc_T	=	&neuron::_m_fnSIGMOID_DRV;
 			break;
 		case neuron::_func::_fnTANH:
-			RunFunc_T = &neuron::_m_fnTANH;
-			RunDRVFunc_T = &neuron::_m_fnTANH_DRV;
+			RunFunc_T		=	&neuron::_m_fnTANH;
+			RunDRVFunc_T	=	&neuron::_m_fnTANH_DRV;
 			break;
 		default:
-			funcInstance = neuron::_func::_fnDEFAULTFUNC;
-			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
-			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
+			funcInstance	=	neuron::_func::_fnDEFAULTFUNC;
+			RunFunc_T		=	&neuron::_fnSDEFAULTFUNC;
+			RunDRVFunc_T	=	&neuron::_fnSDRVDEFFUNC;
 		}
 		GenWeight = nullptr;
 	}
@@ -171,19 +171,19 @@ namespace nndx
 			}
 			else
 			{
-				this->funcInstance = ::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
-				this->moment = ::std::forward<decltype(anet.moment)>(anet.moment);
-				this->u = ::std::forward<decltype(anet.u)>(anet.u);
-				this->data = ::std::forward<decltype(anet.data)>(anet.data);
-				this->weight = ::std::forward<decltype(anet.weight)>(anet.weight);
-				this->topology_save = ::std::forward<decltype(anet.topology_save)>(anet.topology_save);
-				this->nDataNet = ::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
-				this->nTrainNote = ::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
-				this->RunDRVFunc_T = ::std::forward<decltype(anet.RunDRVFunc_T)>(anet.RunDRVFunc_T);
-				this->RunFunc_T = ::std::forward<decltype(anet.RunFunc_T)>(anet.RunFunc_T);
-				this->GenWeight = ::std::forward<decltype(anet.GenWeight)>(anet.GenWeight);
-				this->isReady = true;
-				anet.isReady = false;
+				this->funcInstance		=	::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
+				this->moment			=	::std::forward<decltype(anet.moment)>(anet.moment);
+				this->u					=	::std::forward<decltype(anet.u)>(anet.u);
+				this->data				=	::std::forward<decltype(anet.data)>(anet.data);
+				this->weight			=	::std::forward<decltype(anet.weight)>(anet.weight);
+				this->topology_save		=	::std::forward<decltype(anet.topology_save)>(anet.topology_save);
+				this->nDataNet			=	::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
+				this->nTrainNote		=	::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
+				this->RunDRVFunc_T		=	::std::forward<decltype(anet.RunDRVFunc_T)>(anet.RunDRVFunc_T);
+				this->RunFunc_T			=	::std::forward<decltype(anet.RunFunc_T)>(anet.RunFunc_T);
+				this->GenWeight			=	::std::forward<decltype(anet.GenWeight)>(anet.GenWeight);
+				this->isReady			=	true;
+				anet.isReady			=	false;
 			}
 		}
 		catch (int x)
@@ -207,17 +207,17 @@ namespace nndx
 		switch (fnIns)
 		{
 		case neuron::_func::_fnSIGMOID:
-			RunFunc_T = &neuron::_m_fnSIGMOID;
-			RunDRVFunc_T = &neuron::_m_fnSIGMOID_DRV;
+			RunFunc_T		=	&neuron::_m_fnSIGMOID;
+			RunDRVFunc_T	=	&neuron::_m_fnSIGMOID_DRV;
 			break;
 		case neuron::_func::_fnTANH:
-			RunFunc_T = &neuron::_m_fnTANH;
-			RunDRVFunc_T = &neuron::_m_fnTANH_DRV;
+			RunFunc_T		=	&neuron::_m_fnTANH;
+			RunDRVFunc_T	=	&neuron::_m_fnTANH_DRV;
 			break;
 		default:
-			funcInstance = neuron::_func::_fnDEFAULTFUNC;
-			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
-			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
+			funcInstance	=	neuron::_func::_fnDEFAULTFUNC;
+			RunFunc_T		=	&neuron::_fnSDEFAULTFUNC;
+			RunDRVFunc_T	=	&neuron::_fnSDRVDEFFUNC;
 		}
 
 		auto pos = temp.data();
@@ -280,10 +280,10 @@ namespace nndx
 
 	neuronet::~neuronet()
 	{
-		isReady = false;
-		RunDRVFunc_T = nullptr;
-		RunFunc_T = nullptr;
-		GenWeight = nullptr;
+		isReady			=	false;
+		RunDRVFunc_T	=	nullptr;
+		RunFunc_T		=	nullptr;
+		GenWeight		=	nullptr;
 		data.clear();
 		weight.clear();
 		topology_save.clear();
@@ -304,18 +304,18 @@ namespace nndx
 					return *this;
 				}
 
-				this->funcInstance = anet.funcInstance;
-				this->moment = anet.moment;
-				this->u = anet.u;
-				this->data = anet.data;
-				this->weight = anet.weight;
-				this->topology_save = anet.topology_save;
-				this->nDataNet = anet.nDataNet;
-				this->nTrainNote = anet.nTrainNote;
-				this->RunDRVFunc_T = anet.RunDRVFunc_T;
-				this->RunFunc_T = anet.RunFunc_T;
-				this->GenWeight = anet.GenWeight;
-				this->isReady = true;
+				this->funcInstance			=	anet.funcInstance;
+				this->moment				=	anet.moment;
+				this->u						=	anet.u;
+				this->data					=	anet.data;
+				this->weight				=	anet.weight;
+				this->topology_save			=	anet.topology_save;
+				this->nDataNet				=	anet.nDataNet;
+				this->nTrainNote			=	anet.nTrainNote;
+				this->RunDRVFunc_T			=	anet.RunDRVFunc_T;
+				this->RunFunc_T				=	anet.RunFunc_T;
+				this->GenWeight				=	anet.GenWeight;
+				this->isReady				=	true;
 			}
 		}
 		catch (int x)
@@ -345,19 +345,19 @@ namespace nndx
 				}
 				else
 				{
-					this->funcInstance = ::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
-					this->moment = ::std::forward<decltype(anet.moment)>(anet.moment);
-					this->u = ::std::forward<decltype(anet.u)>(anet.u);
-					this->data = ::std::forward<decltype(anet.data)>(anet.data);
-					this->weight = ::std::forward<decltype(anet.weight)>(anet.weight);
-					this->topology_save = ::std::forward<decltype(anet.topology_save)>(anet.topology_save);
-					this->nDataNet = ::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
-					this->nTrainNote = ::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
-					this->RunDRVFunc_T = ::std::forward<decltype(anet.RunDRVFunc_T)>(anet.RunDRVFunc_T);
-					this->RunFunc_T = ::std::forward<decltype(anet.RunFunc_T)>(anet.RunFunc_T);
-					this->GenWeight = ::std::forward<decltype(anet.GenWeight)>(anet.GenWeight);
-					this->isReady = true;
-					anet.isReady = false;
+					this->funcInstance			=	::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
+					this->moment				=	::std::forward<decltype(anet.moment)>(anet.moment);
+					this->u						=	::std::forward<decltype(anet.u)>(anet.u);
+					this->data					=	::std::forward<decltype(anet.data)>(anet.data);
+					this->weight				=	::std::forward<decltype(anet.weight)>(anet.weight);
+					this->topology_save			=	::std::forward<decltype(anet.topology_save)>(anet.topology_save);
+					this->nDataNet				=	::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
+					this->nTrainNote			=	::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
+					this->RunDRVFunc_T			=	::std::forward<decltype(anet.RunDRVFunc_T)>(anet.RunDRVFunc_T);
+					this->RunFunc_T				=	::std::forward<decltype(anet.RunFunc_T)>(anet.RunFunc_T);
+					this->GenWeight				=	::std::forward<decltype(anet.GenWeight)>(anet.GenWeight);
+					this->isReady				=	true;
+					anet.isReady				=	false;
 				}
 			}
 		}
@@ -384,17 +384,17 @@ namespace nndx
 		switch (funcInstance)
 		{
 		case neuron::_func::_fnSIGMOID:
-			RunFunc_T = &neuron::_m_fnSIGMOID;
-			RunDRVFunc_T = &neuron::_m_fnSIGMOID_DRV;
+			RunFunc_T		=	&neuron::_m_fnSIGMOID;
+			RunDRVFunc_T	=	&neuron::_m_fnSIGMOID_DRV;
 			break;
 		case neuron::_func::_fnTANH:
-			RunFunc_T = &neuron::_m_fnTANH;
-			RunDRVFunc_T = &neuron::_m_fnTANH_DRV;
+			RunFunc_T		=	&neuron::_m_fnTANH;
+			RunDRVFunc_T	=	&neuron::_m_fnTANH_DRV;
 			break;
 		default:
-			funcInstance = neuron::_func::_fnDEFAULTFUNC;
-			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
-			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
+			funcInstance	=	neuron::_func::_fnDEFAULTFUNC;
+			RunFunc_T		=	&neuron::_fnSDEFAULTFUNC;
+			RunDRVFunc_T	=&neuron::_fnSDRVDEFFUNC;
 		}
 
 		if (this->isReady)
@@ -555,17 +555,17 @@ namespace nndx
 		switch (funcInstance)
 		{
 		case neuron::_func::_fnSIGMOID:
-			RunFunc_T = &neuron::_m_fnSIGMOID;
-			RunDRVFunc_T = &neuron::_m_fnSIGMOID_DRV;
+			RunFunc_T		=	&neuron::_m_fnSIGMOID;
+			RunDRVFunc_T	=	&neuron::_m_fnSIGMOID_DRV;
 			break;
 		case neuron::_func::_fnTANH:
-			RunFunc_T = &neuron::_m_fnTANH;
-			RunDRVFunc_T = &neuron::_m_fnTANH_DRV;
+			RunFunc_T		=	&neuron::_m_fnTANH;
+			RunDRVFunc_T	=	&neuron::_m_fnTANH_DRV;
 			break;
 		default:
-			funcInstance = neuron::_func::_fnDEFAULTFUNC;
-			RunFunc_T = &neuron::_fnSDEFAULTFUNC;
-			RunDRVFunc_T = &neuron::_fnSDRVDEFFUNC;
+			funcInstance	=	neuron::_func::_fnDEFAULTFUNC;
+			RunFunc_T		=	&neuron::_fnSDEFAULTFUNC;
+			RunDRVFunc_T	=	&neuron::_fnSDRVDEFFUNC;
 		}
 
 		if (this->isReady)
@@ -1220,7 +1220,7 @@ namespace nndx
 			}
 			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}
-		for (int i = static_cast<int>(data.size() - 3); i >= 0; --i) // обязательно  -> signed <-, 'cause число может быть отрицательным(для выхода из цикла)
+		for (ptrdiff_t i = static_cast<int>(data.size() - 3); i >= 0; --i)
 		{
 			errR[i].reserve(data[i].size());
 			for (size_t j = 0; j < data[i].size(); ++j)

@@ -3,7 +3,7 @@
 //Autor - -dreamIIx
 //GitHub - https://github.com/dreamIIx
 //Release [v0.1] on GitHub 27.09.2018
-//Actual version 4.0[without DEFINE]
+//Actual version 4.1
 //The library include functions and classes to provide support the work with Neural Networks
 
 #include <Windows.h>
@@ -62,17 +62,17 @@ namespace nndx
 		static void _m_fnTANH(neuron&, const double&);
 		static void _m_fnTANH_DRV(neuron&);
 
-#define _fnSDRVDEFFUNC _m_fnSIGMOID_DRV
-#define _fnSDEFAULTFUNC _m_fnSIGMOID
+#define _fnSDRVDEFFUNC		_m_fnSIGMOID_DRV
+#define _fnSDEFAULTFUNC		_m_fnSIGMOID
 //#define _fnSDRVDEFFUNC _m_fnTANH_DRV
 //#define _fnSDEFAULTFUNC _m_fnTANH
 
 	public:
-		enum _func : _dTYPEFUNC
+		enum class _func : _dTYPEFUNC
 		{
-			_fnSIGMOID = 0b0000,
-			_fnTANH = 0b0001,
-			_fnDEFAULTFUNC = _fnSIGMOID // able to change -> _fnTANH
+			_fnSIGMOID		=	0b0000,
+			_fnTANH			=	0b0001,
+			_fnDEFAULTFUNC	=	_fnSIGMOID // able to change -> _fnTANH
 		};
 
 		explicit neuron(const double&) noexcept;

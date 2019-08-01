@@ -1,2 +1,2 @@
 # NeuralNet
-My adaptive neural net. Feed forward/backProp(perceptron).
+Adaptive neural net. Feed forward/backProp(perceptron).

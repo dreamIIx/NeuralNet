@@ -8,25 +8,11 @@
 
 #include "NN.h"
 
-#ifndef def_ERR_FL_
-#define def_ERR_FL_
-#define def_XTT_S(x) #x
-#define def_XTT_S_(x) def_XTT_S(x)
-#define def_XTT_S__LINE__ def_XTT_S_(__LINE__)
-#define def__FILELINE (__FILE__  " line " def_XTT_S__LINE__)
-#define ERROR_ ::std::cout << "Error - " << def__FILELINE << ::std::endl;
-#endif
-
 //#define _mainDEBUG
 
-#ifndef _clr
-#define _clr uint8_t
-#define _clr_ static_cast<_clr>(0b1111'1111)
-#endif
-
-#ifndef _filend
-#define _filend "endOFfile"
-#endif
+typedef uint8_t _clr;
+constexpr _clr _clr_ = static_cast<_clr>(0b1111'1111);
+constexpr const char* _filend = "endOFfile";
 
 namespace nndx
 {
@@ -34,8 +20,8 @@ namespace nndx
 	_clr min_4(_clr, _clr, _clr, _clr);
 	_clr mid_4(_clr, _clr, _clr, _clr);
 	inline double ReLU(const double&);
-	::std::string nts(const int&);
-	::std::string nts(const size_t&);
+	template<typename _T>
+	::std::string nts(const _T&);
 
 #pragma pack(push, 1)
 	struct rgb_T
@@ -400,6 +386,7 @@ namespace nndx
 		}
 
 		//initFuncEx must be called earlier
+		//this func takes indexes of kernels to conv. layer function(10)
 		bool autoInitVec(const ::std::vector<size_t>& data)
 		{
 			if (data.empty())
@@ -484,18 +471,19 @@ namespace nndx
 		}
 
 		//autoInitVec must be called earlier
-		bool init_neuronet(::std::vector<int>&& tplNet, double funcWeights(), _dTYPEFUNC funcNet, double moment, double u)
+		bool init_neuronet(::std::vector<int>&& tplNet, double funcWeights(), nndx::neuron::_func funcNet, double moment, double u)
 		{
 			if (krnl.empty())
 			{
 				ERROR_
 					return false;
 			}
+			system("pause");
 			bool res = false;
 			int num = 0;
 			for (auto& x : vlayer.back())
 			{
-				num += x.size() * x[0].size();
+				num += static_cast<int>(x.size() * x[0].size());
 			}
 			tplNet.emplace(tplNet.begin(), num);
 			res = net.setGenWeightsFunc(funcWeights);
@@ -520,7 +508,7 @@ namespace nndx
 		}
 
 		//autoInitVec must be called earlier
-		bool init_neuronet(::std::string file, _dTYPEFUNC funcNet, double moment, double u)
+		bool init_neuronet(::std::string file, nndx::neuron::_func funcNet, double moment, double u)
 		{
 			if (krnl.empty())
 			{
@@ -550,7 +538,6 @@ namespace nndx
 			return net.getState();
 		}
 
-		//takes vec of vkernel's indexes
 		bool mA()
 		{
 			if (vinLayer.empty())
@@ -563,15 +550,19 @@ namespace nndx
 				ERROR_
 					return false;
 			}
+
 			bool res = false;
-			int current = -1;
+			ptrdiff_t current = -1;
 			size_t idxK = 0;
 			for (auto& x : vfunc)
 			{
 				switch (x)
 				{
 				case 10:
-					if (krnl[idxK] >= vkernel.size()) ERROR_
+					if (krnl[idxK] >= vkernel.size())
+					{
+						ERROR_
+					}
 					else
 					{
 						res = convFunc_RGB(current, krnl[idxK++]);
@@ -591,8 +582,8 @@ namespace nndx
 						break;
 				}
 				++current;
-				//res = saveIm_RGB(static_cast<size_t>(current));
-				//res = saveIm_Gray(static_cast<size_t>(current));
+				res = saveIm_RGB(static_cast<size_t>(current));
+				res = saveIm_Gray(static_cast<size_t>(current));
 			}
 			return true;
 		}
@@ -610,13 +601,11 @@ namespace nndx
 					return false;
 			}
 
+			::std::string sfile = inputF + subS;
 			bool resT = false;
 			for (int i = 0; i < ittr; ++i)
 			{
-				cv::Mat imgT;
-				::std::string sfile = inputF + subS + nndx::nts(func(i));
-				imgT = cv::imread(sfile + extImg);
-				resT = init_image(imgT);
+				resT = init_image(cv::imread(sfile + nndx::nts(func(i)) + extImg));
 				if (!resT)
 				{
 					ERROR_
@@ -632,17 +621,13 @@ namespace nndx
 
 				::std::vector<double> in;
 				in.reserve(net.data[0].size() - 1);
-				//double localsum = 0;
 				for (size_t s = 0; s < vlayer.back().size(); ++s)
 				{
-					//localsum = 0;
 					for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
 					{
 						for (size_t j = 0; j < vlayer.back()[s][0].size(); ++j)
 						{
 							in.emplace_back(vlayer.back()[s][i][j].Grayn);
-							//localsum += vlayer.back()[s][i][j].Grayn;
-							//if (vlayer.back()[s][i][j].Grayn > 1.) ERROR_
 						}
 					}
 					//in.emplace_back(localsum / (vlayer.back()[s].size() * vlayer.back()[s][0].size()));
@@ -746,7 +731,7 @@ namespace nndx
 			int temp1 = 0;
 			for (auto& x : net.getResults())
 			{
-				if (temp1 == 10) temp1 == 0;
+				if (temp1 == 10) temp1 = 0;
 				::std::cout << temp1++ << " " << x << ::std::endl;
 			}
 			return true;
@@ -754,7 +739,7 @@ namespace nndx
 
 	private:
 		//idx of this func - 2, 3, 4
-		bool decreaseX2_RGB(int idxSource, _clr pFunc(_clr, _clr, _clr, _clr))
+		bool decreaseX2_RGB(ptrdiff_t idxSource, _clr pFunc(_clr, _clr, _clr, _clr))
 		{
 			if (idxSource == -1)
 			{
@@ -816,7 +801,7 @@ namespace nndx
 		}
 
 		//idx of this func - 10
-		bool convFunc_RGB(int idxSource, size_t idxKernel)
+		bool convFunc_RGB(ptrdiff_t idxSource, size_t idxKernel)
 		{
 			auto szKrnl = vkernel[idxKernel].size();
 			if (idxSource == -1)
@@ -1083,24 +1068,12 @@ namespace nndx
 		return (x > 0) ? x : 0;
 	}
 
-	::std::string nts(const int& example)
+	template<typename _T>
+	::std::string nts(const _T& example)
 	{
-		int a = example;
 		::std::stringstream ss(::std::stringstream::in | ::std::stringstream::out);
 
-		ss << a;
-
-		::std::string s = ss.str();
-
-		return s;
-	}
-
-	::std::string nts(const size_t& example)
-	{
-		size_t a = example;
-		::std::stringstream ss(::std::stringstream::in | ::std::stringstream::out);
-
-		ss << a;
+		ss << example;
 
 		::std::string s = ss.str();
 

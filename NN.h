@@ -9,22 +9,23 @@
 #include <Windows.h>
 
 #include <iostream>
-#ifndef _DEBUG
+//#ifndef _DEBUG
 #include <exception>
-#endif
+//#endif
 #include <fstream>
 #include <string>
 #include <vector>
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
 #define def_XTT_S(x)		#x
 #define def_XTT_S_(x)		def_XTT_S(x)
 #define def_XTT_S__LINE__	def_XTT_S_(__LINE__)
 #define def__FILELINE		(__FILE__  " line " def_XTT_S__LINE__)
-#define ERROR_				::std::cout << "Error - " << def__FILELINE << ::std::endl;
-#else
-#define ERROR_				throw ::std::exception((const char*)__LINE__);
-#endif
+#define ERROR_				::std::cout << "Error - " << def__FILELINE << ::std::endl; \
+							system("pause");
+//#else
+//#define ERROR_				throw ::std::exception((const char*)__LINE__);
+//#endif
 
 typedef unsigned short int _dTYPEFUNC;
 

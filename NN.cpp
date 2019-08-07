@@ -1220,7 +1220,7 @@ namespace nndx
 			}
 			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}
-		for (ptrdiff_t i = static_cast<int>(data.size() - 3); i >= 0; --i)
+		for (ptrdiff_t i = static_cast<ptrdiff_t>(data.size() - 3); i >= 0; --i)
 		{
 			errR[i].reserve(data[i].size());
 			for (size_t j = 0; j < data[i].size(); ++j)

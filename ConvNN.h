@@ -423,7 +423,7 @@ namespace nndx
 			{
 				size_t temp = vkernel[data[0]].size();
 				vlayer[0].reserve(temp);
-				for (int i = 0; i < temp; ++i)
+				for (size_t i = 0; i < temp; ++i)
 				{
 					vlayer[0].emplace_back(image());
 				}
@@ -447,7 +447,7 @@ namespace nndx
 				{
 					size_t temp = vkernel[data[krnl++]].size() * vlayer[i - 1].size();
 					vlayer[i].reserve(temp);
-					for (int j = 0; j < temp; ++j)
+					for (size_t j = 0; j < temp; ++j)
 					{
 						vlayer[i].emplace_back(image());
 					}
@@ -456,7 +456,7 @@ namespace nndx
 				{
 					size_t temp = vlayer[i - 1].size();
 					vlayer[i].reserve(temp);
-					for (int j = 0; j < temp; ++j)
+					for (size_t j = 0; j < temp; ++j)
 					{
 						vlayer[i].emplace_back(image());
 					}
@@ -471,6 +471,7 @@ namespace nndx
 		}
 
 		//autoInitVec must be called earlier
+		//mA() must be called earlier
 		bool init_neuronet(::std::vector<int>&& tplNet, double funcWeights(), nndx::neuron::_func funcNet, double moment, double u)
 		{
 			if (krnl.empty())
@@ -507,7 +508,6 @@ namespace nndx
 			return net.getState();
 		}
 
-		//autoInitVec must be called earlier
 		bool init_neuronet(::std::string file, nndx::neuron::_func funcNet, double moment, double u)
 		{
 			if (krnl.empty())
@@ -888,6 +888,22 @@ namespace nndx
 				}
 			}
 			return true;
+		}
+
+		bool backProp()
+		{
+			if (vinLayer.empty())
+			{
+				ERROR_
+					return false;
+			}
+			if (krnl.empty())
+			{
+				ERROR_
+					return false;
+			}
+
+
 		}
 
 		bool saveIm_RGB(size_t idx)

@@ -1193,7 +1193,7 @@ namespace nndx
 
 	void neuronet::backProp(const ::std::vector<double>& d)
 	{
-		typedef ::std::vector<double> dw;
+		using dw = ::std::vector<double>;
 		::std::vector<dw> errR;
 
 		errR.reserve(data.size());
@@ -1255,6 +1255,75 @@ namespace nndx
 			}
 		}
 	}
+
+#ifdef _NNDX_CONV_NEURONET_DEF
+	void neuronet::backProp(const ::std::vector<double>& d, ::std::vector<double>& errback)
+	{
+		using dw = ::std::vector<double>;
+		::std::vector<dw> errR;
+
+		errR.reserve(data.size());
+		for (size_t i = 0; i < data.size(); ++i)
+		{
+			errR.emplace_back(dw());
+		}
+
+		errR.back().reserve(data.back().size());
+		for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
+		}
+
+		double local_sum = 0.;
+		errR[data.size() - 2].reserve(data[data.size() - 2].size());
+		for (size_t j = 0; j < data[data.size() - 2].size(); ++j)
+		{
+			local_sum = 0.;
+			for (size_t next = 0; next < data[data.size() - 1].size(); ++next)
+			{
+				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data[data.size() - 1].size() * j + next].wg;
+				weight[data.size() - 2][data[data.size() - 1].size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
+			}
+			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
+		}
+		for (ptrdiff_t i = static_cast<ptrdiff_t>(data.size() - 3); i >= 0; --i)
+		{
+			errR[i].reserve(data[i].size());
+			for (size_t j = 0; j < data[i].size(); ++j)
+			{
+				local_sum = 0.;
+				for (size_t next = 0; next < data[i + 1].size() - 1; ++next)
+				{
+					local_sum += errR[i + 1][next] * weight[i][(data[i + 1].size() - 1) * j + next].wg;
+					weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data;
+				}
+				errR[i].emplace_back(local_sum * data[i][j].funcDRV);
+			}
+		}
+
+		for (size_t i = 1; i < data.size() - 1; ++i)
+		{
+			for (size_t j = 0; j < data[i].size() - 1; ++j)
+			{
+				for (size_t prev = 0; prev < data[i - 1].size(); ++prev)
+				{
+					weight[i - 1][prev * (data[i].size() - 1) + j].dwg = u * weight[i - 1][prev * (data[i].size() - 1) + j].grad + (moment * weight[i - 1][prev * (data[i].size() - 1) + j].dwg);
+					weight[i - 1][prev * (data[i].size() - 1) + j].wg += weight[i - 1][prev * (data[i].size() - 1) + j].dwg;
+				}
+			}
+		}
+		for (size_t j = 0; j < data[data.size() - 1].size(); ++j)
+		{
+			for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
+			{
+				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg = u * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].grad + (moment * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg);
+				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].wg += weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg;
+			}
+		}
+
+		errback = errR[0];
+	}
+#endif
 
 	void neuronet::funcHebb()
 	{

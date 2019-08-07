@@ -3,7 +3,7 @@
 //Autor - -dreamIIx
 //GitHub - https://github.com/dreamIIx
 //Release [v0.1] on GitHub 27.09.2018
-//Actual version 4.1.5
+//Actual version 4.2
 //The library include functions and classes to provide support the work with Neural Networks
 
 #include <Windows.h>
@@ -25,6 +25,8 @@
 #else
 #define ERROR_				throw ::std::exception((const char*)__LINE__);
 #endif
+
+#define _NNDX_NEURONET_DEF
 
 typedef unsigned short int _dTYPEFUNC;
 
@@ -96,6 +98,9 @@ namespace nndx
 
 	class neuronet
 	{
+#ifdef _NNDX_CONV_NEURONET_DEF
+		friend class CNN;
+#endif
 	public:
 		::std::vector<dataA> data;
 		::std::vector<dataW> weight;
@@ -150,5 +155,10 @@ namespace nndx
 		void activationF(); // work
 		void backProp(const ::std::vector<double>&); // work
 		void funcHebb();
+
+#ifdef _NNDX_CONV_NEURONET_DEF
+	protected:
+		void backProp(const ::std::vector<double>&, ::std::vector<double>&);
+#endif
 	};
 }

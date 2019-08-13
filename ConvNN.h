@@ -4,9 +4,12 @@
 #include <fstream>
 #include <vector>
 #include <string>
+
 #include "opencv2\opencv.hpp"
 
+// main flag
 #define _NNDX_CONV_NEURONET_DEF
+
 #include "NN.h"
 
 //#define _mainDEBUG
@@ -685,23 +688,24 @@ namespace nndx
 				resT = net.fillInput(in);
 				resT = net.callActivationF();
 
-				int tempval_ = 0;
-				double maxval_ = -2;
-				int response_ = 0;
+				::std::cout << " func(i) - " << func(i) << "\n";
+				/*double maxval_ = -2;
+				int response_ = 0;*/
 				for (auto& x : net.getResults())
 				{
-					if (x >= maxval_)
+					::std::cout << x << "|" << "\n";
+					/*if (x >= maxval_)
 					{
 						response_ = tempval_;
 						maxval_ = x;
 					}
-					++tempval_;
+					++tempval_;*/
 				}
-				::std::cout << "response - " << response_ << "\n";
+				::std::cout << "\n";
+				//::std::cout << "response - " << response_ << "\n";
 
-				resT = net.callBackProp(results[func(i)]);
+				resT = backProp(results[func(i)]);
 				//::std::cout << " i - " << i << ::std::endl;
-				::std::cout << " func(i) - " << func(i) << ::std::endl;
 			}
 			::std::cout << ::std::endl;
 			resT = net.saveF(outputF + "net.txt");
@@ -924,19 +928,10 @@ namespace nndx
 
 		bool backProp(const ::std::vector<double>& res)
 		{
-			if (vinLayer.empty())
-			{
-				ERROR_
-					return false;
-			}
-			if (krnl.empty())
-			{
-				ERROR_
-					return false;
-			}
-
 			::std::vector<double> vErr;
-			net.backProp(res, vErr);
+			net.callBackProp(res, vErr);
+
+			return true;
 		}
 
 		bool saveIm_RGB(size_t idx)
@@ -1129,4 +1124,95 @@ namespace nndx
 
 		return s;
 	}
+
+#ifdef _NNDX_CONV_NEURONET_DEF
+	bool neuronet::callBackProp(const ::std::vector<double>& d, ::std::vector<double>& errback)
+	{
+		if (!this->isReady)
+		{
+			ERROR_
+				return false;
+		}
+		if ((this->moment == 0) || (this->u == 0))
+		{
+			ERROR_
+				return false;
+		}
+		if (d.size() != data.back().size())
+		{
+			ERROR_
+				return false;
+		}
+		backProp(d, errback);
+		return true;
+	}
+
+	void neuronet::backProp(const ::std::vector<double>& d, ::std::vector<double>& errback)
+	{
+		using dw = ::std::vector<double>;
+		::std::vector<dw> errR;
+
+		errR.reserve(data.size());
+		for (size_t i = 0; i < data.size(); ++i)
+		{
+			errR.emplace_back(dw());
+		}
+
+		errR.back().reserve(data.back().size());
+		for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
+		}
+
+		double local_sum = 0.;
+		errR[data.size() - 2].reserve(data[data.size() - 2].size());
+		for (size_t j = 0; j < data[data.size() - 2].size(); ++j)
+		{
+			local_sum = 0.;
+			for (size_t next = 0; next < data[data.size() - 1].size(); ++next)
+			{
+				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data[data.size() - 1].size() * j + next].wg;
+				weight[data.size() - 2][data[data.size() - 1].size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
+			}
+			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
+		}
+		for (ptrdiff_t i = static_cast<ptrdiff_t>(data.size() - 3); i >= 0; --i)
+		{
+			errR[i].reserve(data[i].size());
+			for (size_t j = 0; j < data[i].size(); ++j)
+			{
+				local_sum = 0.;
+				for (size_t next = 0; next < data[i + 1].size() - 1; ++next)
+				{
+					local_sum += errR[i + 1][next] * weight[i][(data[i + 1].size() - 1) * j + next].wg;
+					weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data;
+				}
+				errR[i].emplace_back(local_sum * data[i][j].funcDRV);
+			}
+		}
+
+		for (size_t i = 1; i < data.size() - 1; ++i)
+		{
+			for (size_t j = 0; j < data[i].size() - 1; ++j)
+			{
+				for (size_t prev = 0; prev < data[i - 1].size(); ++prev)
+				{
+					weight[i - 1][prev * (data[i].size() - 1) + j].dwg = u * weight[i - 1][prev * (data[i].size() - 1) + j].grad + (moment * weight[i - 1][prev * (data[i].size() - 1) + j].dwg);
+					weight[i - 1][prev * (data[i].size() - 1) + j].wg += weight[i - 1][prev * (data[i].size() - 1) + j].dwg;
+				}
+			}
+		}
+		for (size_t j = 0; j < data[data.size() - 1].size(); ++j)
+		{
+			for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
+			{
+				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg = u * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].grad + (moment * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg);
+				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].wg += weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg;
+			}
+		}
+
+		errback = errR[0];
+	}
+
+#endif
 }

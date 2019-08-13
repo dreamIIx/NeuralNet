@@ -9,23 +9,21 @@
 #include <Windows.h>
 
 #include <iostream>
-#ifndef _DEBUG
 #include <exception>
-#endif
 #include <fstream>
 #include <string>
 #include <vector>
 
-#ifdef _DEBUG
 #define def_XTT_S(x)		#x
 #define def_XTT_S_(x)		def_XTT_S(x)
 #define def_XTT_S__LINE__	def_XTT_S_(__LINE__)
-#define def__FILELINE		(__FILE__  " line " def_XTT_S__LINE__)
-#define ERROR_				::std::cout << "Error - " << def__FILELINE << ::std::endl;
-#else
-#define ERROR_				throw ::std::exception((const char*)__LINE__);
-#endif
+/*#define def__FILELINE		(__FILE__  " line " def_XTT_S__LINE__)
+#define ERROR_				::std::cout << "Error - " << def__FILELINE << ::std::endl; \
+							system("pause");*/
 
+#define ERROR_				throw ::std::exception((const char*)def_XTT_S_(__LINE__));
+
+// main flag
 #define _NNDX_NEURONET_DEF
 
 typedef unsigned short int _dTYPEFUNC;
@@ -159,6 +157,7 @@ namespace nndx
 #ifdef _NNDX_CONV_NEURONET_DEF
 	protected:
 		void backProp(const ::std::vector<double>&, ::std::vector<double>&);
+		bool callBackProp(const ::std::vector<double>&, ::std::vector<double>&);
 #endif
 	};
 }

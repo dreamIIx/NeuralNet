@@ -6,6 +6,7 @@
 #include <string>
 #include "opencv2\opencv.hpp"
 
+#define _NNDX_CONV_NEURONET_DEF
 #include "NN.h"
 
 //#define _mainDEBUG
@@ -16,12 +17,39 @@ constexpr const char* _filend = "endOFfile";
 
 namespace nndx
 {
-	_clr max_4(_clr, _clr, _clr, _clr);
-	_clr min_4(_clr, _clr, _clr, _clr);
-	_clr mid_4(_clr, _clr, _clr, _clr);
-	inline double ReLU(const double&);
+	double max_4(double, double, double, double);
+	double min_4(double, double, double, double);
+	double mid_4(double, double, double, double);
+	double ReLU(double);
 	template<typename _T>
 	::std::string nts(const _T&);
+
+	class __bool
+	{
+	private:
+		volatile bool flag;
+	public:
+		explicit __bool() noexcept : flag(true) {}
+
+		__bool& operator=(bool x)
+		{
+			flag = x;
+			if (!flag)	throw ::std::exception("__bool is FALSE");
+			return *this;
+		}
+
+		operator bool() const noexcept
+		{
+			return (flag == true);
+		}
+
+		void reset()
+		{
+			flag = true;
+		}
+
+		~__bool() {}
+	};
 
 #pragma pack(push, 1)
 	struct rgb_T
@@ -36,12 +64,6 @@ namespace nndx
 		double Grayn;
 
 		rgb_T() : R(0), G(0), B(0), Gray(0), Rn(0.), Gn(0.), Bn(0.), Grayn(0.) {}
-
-		rgb_T(_clr r, _clr g, _clr b) : R(r), G(g), B(b), Rn(r / _clr_), Gn(g / _clr_), Bn(b / _clr_)
-		{
-			Gray = static_cast<_clr>(0.299 * R + 0.587 * G + 0.114 * B);
-			Grayn = 0.299 * Rn + 0.587 * Gn + 0.114 * Bn;
-		}
 
 		rgb_T(double r, double g, double b) : Rn(r), Gn(g), Bn(b)
 		{
@@ -81,12 +103,13 @@ namespace nndx
 	{
 	private:
 		using image = ::std::vector<::std::vector<rgb_T>>;
+		using mapge = ::std::vector<::std::vector<double>>;
 		unsigned int nConv;
 		::std::string inputF;
 		::std::string outputF;
 		::std::string dataF;
 		image vinLayer;
-		::std::vector<::std::vector<::std::vector<::std::vector<double>>>> vkernel;
+		::std::vector<::std::vector<mapge>> vkernel;
 		::std::vector<int> vfunc;
 		::std::vector<size_t> krnl;
 		nndx::neuronet net;
@@ -242,7 +265,7 @@ namespace nndx
 			else if (idx_ == vkernel.size())
 			{
 				vkernel.reserve(vkernel.capacity() + 1);
-				vkernel.emplace_back(::std::vector<::std::vector<::std::vector<double>>>());
+				vkernel.emplace_back(::std::vector<mapge>());
 			}
 			if (idxKernel > vkernel[idx_].size())
 			{
@@ -256,8 +279,9 @@ namespace nndx
 			else
 			{
 				vkernel[idx_].reserve(vkernel[idx_].capacity() + 1);
-				vkernel[idx_].emplace_back(::std::vector<::std::vector<double>>());
+				vkernel[idx_].emplace_back(mapge());
 			}
+
 			va_list args;
 			va_start(args, sizey);
 
@@ -287,7 +311,7 @@ namespace nndx
 			else if (idx_ == vkernel.size())
 			{
 				vkernel.reserve(vkernel.capacity() + 1);
-				vkernel.emplace_back(::std::vector<::std::vector<::std::vector<double>>>());
+				vkernel.emplace_back(::std::vector<mapge>());
 			}
 			if (idxKernel > vkernel[idx_].size())
 			{
@@ -301,7 +325,7 @@ namespace nndx
 			else
 			{
 				vkernel[idx_].reserve(vkernel[idx_].capacity() + 1);
-				vkernel[idx_].emplace_back(::std::vector<::std::vector<double>>());
+				vkernel[idx_].emplace_back(mapge());
 			}
 			if (dataF.empty())
 			{
@@ -385,16 +409,51 @@ namespace nndx
 			return true;
 		}
 
-		//initFuncEx must be called earlier
-		//this func takes indexes of kernels to conv. layer function(10)
-		bool autoInitVec(const ::std::vector<size_t>& data)
+		//for standart structure
+		//10 first
+		//4
+		//10
+		//4 last
+		//...
+		bool initFuncEx(size_t size)
 		{
-			if (data.empty())
+			if (!vlayer.empty())
+			{
+				vlayer.clear();
+			}
+			if (!vfunc.empty())
+			{
+				vfunc.clear();
+				nConv = 0;
+			}
+
+			if (!!size)
+			{
+				vlayer.reserve(size);
+				vfunc.reserve(size);
+				for (unsigned int i = 0; i < size; ++i)
+				{
+					vlayer.emplace_back(::std::vector<image>());
+					vfunc.emplace_back(int(10));
+					++nConv;
+					vlayer.emplace_back(::std::vector<image>());
+					vfunc.emplace_back(int(4));
+				}
+			}
+			else
 			{
 				ERROR_
 					return false;
 			}
-			if (data.size() != nConv)
+			nConv;
+			return true;
+		}
+
+		//initFuncEx must be called earlier
+		//this func takes idx_ of kernels to conv. layer function(10)
+		bool autoInitVec(const ::std::vector<size_t>& data)
+		{
+			if (data.empty())
 			{
 				ERROR_
 					return false;
@@ -407,21 +466,34 @@ namespace nndx
 						return false;
 				}
 			}
-			if (vfunc.empty())
+			if (vfunc.empty() || vlayer.empty())
 			{
-				ERROR_
-					return false;
+				if (!initFuncEx(data.size())) //auto caller initFuncEx(standart structure)
+				{
+					ERROR_
+						return false;
+				}
 			}
-			if (vlayer.empty())
+			else
 			{
-				ERROR_
-					return false;
+				if (vfunc.size() != vlayer.capacity())
+				{
+					ERROR_
+						return false;
+				}
+				if (data.size() != nConv)
+				{
+					ERROR_
+						return false;
+				}
 			}
+
+			size_t temp;
 			krnl = data;
 			vlayer[0].clear();
 			if (vfunc[0] == 10)
 			{
-				size_t temp = vkernel[data[0]].size();
+				temp = vkernel[data[0]].size();
 				vlayer[0].reserve(temp);
 				for (size_t i = 0; i < temp; ++i)
 				{
@@ -439,13 +511,13 @@ namespace nndx
 					return false;
 			}
 
-			size_t krnl = 1;
+			size_t krnl_ = 1;
 			for (size_t i = 1; i < vfunc.size(); ++i)
 			{
 				vlayer[i].clear();
 				if (vfunc[i] == 10)
 				{
-					size_t temp = vkernel[data[krnl++]].size() * vlayer[i - 1].size();
+					temp = vkernel[data[krnl_++]].size() * vlayer[i - 1].size();
 					vlayer[i].reserve(temp);
 					for (size_t j = 0; j < temp; ++j)
 					{
@@ -479,32 +551,20 @@ namespace nndx
 				ERROR_
 					return false;
 			}
-			system("pause");
-			bool res = false;
-			int num = 0;
+
+			__bool res;
+			int num = 0; // old - 0
+
 			for (auto& x : vlayer.back())
 			{
 				num += static_cast<int>(x.size() * x[0].size());
 			}
 			tplNet.emplace(tplNet.begin(), num);
+
 			res = net.setGenWeightsFunc(funcWeights);
-			if (!res)
-			{
-				ERROR_
-					return false;
-			}
 			res = net.init(tplNet, funcNet);
-			if (!res)
-			{
-				ERROR_
-					return false;
-			}
 			res = net.setParams(moment, u);
-			if (!res)
-			{
-				ERROR_
-					return false;
-			}
+
 			return net.getState();
 		}
 
@@ -515,26 +575,13 @@ namespace nndx
 				ERROR_
 					return false;
 			}
-			bool res = false;
+
+			__bool res;
 			net.nDataNet = file;
 			res = net.initFromFile();
-			if (!res)
-			{
-				ERROR_
-					return false;
-			}
 			res = net.setFunc(funcNet);
-			if (!res)
-			{
-				ERROR_
-					return false;
-			}
 			res = net.setParams(moment, u);
-			if (!res)
-			{
-				ERROR_
-					return false;
-			}
+
 			return net.getState();
 		}
 
@@ -551,7 +598,7 @@ namespace nndx
 					return false;
 			}
 
-			bool res = false;
+			__bool res;
 			ptrdiff_t current = -1;
 			size_t idxK = 0;
 			for (auto& x : vfunc)
@@ -565,7 +612,8 @@ namespace nndx
 					}
 					else
 					{
-						res = convFunc_RGB(current, krnl[idxK++]);
+						res = convFunc_RGB(current, krnl[idxK]);
+						++idxK;
 					}
 					break;
 				case 2:
@@ -582,7 +630,7 @@ namespace nndx
 						break;
 				}
 				++current;
-				res = saveIm_RGB(static_cast<size_t>(current));
+				//res = saveIm_RGB(static_cast<size_t>(current));
 				res = saveIm_Gray(static_cast<size_t>(current));
 			}
 			return true;
@@ -602,78 +650,62 @@ namespace nndx
 			}
 
 			::std::string sfile = inputF + subS;
-			bool resT = false;
+			__bool resT;
+
 			for (int i = 0; i < ittr; ++i)
 			{
 				resT = init_image(cv::imread(sfile + nndx::nts(func(i)) + extImg));
-				if (!resT)
-				{
-					ERROR_
-						return false;
-				}
 
 				resT = mA();
-				if (!resT)
-				{
-					ERROR_
-						return false;
-				}
 
 				::std::vector<double> in;
-				in.reserve(net.data[0].size() - 1);
+				in.reserve(net.data[0].size() - 1); // <----------   important
+
 				for (size_t s = 0; s < vlayer.back().size(); ++s)
 				{
+					//double tempreq = 0.;
 					for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
 					{
 						for (size_t j = 0; j < vlayer.back()[s][0].size(); ++j)
 						{
+							//tempreq += vlayer.back()[s][i][j].Grayn;
+							//auto temp_ = vlayer.back()[s][i][j].Grayn;
 							in.emplace_back(vlayer.back()[s][i][j].Grayn);
+							//::std::cout << temp_ <<  " ";
 						}
 					}
+					//tempreq /= vlayer.back().size() * vlayer.back()[s][0].size();
+					//in.emplace_back(tempreq);
 					//in.emplace_back(localsum / (vlayer.back()[s].size() * vlayer.back()[s][0].size()));
 					//if (localsum / (vlayer.back()[s].size() * vlayer.back()[s][0].size()) > 1.)
 						//::std::cout << "localsum = " << localsum / (vlayer.back()[s].size() * vlayer.back()[s][0].size()) << ::std::endl;
 				}
-				resT = net.fillInput(in);
-				if (!resT)
-				{
-					ERROR_
-						return false;
-				}
-				resT = net.callActivationF();
-				if (!resT)
-				{
-					ERROR_
-						return false;
-				}
+				//::std::cout << "\n";
 
-				int temp1 = 0;
-				int temp2 = 0;
-				double maxTemp = -2.;
+				resT = net.fillInput(in);
+				resT = net.callActivationF();
+
+				int tempval_ = 0;
+				double maxval_ = -2;
+				int response_ = 0;
 				for (auto& x : net.getResults())
 				{
-					if (x > maxTemp)
+					if (x >= maxval_)
 					{
-						maxTemp = x;
-						temp2 = temp1;
+						response_ = tempval_;
+						maxval_ = x;
 					}
-					++temp1;
+					++tempval_;
 				}
-				::std::cout << temp2 << ::std::endl;
+				::std::cout << "response - " << response_ << "\n";
 
 				resT = net.callBackProp(results[func(i)]);
-				if (!resT)
-				{
-					ERROR_
-						return false;
-				}
+				//::std::cout << " i - " << i << ::std::endl;
+				::std::cout << " func(i) - " << func(i) << ::std::endl;
 			}
+			::std::cout << ::std::endl;
 			resT = net.saveF(outputF + "net.txt");
-			if (!resT)
-			{
-				ERROR_
-					return false;
-			}
+
 			return true;
 		}
 
@@ -739,7 +771,7 @@ namespace nndx
 
 	private:
 		//idx of this func - 2, 3, 4
-		bool decreaseX2_RGB(ptrdiff_t idxSource, _clr pFunc(_clr, _clr, _clr, _clr))
+		bool decreaseX2_RGB(ptrdiff_t idxSource, double pFunc(double, double, double, double))
 		{
 			if (idxSource == -1)
 			{
@@ -760,9 +792,9 @@ namespace nndx
 					for (unsigned int x = 0; x < cols; x += 2)
 					{
 						vlayer[0][0].back().emplace_back(
-							pFunc(vinLayer[y][x].R, vinLayer[y + 1][x].R, vinLayer[y][x + 1].R, vinLayer[y + 1][x + 1].R),
-							pFunc(vinLayer[y][x].G, vinLayer[y + 1][x].G, vinLayer[y][x + 1].G, vinLayer[y + 1][x + 1].G),
-							pFunc(vinLayer[y][x].B, vinLayer[y + 1][x].B, vinLayer[y][x + 1].B, vinLayer[y + 1][x + 1].B));
+							ReLU(pFunc(vinLayer[y][x].Rn, vinLayer[y + 1][x].Rn, vinLayer[y][x + 1].Rn, vinLayer[y + 1][x + 1].Rn)),
+							ReLU(pFunc(vinLayer[y][x].Gn, vinLayer[y + 1][x].Gn, vinLayer[y][x + 1].Gn, vinLayer[y + 1][x + 1].Gn)),
+							ReLU(pFunc(vinLayer[y][x].Bn, vinLayer[y + 1][x].Bn, vinLayer[y][x + 1].Bn, vinLayer[y + 1][x + 1].Bn)));
 					}
 				}
 			}
@@ -790,9 +822,9 @@ namespace nndx
 						for (unsigned int x = 0; x < cols; x += 2)
 						{
 							vlayer[idxSource + 1][i].back().emplace_back(
-								pFunc(vlayer[idxSource][i][y][x].R, vlayer[idxSource][i][y + 1][x].R, vlayer[idxSource][i][y][x + 1].R, vlayer[idxSource][i][y + 1][x + 1].R),
-								pFunc(vlayer[idxSource][i][y][x].G, vlayer[idxSource][i][y + 1][x].G, vlayer[idxSource][i][y][x + 1].G, vlayer[idxSource][i][y + 1][x + 1].G),
-								pFunc(vlayer[idxSource][i][y][x].B, vlayer[idxSource][i][y + 1][x].B, vlayer[idxSource][i][y][x + 1].B, vlayer[idxSource][i][y + 1][x + 1].B));
+								ReLU(pFunc(vlayer[idxSource][i][y][x].Rn, vlayer[idxSource][i][y + 1][x].Rn, vlayer[idxSource][i][y][x + 1].Rn, vlayer[idxSource][i][y + 1][x + 1].Rn)),
+								ReLU(pFunc(vlayer[idxSource][i][y][x].Gn, vlayer[idxSource][i][y + 1][x].Gn, vlayer[idxSource][i][y][x + 1].Gn, vlayer[idxSource][i][y + 1][x + 1].Gn)),
+								ReLU(pFunc(vlayer[idxSource][i][y][x].Bn, vlayer[idxSource][i][y + 1][x].Bn, vlayer[idxSource][i][y][x + 1].Bn, vlayer[idxSource][i][y + 1][x + 1].Bn)));
 						}
 					}
 				}
@@ -890,7 +922,7 @@ namespace nndx
 			return true;
 		}
 
-		bool backProp()
+		bool backProp(const ::std::vector<double>& res)
 		{
 			if (vinLayer.empty())
 			{
@@ -903,7 +935,8 @@ namespace nndx
 					return false;
 			}
 
-
+			::std::vector<double> vErr;
+			net.backProp(res, vErr);
 		}
 
 		bool saveIm_RGB(size_t idx)
@@ -1058,29 +1091,30 @@ namespace nndx
 		}
 	};
 
-	_clr max_4(_clr f1, _clr f2, _clr f3, _clr f4)
+	double max_4(double f1, double f2, double f3, double f4)
 	{
-		_clr max = f1 > f2 ? f1 : f2;
+		double max = f1 > f2 ? f1 : f2;
 		max = max > f3 ? max : f3;
 		max = max > f4 ? max : f4;
 		return max;
 	}
 
-	_clr min_4(_clr f1, _clr f2, _clr f3, _clr f4)
+	double min_4(double f1, double f2, double f3, double f4)
 	{
-		_clr min = f1 > f2 ? f2 : f1;
+		double min = f1 > f2 ? f2 : f1;
 		min = min > f3 ? f3 : min;
 		min = min > f4 ? f4 : min;
 		return static_cast<_clr>(min);
 	}
 
-	_clr mid_4(_clr f1, _clr f2, _clr f3, _clr f4)
+	double mid_4(double f1, double f2, double f3, double f4)
 	{
-		return static_cast<_clr>((f1 + f2 + f3 + f4) / 4);
+		return static_cast<double>((f1 + f2 + f3 + f4) / 4.);
 	}
 
-	inline double ReLU(const double& x)
+	double ReLU(double x)
 	{
+		if (x > 1.)	x = 1;
 		return (x > 0) ? x : 0;
 	}
 

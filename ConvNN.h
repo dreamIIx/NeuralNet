@@ -704,7 +704,7 @@ namespace nndx
 				::std::cout << "\n";
 				//::std::cout << "response - " << response_ << "\n";
 
-				resT = backProp(results[func(i)]);
+				resT = ConvBackProp(results[func(i)]);
 				//::std::cout << " i - " << i << ::std::endl;
 			}
 			::std::cout << ::std::endl;
@@ -926,10 +926,12 @@ namespace nndx
 			return true;
 		}
 
-		bool backProp(const ::std::vector<double>& res)
+		bool ConvBackProp(const ::std::vector<double>& res)
 		{
 			::std::vector<double> vErr;
 			net.callBackProp(res, vErr);
+
+
 
 			return true;
 		}

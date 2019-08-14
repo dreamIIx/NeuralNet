@@ -58,12 +58,12 @@ int main()
 		ERROR_
 			return 1;
 	}*/
-	res = test.autoInitVec(::std::vector<size_t>{0, 0, 1, 2});
+	res = test.autoInitVec(::std::vector<size_t>{0, 1, 1, 2});
 
 	res = test.mA();
 
 	res = test.init_neuronet(::std::vector<int>{50, 25, 1}, []()->double { return static_cast<double>(((nndx::randB(hProv) % 100) - 50.) / 100.); },
-		nndx::neuron::_func::_fnSIGMOID, 0.2, 0.5);
+		nndx::neuron::_func::_fnSIGMOID, 0.3, 0.5);
 
 	/*res = test.init_neuronet("output/net.txt", nndx::neuron::_func::_fnSIGMOID, 0.8, 1.2);*/
 

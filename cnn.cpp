@@ -38,34 +38,22 @@ int main()
 	//res = test.initKrnlFromFile(1, 1);
 	res = test.initKrnlFromFile(2, 0);
 
-	res = test.initFuncEx(8, //num
-		10,
-		4,
-		10,
-		4,
-		10,
-		4,
-		10,
-		4);
-
 	cv::Mat img;
-	img = cv::imread("images/test11.jpg");
+	img = cv::imread("images/test0.jpg");
 	res = test.init_image(img);
 
-	/*res = test.init_image(100, 100, 0, 0, 0);
-	if (!res)
-	{
-		ERROR_
-			return 1;
-	}*/
-	res = test.autoInitVec(::std::vector<size_t>{0, 1, 1, 2});
-
-	res = test.mA();
+	res = test.initFuncEx(8, //num
+		0,
+		-4,
+		1,
+		-4,
+		1,
+		-4,
+		2,
+		-4);
 
 	res = test.init_neuronet(::std::vector<int>{50, 25, 1}, []()->double { return static_cast<double>(((nndx::randB(hProv) % 100) - 50.) / 100.); },
-		nndx::neuron::_func::_fnSIGMOID, 0.3, 0.5);
-
-	/*res = test.init_neuronet("output/net.txt", nndx::neuron::_func::_fnSIGMOID, 0.8, 1.2);*/
+		nndx::neuron::_func::_fnSIGMOID, 0.3, 0.5, 0.8);
 
 	::std::vector<::std::vector<double>> resNet;
 	resNet.reserve(10);
@@ -81,7 +69,7 @@ int main()
 	resNet.emplace_back(::std::vector<double>{0.9});
 
 	//resNet, 5000, [](int& x)->int { return x % 20; }, "test", ".jpg"
-	res = test.fullNet_mA(resNet, 2000, [](int& x)->int { return x % 10; }, "test", ".jpg");
+	res = test.fullNet_mA(resNet, 10000, [](int& x)->int { return x % 10; }, "test", ".jpg");
 
 	system("pause");
 	return 0;

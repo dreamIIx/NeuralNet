@@ -132,7 +132,7 @@ namespace nndx
 		bool initFromKeyboard(); // ch
 		bool initFromFile(); // ch
 		bool setFunc(neuron::_func); // ch
-		bool setGenWeightsFunc(double());
+		bool setGenWeightsFunc(double(void));
 		bool setParams(double, double); // ch
 
 		bool RunTraining(bool); // ch

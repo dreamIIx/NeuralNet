@@ -916,7 +916,7 @@ namespace nndx
 		return true;
 	}
 
-	bool neuronet::setGenWeightsFunc(double func())
+	bool neuronet::setGenWeightsFunc(double func(void))
 	{
 		this->GenWeight = func;
 		return true;
@@ -1202,11 +1202,24 @@ namespace nndx
 			errR.emplace_back(dw());
 		}
 
+		//squared error(check out efficient!)
+		double squadErr = 0.;
 		errR.back().reserve(data.back().size());
 		for (size_t i = 0; i < data.back().size(); ++i)
 		{
-			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
+			squadErr += (d[i] - data.back()[i].data) * (d[i] - data.back()[i].data);
 		}
+		squadErr /= 2;
+		for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			errR.back().emplace_back(squadErr * data.back()[i].funcDRV);
+		}
+
+		//default error
+		/*for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
+		}*/
 
 		double local_sum = 0.;
 		errR[data.size() - 2].reserve(data[data.size() - 2].size());

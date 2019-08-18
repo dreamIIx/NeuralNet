@@ -75,7 +75,7 @@ int main()
 	resNet.emplace_back(::std::vector<double>{0.9});*/
 
 	//resNet, 5000, [](int& x)->int { return x % 20; }, "test", ".jpg"
-	res = test.fullNet_mA(resNet, 2, [](int& x)->int { return x % 10; }, "test", ".jpg");
+	res = test.fullNet_mA(resNet, 10000, [](int& x)->int { return x % 10; }, "test", ".jpg");
 
 	system("pause");
 	return 0;

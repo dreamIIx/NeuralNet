@@ -99,7 +99,7 @@ namespace nndx
 		tempDATA.clear();
 	}
 
-	neuron::neuron(const double& num) noexcept : data(num), prevdata(0.0), funcDRV(0.0), BIAS(false) {}
+	neuron::neuron(const double& num) noexcept : data(num), prevdata(0.), funcDRV(0.), BIAS(false) {}
 
 	void neuron::_m_fnSIGMOID(neuron& n, const double& value)
 	{
@@ -124,6 +124,7 @@ namespace nndx
 	void neuron::setAsBias() noexcept
 	{
 		BIAS = true;
+		funcDRV = 1.;
 	}
 
 	bool neuron::isBias() const noexcept
@@ -1148,46 +1149,34 @@ namespace nndx
 
 		for (size_t i = 1; i < data.size() - 1; ++i)
 		{
-			//::std::cout << "----------------  data.size - " << data.size() << "   now - " << i << ::std::endl;
 			for (size_t j = 0; j < data[i].size(); ++j)
 			{
-				//::std::cout << "----------------  data[" << i <<  "].size - " << data[i].size() << "  now - " << j << "   ";
 				if (!data[i][j].isBias())
 				{
-					//::std::cout << "- is not BIAS | ";
 					local_sum = 0.;
 					for (size_t prev = 0; prev < data[i - 1].size(); ++prev)
 					{
-						//::std::cout << prev * (data[i].size() - 1) + j << " ";
 						local_sum += data[i - 1][prev].data * weight[i - 1][prev * (data[i].size() - 1) + j].wg;
 					}
-					//::std::cout << ::std::endl;
 					data[i][j].prevdata = data[i][j].data;
 					RunFunc_T(data[i][j], local_sum);
 					RunDRVFunc_T(data[i][j]);
 				}
-				//else ::std::cout << "- is BIAS | " << ::std::endl;
 			}
 		}
-		//::std::cout << "----------------  data.size - " << data.size() << "   now - last" << ::std::endl;
 		for (size_t j = 0; j < data.back().size(); ++j)
 		{
-			//::std::cout << "----------------  data[last].size - " << data[data.size() - 1].size() << "  now - " << j << "   ";
 			if (!data.back()[j].isBias())
 			{
-				//::std::cout << "- is not BIAS | ";
 				local_sum = 0.;
 				for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
 				{
-					//::std::cout << prev * data.back().size() + j << " ";
 					local_sum += data[data.size() - 2][prev].data * weight[data.size() - 2][prev * data.back().size() + j].wg;
 				}
-				//::std::cout << ::std::endl;
 				data.back()[j].prevdata = data.back()[j].data;
 				RunFunc_T(data.back()[j], local_sum);
 				RunDRVFunc_T(data.back()[j]);
 			}
-			//else ::std::cout << "- is BIAS | " << ::std::endl;
 		}
 	}
 
@@ -1202,34 +1191,21 @@ namespace nndx
 			errR.emplace_back(dw());
 		}
 
-		//squared error(check out efficient!)
-		double squadErr = 0.;
-		errR.back().reserve(data.back().size());
-		for (size_t i = 0; i < data.back().size(); ++i)
-		{
-			squadErr += (d[i] - data.back()[i].data) * (d[i] - data.back()[i].data);
-		}
-		squadErr /= 2;
-		for (size_t i = 0; i < data.back().size(); ++i)
-		{
-			errR.back().emplace_back(squadErr * data.back()[i].funcDRV);
-		}
-
 		//default error
-		/*for (size_t i = 0; i < data.back().size(); ++i)
+		for (size_t i = 0; i < data.back().size(); ++i)
 		{
 			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
-		}*/
+		}
 
 		double local_sum = 0.;
 		errR[data.size() - 2].reserve(data[data.size() - 2].size());
 		for (size_t j = 0; j < data[data.size() - 2].size(); ++j)
 		{
 			local_sum = 0.;
-			for (size_t next = 0; next < data[data.size() - 1].size(); ++next)
+			for (size_t next = 0; next < data.back().size(); ++next)
 			{
-				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data[data.size() - 1].size() * j + next].wg;
-				weight[data.size() - 2][data[data.size() - 1].size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
+				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data.back().size() * j + next].wg;
+				weight[data.size() - 2][data.back().size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
 			}
 			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}
@@ -1259,12 +1235,12 @@ namespace nndx
 				}
 			}
 		}
-		for (size_t j = 0; j < data[data.size() - 1].size(); ++j)
+		for (size_t j = 0; j < data.back().size(); ++j)
 		{
 			for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
 			{
-				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg = u * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].grad + (moment * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg);
-				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].wg += weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg;
+				weight[data.size() - 2][prev * data.back().size() + j].dwg = u * weight[data.size() - 2][prev * data.back().size() + j].grad + (moment * weight[data.size() - 2][prev * data.back().size() + j].dwg);
+				weight[data.size() - 2][prev * data.back().size() + j].wg += weight[data.size() - 2][prev * data.back().size() + j].dwg;
 			}
 		}
 	}

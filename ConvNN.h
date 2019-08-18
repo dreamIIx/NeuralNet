@@ -54,10 +54,7 @@ namespace nndx
 
 		explicit cneuron() : data(0.), mBIAS(0.), err(0.) {}
 
-		cneuron(double x, double bias) : data(x), mBIAS(bias), err(0.)
-		{
-			::std::cout << "bias = " << bias << ::std::endl;
-		}
+		cneuron(double x, double bias) : data(x), mBIAS(bias), err(0.) {}
 
 		bool operator==(cneuron& x)
 		{
@@ -107,9 +104,9 @@ namespace nndx
 			return 1. / (1. + exp(-value));
 		}
 
-		static double mSIGMOID_DRV(cneuron& cn)
+		static double mSIGMOID_DRV(double value)
 		{
-			return cn.data * (1. - cn.data);
+			return value * (1. - value);
 		}
 
 		~cneuron() {}
@@ -136,8 +133,11 @@ namespace nndx
 		void init(double r, double g, double b)
 		{
 			Rn = r;
+			Rn.err = 0.;
 			Gn = g;
+			Gn.err = 0.;
 			Bn = b;
+			Bn.err = 0.;
 		}
 
 		double Grayn() noexcept
@@ -155,12 +155,7 @@ namespace nndx
 
 		explicit cnnKernel_c3() : R(0.), G(0.), B(0.) {}
 
-		explicit cnnKernel_c3(double r, double g, double b) : R(r), G(g), B(b)
-		{
-			::std::cout << "r = " << r << ::std::endl;
-			::std::cout << "g = " << g << ::std::endl;
-			::std::cout << "b = " << b << ::std::endl;
-		}
+		explicit cnnKernel_c3(double r, double g, double b) : R(r), G(g), B(b) {}
 
 		~cnnKernel_c3() {}
 	};
@@ -1039,7 +1034,12 @@ namespace nndx
 				{
 					for (size_t j = 0; j < vlayer.back()[s].back().size(); ++j)
 					{
-						vlayer.back()[s][i][j].Error = vErr[temp_++];
+						vlayer.back()[s][i][j].Rn.err = vErr[temp_++];
+						vlayer.back()[s][i][j].Gn.err = vErr[temp_++];
+						vlayer.back()[s][i][j].Bn.err = vErr[temp_++];
+						::std::cout << vlayer.back()[s][i][j].Rn.err << ::std::endl;
+						::std::cout << vlayer.back()[s][i][j].Gn.err << ::std::endl;
+						::std::cout << vlayer.back()[s][i][j].Bn.err << ::std::endl;
 					}
 				}
 			}
@@ -1049,7 +1049,7 @@ namespace nndx
 			{
 				if (vfunc[i] < 0)
 				{
-					if (vfunc[i] == 4)
+					if (vfunc[i] == -4)
 					{
 						for (size_t layer = 0; layer < vlayer[i].size(); ++layer)
 						{
@@ -1057,68 +1057,120 @@ namespace nndx
 							{
 								for (size_t x = 0; x < vlayer[i][layer].back().size(); ++x)
 								{
-									if (vlayer[i][layer][y][x].Error == 0.)	continue;
 									auto& temp2 = vlayer[i][layer][y][x];
-									vlayer[i - 1][layer][y * 2][x * 2].Error = temp2.Error;
-									vlayer[i - 1][layer][y * 2 + 1][x * 2].Error = temp2.Error;
-									vlayer[i - 1][layer][y * 2][x * 2 + 1].Error = temp2.Error;
-									vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Error = temp2.Error;
+									if (temp2.Rn.err != 0.)
+									{
+										vlayer[i - 1][layer][y * 2][x * 2].Rn.err = temp2.Rn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2].Rn.err = temp2.Rn.err;
+										vlayer[i - 1][layer][y * 2][x * 2 + 1].Rn.err = temp2.Rn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Rn.err = temp2.Rn.err;
+									}
+									if (temp2.Gn.err != 0.)
+									{
+										vlayer[i - 1][layer][y * 2][x * 2].Gn.err = temp2.Gn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2].Gn.err = temp2.Gn.err;
+										vlayer[i - 1][layer][y * 2][x * 2 + 1].Gn.err = temp2.Gn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Gn.err = temp2.Gn.err;
+									}
+									if (temp2.Bn.err != 0.)
+									{
+
+										vlayer[i - 1][layer][y * 2][x * 2].Bn.err = temp2.Bn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2].Bn.err = temp2.Bn.err;
+										vlayer[i - 1][layer][y * 2][x * 2 + 1].Bn.err = temp2.Bn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Bn.err = temp2.Bn.err;
+									}
+								}
+							}
+						}
+					}
+					else if ((vfunc[i] == -2) || (vfunc[i] == -3))
+					{
+						for (size_t layer = 0; layer < vlayer[i].size(); ++layer)
+						{
+							for (size_t y = 0; y < vlayer[i][layer].size(); ++y)
+							{
+								for (size_t x = 0; x < vlayer[i][layer].back().size(); ++x)
+								{
+									for (size_t ly = y * 2; ly < y * 2 + 1; ++ly)
+									{
+										for (size_t lx = x * 2; lx < x * 2 + 1; ++lx)
+										{
+											auto& tempnext = vlayer[i][layer][y][x];
+											auto& temptarg = vlayer[i - 1][layer][ly][lx];
+											if (tempnext.Rn.err != 0.)
+											{
+												if (temptarg.Rn.data == tempnext.Rn.data)	temptarg.Rn.err = tempnext.Rn.err;
+											}
+											if (tempnext.Gn.err != 0.)
+											{
+												if (temptarg.Gn.data == tempnext.Gn.data)	temptarg.Gn.err = tempnext.Gn.err;
+											}
+											if (tempnext.Bn.err != 0.)
+											{
+												if (temptarg.Bn.data == tempnext.Bn.data)	temptarg.Bn.err = tempnext.Bn.err;
+											}
+										}
+									}
 								}
 							}
 						}
 					}
 					else
 					{
-						for (size_t layer = 0; layer < vlayer[i].size(); ++layer)
-						{
-							for (size_t y = 0; y < vlayer[i][layer].size(); ++y)
-							{
-								for (size_t x = 0; x < vlayer[i][layer].back().size(); ++x)
-								{
-									if (vlayer[i][layer][y][x].Error == 0.)	continue;
-									for (size_t ly = y * 2; ly < y * 2 + 1; ++ly)
-									{
-										for (size_t lx = x * 2; lx < x * 2 + 1; ++lx)
-										{
-											auto& temp = vlayer[i - 1][layer][ly][lx];
-											auto& temp2 = vlayer[i][layer][y][x];
-											if		(temp.Rn == temp2.Rn)	temp.Error = temp2.Error;
-											else if (temp.Gn == temp2.Gn)	temp.Error = temp2.Error;
-											else if (temp.Bn == temp2.Bn)	temp.Error = temp2.Error;
-										}
-									}
-								}
-							}
-						}
+						ERROR_
+							return false;
 					}
 				}
 				else
 				{
-					auto& kern = vkernel[vfunc[i]];
-					size_t szkern = kern.size();
+					auto& kern = vkernel[vfunc[i]]; //											current stack of kernels
+					size_t szkern = kern.size(); //												it size
 					for (size_t k = 0; k < szkern; ++k)
 					{
-						auto& prevlayer = vlayer[i - 1];
-						size_t szprevlayer = prevlayer.size();
-						size_t sztemp = kern[k].size();
-						size_t szbktemp = kern[k].back().size();
+						auto& prevlayer = vlayer[i - 1]; //										-previous- layer
+						size_t szprevlayer = prevlayer.size(); //								it size
+						size_t szcurkerny = kern[k].size(); //										current kernel size y
+						size_t szcurkernx = kern[k].back().size(); //								current kernel size x
 						for (size_t prev = 0; prev < szprevlayer; ++prev)
 						{
-							auto& next = vlayer[i][szkern * prev + k];
-							size_t sznext = vlayer[i][szkern * prev + k].size();
-							size_t szbknext = vlayer[i][szkern * prev + k].back().size();
+							auto& next = vlayer[i][szkern * prev + k]; //						-current next- layer
+							size_t sznext = vlayer[i][szkern * prev + k].size(); //				it size y
+							size_t szbknext = vlayer[i][szkern * prev + k].back().size(); //	it size x
 							for (size_t y = 0; y < sznext; ++y)
 							{
 								for (size_t x = 0; x < szbknext; ++x)
 								{
-									if (next[y][x].Error == 0.) continue;
-									for (size_t ky = 0; ky < sztemp; ++ky)
+									for (size_t ky = 0; ky < szcurkerny; ++ky)
 									{
-										for (size_t kx = 0; kx < szbktemp; ++kx)
+										for (size_t kx = 0; kx < szcurkernx; ++kx)
 										{
-											prevlayer[prev][y + ky][x + kx].Error = next[y][x].Error * kern[k][ky][kx];
+											if (next[y][x].Rn.err != 0.)
+											{
+												prevlayer[prev][y + ky][x + kx].Rn.err += next[y][x].Rn.err * kern[k][ky][kx].R.wg;
+												kern[k][ky][kx].R.grad += next[y][x].Rn.err * prevlayer[prev][y + ky][x + kx].Rn.data;
+											}
+											if (next[y][x].Gn.err != 0.)
+											{
+												prevlayer[prev][y + ky][x + kx].Gn.err += next[y][x].Gn.err * kern[k][ky][kx].G.wg;
+												kern[k][ky][kx].G.grad += next[y][x].Gn.err * prevlayer[prev][y + ky][x + kx].Gn.data;
+											}
+											if (next[y][x].Bn.err != 0.)
+											{
+												prevlayer[prev][y + ky][x + kx].Bn.err += next[y][x].Bn.err * kern[k][ky][kx].B.wg;
+												kern[k][ky][kx].B.grad += next[y][x].Bn.err * prevlayer[prev][y + ky][x + kx].Bn.data;
+											}
 										}
 									}
+								}
+							}
+							size_t szcurprevy = prevlayer[prev].size(); //						size y of current previous layer
+							size_t szcurprevx = prevlayer[prev].back().size(); //				size x of current previous layer
+							for (size_t y = 0; y < szcurprevy; ++y)
+							{
+								for (size_t x = 0; x < szcurprevx; ++x)
+								{
+									prevlayer[prev][y][x].Rn.err *= nndx::cneuron::mSIGMOID_DRV(prevlayer[prev][y][x].Rn.data);
 								}
 							}
 						}
@@ -1143,27 +1195,13 @@ namespace nndx
 								}
 							}
 						}
-
-						/*for (size_t prev = 0; prev < szprevlayer; ++prev)
-						{
-							size_t szprevsizey = prevlayer[prev].size() - sztemp + 1;
-							size_t szbkprevsizex = prevlayer[prev].back().size() - szbktemp + 1;
-							for (size_t y = 0; y < szprevsizey; ++y)
-							{
-								for (size_t x = 0; x < szbkprevsizex; ++x)
-								{
-									for (size_t ky = 0; ky < sztemp; ++ky)
-									{
-										for (size_t kx = 0; kx < szbktemp; ++kx)
-										{
-											kern[k][ky][kx] += u_net * prevlayer[prev][y + ky][x + kx].Error * prevlayer[prev][y + ky][x + kx].Grayn;
-										}
-									}
-								}
-							}
-						}
 					}
 				}
+			}
+
+			if (vfunc[0] >= 0) // if first vfunc < 0, then do nothing(wWw in decrease layers don't changing)
+			{
+
 			}*/
 
 			return true;
@@ -1397,7 +1435,7 @@ namespace nndx
 			errR.emplace_back(dw());
 		}
 
-		errR.back().reserve(data.back().size());
+		//default error
 		for (size_t i = 0; i < data.back().size(); ++i)
 		{
 			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
@@ -1408,10 +1446,10 @@ namespace nndx
 		for (size_t j = 0; j < data[data.size() - 2].size(); ++j)
 		{
 			local_sum = 0.;
-			for (size_t next = 0; next < data[data.size() - 1].size(); ++next)
+			for (size_t next = 0; next < data.back().size(); ++next)
 			{
-				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data[data.size() - 1].size() * j + next].wg;
-				weight[data.size() - 2][data[data.size() - 1].size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
+				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data.back().size() * j + next].wg;
+				weight[data.size() - 2][data.back().size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
 			}
 			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}
@@ -1441,12 +1479,12 @@ namespace nndx
 				}
 			}
 		}
-		for (size_t j = 0; j < data[data.size() - 1].size(); ++j)
+		for (size_t j = 0; j < data.back().size(); ++j)
 		{
 			for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
 			{
-				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg = u * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].grad + (moment * weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg);
-				weight[data.size() - 2][prev * data[data.size() - 1].size() + j].wg += weight[data.size() - 2][prev * data[data.size() - 1].size() + j].dwg;
+				weight[data.size() - 2][prev * data.back().size() + j].dwg = u * weight[data.size() - 2][prev * data.back().size() + j].grad + (moment * weight[data.size() - 2][prev * data.back().size() + j].dwg);
+				weight[data.size() - 2][prev * data.back().size() + j].wg += weight[data.size() - 2][prev * data.back().size() + j].dwg;
 			}
 		}
 

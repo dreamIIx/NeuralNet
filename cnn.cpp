@@ -27,28 +27,33 @@ int main()
 
 	res = test.initDir("images", "output", "data");
 
-	res = test.initKrnl(0, 0, 3, 3, []()->double { return (nndx::randT(hProv) % 10 - 5.) / 10.; });
-	res = test.initKrnl(0, 1, 3, 3, []()->double { return (nndx::randT(hProv) % 10 - 5.) / 10.; });
-	res = test.initKrnl(1, 0, 3, 3, []()->double { return (nndx::randT(hProv) % 10 - 5.) / 10.; });
-	res = test.initKrnl(1, 1, 3, 3, []()->double { return (nndx::randT(hProv) % 10 - 5.) / 10.; });
+	/*res = test.initKrnl(0, 0, 3, 3, []()->double { return (nndx::randT(hProv) % 10) / 100.; });
+	res = test.initKrnl(1, 0, 3, 3, []()->double { return (nndx::randT(hProv) % 10) / 100.; });
+	res = test.initKrnl(2, 0, 3, 3, []()->double { return (nndx::randT(hProv) % 10) / 100.; });
+	res = test.initKrnl(3, 0, 3, 3, []()->double { return (nndx::randT(hProv) % 10) / 100.; });*/
+
+	res = test.initKrnlFromFile(0, 0);
+	res = test.initKrnlFromFile(1, 0);
 	res = test.initKrnlFromFile(2, 0);
+	res = test.initKrnlFromFile(3, 0);
+	res = test.initKrnlFromFile(4, 0);
 
 	cv::Mat img;
 	img = cv::imread("images/test0.jpg");
 	res = test.init_image(img);
 
-	res = test.initFuncEx([]()->double { return (nndx::randT(hProv) % 10) / 10.; }, 8, //num
+	res = test.initFuncEx([]()->double { return 0.; }, 8, //num
+		1,
+		-4,
 		0,
-		-2,
-		1,
-		-2,
-		1,
-		-2,
+		-4,
 		2,
-		-2);
+		-4,
+		4,
+		-4);
 
-	res = test.init_neuronet(::std::vector<int>{50, 25, 1}, []()->double { return static_cast<double>(((nndx::randB(hProv) % 10) - 5.) / 10.); },
-		nndx::neuron::_func::_fnSIGMOID, 0.3, 0.5, 0.4);
+	res = test.init_neuronet(::std::vector<int>{10, 1}, []()->double { return static_cast<double>(((nndx::randB(hProv) % 10) - 5.) / 10.); },
+		nndx::neuron::_func::_fnSIGMOID, 0.1, 0.2, 0.1, 0.02);
 
 	::std::vector<::std::vector<double>> resNet;
 	resNet.reserve(10);
@@ -75,7 +80,7 @@ int main()
 	resNet.emplace_back(::std::vector<double>{0.9});*/
 
 	//resNet, 5000, [](int& x)->int { return x % 20; }, "test", ".jpg"
-	res = test.fullNet_mA(resNet, 10000, [](int& x)->int { return x % 10; }, "test", ".jpg");
+	res = test.fullNet_mA(resNet, 40000, [](int& x)->int { return x % 10; }, "test", ".jpg", 10);
 
 	system("pause");
 	return 0;

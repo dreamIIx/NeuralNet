@@ -14,14 +14,14 @@
 #include <string>
 #include <vector>
 
-#define def_XTT_S(x)		#x
-#define def_XTT_S_(x)		def_XTT_S(x)
-#define def_XTT_S__LINE__	def_XTT_S_(__LINE__)
-/*#define def__FILELINE		(__FILE__  " line " def_XTT_S__LINE__)
-#define ERROR_				::std::cout << "Error - " << def__FILELINE << ::std::endl; \
+#define defDX_S(x)		#x
+#define defDX_S_(x)		defDX_S(x)
+#define defDX_S__LINE__	defDX_S_(__LINE__)
+/*#define defDX__FILELINE		(__FILE__  " line " defDX_S__LINE__)
+#define ERROR_				::std::cout << "Error - " << defDX__FILELINE << ::std::endl; \
 							system("pause");*/
 
-#define ERROR_				throw ::std::exception((const char*)def_XTT_S_(__LINE__));
+#define ERROR_				throw ::std::exception((const char*)defDX_S_(__LINE__));
 
 // main flag
 #define _NNDX_NEURONET_DEF

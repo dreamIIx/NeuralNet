@@ -18,6 +18,7 @@
 
 constexpr unsigned char _clr_ = static_cast<unsigned char>(0b1111'1111);
 constexpr const char* _filend = "endOFfile";
+constexpr double STOPVALUE_DEFAULT = 0.6;
 
 namespace nndx
 {
@@ -91,22 +92,24 @@ namespace nndx
 			this->mBIAS = x.mBIAS;
 			this->err = x.err;
 			return *this;
-		}*/
+		}
 
 		cneuron& operator=(double x)
 		{
 			data = x;
 			return *this;
-		}
+		}*/
 
-		static double mSIGMOID(double value)
+		static double mSIGMOID(double value, double x)
 		{
-			return 1. / (1. + exp(-value));
+			//return 1. / (1. + exp(-value));
+			return value / x;
 		}
 
 		static double mSIGMOID_DRV(double value)
 		{
-			return value * (1. - value);
+			//return value * (1. - value);
+			return 1;
 		}
 
 		~cneuron() {}
@@ -125,18 +128,18 @@ namespace nndx
 
 		explicit rgb_T(const cv::Vec3b& v)
 		{
-			Bn = v[0] / _clr_;
-			Gn = v[1] / _clr_;
-			Rn = v[2] / _clr_;
+			Bn.data = v[0] / _clr_;
+			Gn.data = v[1] / _clr_;
+			Rn.data = v[2] / _clr_;
 		}
 
 		void init(double r, double g, double b)
 		{
-			Rn = r;
+			Rn.data = r;
 			Rn.err = 0.;
-			Gn = g;
+			Gn.data = g;
 			Gn.err = 0.;
-			Bn = b;
+			Bn.data = b;
 			Bn.err = 0.;
 		}
 
@@ -168,6 +171,8 @@ namespace nndx
 	private:
 		bool isReady;
 		double u_net;
+		double moment_net;
+		mutable double STOPVALUE;
 
 		::std::string inputF;
 		::std::string outputF;
@@ -180,26 +185,23 @@ namespace nndx
 		nndx::neuronet net;								// main forward neural network
 
 	public:
-		explicit CNN() : isReady(false), u_net(0.) {}
+		unsigned int FLAGS; // activate some functions of network
 
-		CNN(CNN&& data)
+		enum class CNN_PARAMS : unsigned int
 		{
-			this->isReady	=		::std::forward<decltype(data.isReady)>(data.isReady);
-			this->u_net		=		::std::forward<decltype(data.u_net)>(data.u_net);
-			this->vinLayer	=		::std::forward<decltype(data.vinLayer)>(data.vinLayer);
-			this->vkernel	=		::std::forward<decltype(data.vkernel)>(data.vkernel);
-			this->vfunc		=		::std::forward<decltype(data.vfunc)>(data.vfunc);
-			this->vlayer	=		::std::forward<decltype(data.vlayer)>(data.vlayer);
-			this->inputF	=		::std::forward<decltype(data.inputF)>(data.inputF);
-			this->outputF	=		::std::forward<decltype(data.outputF)>(data.outputF);
-			this->dataF		=		::std::forward<decltype(data.dataF)>(data.dataF);
-			this->net		=		::std::forward<decltype(data.net)>(data.net);
-#ifdef _mainDEBUG
-			::std::cout << "[CNN] call &&constructor!" << ::std::endl;
-#endif
-		}
+			IF_ALL_CLOSE		=	0,					// STOPVALUE_DEFAULT
+			IF_ONE_CLOSE		=	1,					// STOPVALUE_DEFAULT
+			SAVE_RDB			=	1 << 4,
+			SAVE_BW				=	1 << 5,
+			SAVE_NNET			=	1 << 8,
+			SAVE_CNNET			=	1 << 9,
+			SAVE_KRNLS			=	1 << 10,
+			SAVE_LOG			=	1 << 11
+		};
 
-		CNN(const cv::Mat& img) : isReady(false), u_net(0.)
+		explicit CNN(double stop_rate = STOPVALUE_DEFAULT) : isReady(false), u_net(0.), moment_net(0.), STOPVALUE(stop_rate) {}
+
+		explicit CNN(const cv::Mat& img, double stop_rate = STOPVALUE_DEFAULT) : isReady(false), u_net(0.), moment_net(0.), STOPVALUE(stop_rate)
 		{
 			if ((img.rows < 2) || (img.cols < 2))
 			{
@@ -220,6 +222,25 @@ namespace nndx
 			}
 		}
 
+		CNN(CNN&& data)
+		{
+			this->isReady			=		::std::forward<decltype(data.isReady)>(data.isReady);
+			this->u_net				=		::std::forward<decltype(data.u_net)>(data.u_net);
+			this->moment_net		=		::std::forward<decltype(data.moment_net)>(data.moment_net);
+			this->STOPVALUE			=		::std::forward<decltype(data.STOPVALUE)>(data.STOPVALUE);
+			this->vinLayer			=		::std::forward<decltype(data.vinLayer)>(data.vinLayer);
+			this->vkernel			=		::std::forward<decltype(data.vkernel)>(data.vkernel);
+			this->vfunc				=		::std::forward<decltype(data.vfunc)>(data.vfunc);
+			this->vlayer			=		::std::forward<decltype(data.vlayer)>(data.vlayer);
+			this->inputF			=		::std::forward<decltype(data.inputF)>(data.inputF);
+			this->outputF			=		::std::forward<decltype(data.outputF)>(data.outputF);
+			this->dataF				=		::std::forward<decltype(data.dataF)>(data.dataF);
+			this->net				=		::std::forward<decltype(data.net)>(data.net);
+#ifdef _mainDEBUG
+			::std::cout << "[CNN] call &&constructor!" << ::std::endl;
+#endif
+		}
+		
 		bool initDir(const ::std::string& in, const ::std::string& out, const ::std::string& data)
 		{
 			if (in.empty() || out.empty() || data.empty())
@@ -390,6 +411,11 @@ namespace nndx
 			return true;
 		}
 
+		bool change_STOPVALUE(const double& x)
+		{
+			STOPVALUE = x;
+		}
+
 		//files must be with .krnl extension
 		bool initKrnlFromFile(size_t idx_, size_t idxKernel)
 		{
@@ -435,9 +461,9 @@ namespace nndx
 			}
 
 			size_t sizey, sizex;
-			double kernelTemp1 = 0.;
-			double kernelTemp2 = 0.;
-			double kernelTemp3 = 0.;
+			double kernelTempR = 0.;
+			double kernelTempG = 0.;
+			double kernelTempB = 0.;
 			read >> sizex;
 			read >> sizey;
 
@@ -448,10 +474,13 @@ namespace nndx
 				vkernel[idx_][idxKernel].back().reserve(sizex);
 				for (size_t j = 0; j < sizex; ++j)
 				{
-					read >> kernelTemp1;
-					read >> kernelTemp2;
-					read >> kernelTemp3;
-					vkernel[idx_][idxKernel].back().emplace_back(kernelTemp1, kernelTemp2, kernelTemp3);
+					kernelTempR = 0.;
+					kernelTempG = 0.;
+					kernelTempB = 0.;
+					read >> kernelTempR;
+					read >> kernelTempG;
+					read >> kernelTempB;
+					vkernel[idx_][idxKernel].back().emplace_back(kernelTempR * 0.1, kernelTempG * 0.1, kernelTempB * 0.1);
 				}
 			}
 			read >> sfile;
@@ -472,7 +501,7 @@ namespace nndx
 		// -4 - decreaseX2_RGB(mid)
 		// !!! Init			all need kernels		before !!!
 		// !!! Init			input image				before !!!
-		bool initFuncEx(double randF(), size_t size, ...)
+		bool initFuncEx(double randForBias(), size_t size, ...)
 		{
 			isReady = false;
 			if (vinLayer.empty())
@@ -521,7 +550,7 @@ namespace nndx
 					}
 
 					vlayer.emplace_back(::std::vector<image>());
-					auto temp_ = vkernel[functemp_].size();
+					size_t temp_ = vkernel[functemp_].size();
 					vlayer.back().reserve(temp_);
 					for (size_t n = 0; n < temp_; n++)
 					{
@@ -537,7 +566,7 @@ namespace nndx
 					if (functemp_ < 0)
 					{
 						vlayer.emplace_back(::std::vector<image>());
-						auto temp_ = vlayer[i - 1].size();
+						size_t temp_ = vlayer[i - 1].size();
 						vlayer.back().reserve(temp_);
 						for (size_t n = 0; n < temp_; n++)
 						{
@@ -554,7 +583,7 @@ namespace nndx
 						}
 
 						vlayer.emplace_back(::std::vector<image>());
-						auto temp_ = vkernel[functemp_].size() * vlayer[i - 1].size();
+						size_t temp_ = vkernel[functemp_].size() * vlayer[i - 1].size();
 						vlayer.back().reserve(temp_);
 						for (size_t n = 0; n < temp_; n++)
 						{
@@ -587,13 +616,13 @@ namespace nndx
 						vlayer[0].back().back().reserve(cols);
 						for (size_t x = 0; x < cols; ++x)
 						{
-							vlayer[0].back().back().emplace_back(rgb_T(randF));
+							vlayer[0].back().back().emplace_back(rgb_T(randForBias));
 						}
 					}
 				}
 				else
 				{
-					auto szKrnl = vkernel[vfunc[0]].size();
+					size_t szKrnl = vkernel[vfunc[0]].size();
 #ifdef _DEBUG
 					if (vlayer[0].size() != szKrnl)
 					{
@@ -619,7 +648,7 @@ namespace nndx
 							vlayer[0][i].back().reserve(localx);
 							for (size_t x = 0; x < localx; ++x)
 							{
-								vlayer[0][i].back().emplace_back(rgb_T(randF));
+								vlayer[0][i].back().emplace_back(rgb_T(randForBias));
 							}
 						}
 					}
@@ -656,14 +685,14 @@ namespace nndx
 								vlayer[i][prev].back().reserve(cols);
 								for (size_t x = 0; x < cols; ++x)
 								{
-									vlayer[i][prev].back().emplace_back(rgb_T(randF));
+									vlayer[i][prev].back().emplace_back(rgb_T(randForBias));
 								}
 							}
 						}
 					}
 					else
 					{
-						auto szKrnl = vkernel[vfunc[i]].size();
+						size_t szKrnl = vkernel[vfunc[i]].size();
 #ifdef _DEBUG
 						if (vlayer[i].size() != szKrnl * vlayer[i - 1].size())
 						{
@@ -691,7 +720,7 @@ namespace nndx
 									vlayer[i][szKrnl * prev + k].back().reserve(localx);
 									for (size_t x = 0; x < localx; ++x)
 									{
-										vlayer[i][szKrnl * prev + k].back().emplace_back(rgb_T(randF));
+										vlayer[i][szKrnl * prev + k].back().emplace_back(rgb_T(randForBias));
 									}
 								}
 							}
@@ -711,7 +740,7 @@ namespace nndx
 
 		//initFuncEx must be called earlier
 		//mA() must be called earlier
-		bool init_neuronet(::std::vector<int>&& tplNet, double funcWeights(), nndx::neuron::_func funcNet, double moment, double u, double mainu)
+		bool init_neuronet(::std::vector<int>&& tplNet, double funcWeights(), nndx::neuron::_func funcNet, double moment, double u, double mainmoment, double mainu)
 		{
 			if (!isReady)
 			{
@@ -742,19 +771,21 @@ namespace nndx
 			res = net.init(tplNet, funcNet);
 			res = net.setParams(moment, u);
 			u_net = mainu;
+			moment_net = mainmoment;
 
 			return net.getState();
 		}
 
-		bool init_neuronet(nndx::neuronet&& x, double mainu)
+		bool init_neuronet(nndx::neuronet&& x, double mainmoment, double mainu)
 		{
 			net = ::std::forward<decltype(x)>(x);
 			u_net = mainu;
+			moment_net = mainmoment;
 
 			return net.getState();
 		}
 
-		bool init_neuronet(::std::string file, nndx::neuron::_func funcNet, double moment, double u, double mainu)
+		bool init_neuronet(::std::string file, nndx::neuron::_func funcNet, double moment, double u, double mainmoment, double mainu)
 		{
 			if (!isReady)
 			{
@@ -777,18 +808,19 @@ namespace nndx
 			res = net.setFunc(funcNet);
 			res = net.setParams(moment, u);
 			u_net = mainu;
+			moment_net = mainmoment;
 
 			return net.getState();
 		}
 
-		bool fullNet_mA(const ::std::vector<::std::vector<double>>& results, const int& ittr, int func(int&), ::std::string subS, ::std::string extImg)
+		bool fullNet_mA(const ::std::vector<::std::vector<double>>& results, const int& ittr, int func(int&), ::std::string subS, ::std::string extImg, int stopnum)
 		{
 			if (!net.getState())
 			{
 				ERROR_
 					return false;
 			}
-			if (u_net == 0.)
+			if ((u_net == 0.) || (moment_net == 0.))
 			{
 				ERROR_
 					return false;
@@ -801,8 +833,11 @@ namespace nndx
 
 			::std::string sfile = inputF + subS;
 			__bool resT;
+			int stopRate = 0;
 
-			for (int i = 0; i < ittr; ++i)
+			//for (int i = 0; i < ittr; ++i)
+			int i = 0;
+			while(true)
 			{
 				resT = init_image(cv::imread(sfile + nndx::nts(func(i)) + extImg));
 
@@ -830,11 +865,19 @@ namespace nndx
 				::std::cout << " func(i) - " << func(i) << "\n";
 				for (auto& x : net.getResults())
 				{
+					if (abs(static_cast<double>(func(i)) - x) <= STOPVALUE)	++stopRate;
+					else	stopRate = 0;
 					::std::cout << x << "\n";
 				}
 				::std::cout << "\n";
 
 				resT = ConvBackProp(results[func(i)]);
+				if (stopRate >= stopnum)
+				{
+					::std::cout << "Learned!" << ::std::endl;
+					break;
+				}
+				++i;
 			}
 			::std::cout << ::std::endl;
 			resT = net.saveF(outputF + "net.txt");
@@ -919,7 +962,7 @@ namespace nndx
 					res = convFunc_RGB(current, x);
 				}
 				++current;
-				//res = saveIm_RGB(static_cast<size_t>(current));
+				res = saveIm_RGB(static_cast<size_t>(current));
 				res = saveIm_Gray(static_cast<size_t>(current));
 			}
 			return true;
@@ -963,7 +1006,7 @@ namespace nndx
 		//convolution func
 		bool convFunc_RGB(ptrdiff_t idxSource, size_t idxKernel)
 		{
-			auto szKrnl = vkernel[idxKernel].size();
+			size_t szKrnl = vkernel[idxKernel].size();
 			if (idxSource == -1)
 			{
 				for (size_t i = 0; i < szKrnl; ++i)
@@ -975,16 +1018,22 @@ namespace nndx
 							double sumR = vlayer[0][i][y][x].Rn.mBIAS;
 							double sumG = vlayer[0][i][y][x].Gn.mBIAS;
 							double sumB = vlayer[0][i][y][x].Bn.mBIAS;
+							double sumKernelR = 0.;
+							double sumKernelG = 0.;
+							double sumKernelB = 0.;
 							for (size_t ky = 0; ky < vkernel[idxKernel][i].size(); ++ky)
 							{
 								for (size_t kx = 0; kx < vkernel[idxKernel][i].back().size(); ++kx)
 								{
 									sumR += vkernel[idxKernel][i][ky][kx].R.wg * vinLayer[y + ky][x + kx].Rn.data;
+									sumKernelR += vkernel[idxKernel][i][ky][kx].R.wg;
 									sumG += vkernel[idxKernel][i][ky][kx].G.wg * vinLayer[y + ky][x + kx].Gn.data;
+									sumKernelG += vkernel[idxKernel][i][ky][kx].G.wg;
 									sumB += vkernel[idxKernel][i][ky][kx].B.wg * vinLayer[y + ky][x + kx].Bn.data;
+									sumKernelB += vkernel[idxKernel][i][ky][kx].B.wg;
 								}
 							}
-							vlayer[0][i][y][x].init(nndx::cneuron::mSIGMOID(sumR), nndx::cneuron::mSIGMOID(sumG), nndx::cneuron::mSIGMOID(sumB));
+							vlayer[0][i][y][x].init(nndx::cneuron::mSIGMOID(sumR, sumKernelR), nndx::cneuron::mSIGMOID(sumG, sumKernelG), nndx::cneuron::mSIGMOID(sumB, sumKernelB));
 						}
 					}
 				}
@@ -1002,16 +1051,22 @@ namespace nndx
 								double sumR = vlayer[idxSource + 1][szKrnl * j + k][y][x].Rn.mBIAS;
 								double sumG = vlayer[idxSource + 1][szKrnl * j + k][y][x].Gn.mBIAS;
 								double sumB = vlayer[idxSource + 1][szKrnl * j + k][y][x].Bn.mBIAS;
+								double sumKernelR = 0.;
+								double sumKernelG = 0.;
+								double sumKernelB = 0.;
 								for (size_t ky = 0; ky < vkernel[idxKernel][k].size(); ++ky)
 								{
 									for (size_t kx = 0; kx < vkernel[idxKernel][k].back().size(); ++kx)
 									{
 										sumR += vkernel[idxKernel][k][ky][kx].R.wg * vlayer[idxSource][j][y + ky][x + kx].Rn.data;
+										sumKernelR += vkernel[idxKernel][k][ky][kx].R.wg;
 										sumG += vkernel[idxKernel][k][ky][kx].G.wg * vlayer[idxSource][j][y + ky][x + kx].Gn.data;
+										sumKernelG += vkernel[idxKernel][k][ky][kx].G.wg;
 										sumB += vkernel[idxKernel][k][ky][kx].B.wg * vlayer[idxSource][j][y + ky][x + kx].Bn.data;
+										sumKernelB += vkernel[idxKernel][k][ky][kx].B.wg;
 									}
 								}
-								vlayer[idxSource + 1][szKrnl * j + k][y][x].init(nndx::cneuron::mSIGMOID(sumR), nndx::cneuron::mSIGMOID(sumG), nndx::cneuron::mSIGMOID(sumB));
+								vlayer[idxSource + 1][szKrnl * j + k][y][x].init(nndx::cneuron::mSIGMOID(sumR, sumKernelR), nndx::cneuron::mSIGMOID(sumG, sumKernelG), nndx::cneuron::mSIGMOID(sumB, sumKernelB));
 							}
 						}
 					}
@@ -1022,7 +1077,7 @@ namespace nndx
 
 		bool ConvBackProp(const ::std::vector<double>& res)
 		{
-			//receive errors
+			//receive Error
 			::std::vector<double> vErr;
 			net.callBackProp(res, vErr);
 
@@ -1034,12 +1089,12 @@ namespace nndx
 				{
 					for (size_t j = 0; j < vlayer.back()[s].back().size(); ++j)
 					{
-						vlayer.back()[s][i][j].Rn.err = vErr[temp_++];
+						//vlayer.back()[s][i][j].Rn.err = vErr[temp_] * 0.299; // before [temp_++] 3 times
+						//vlayer.back()[s][i][j].Gn.err = vErr[temp_] * 0.587;
+						//vlayer.back()[s][i][j].Bn.err = vErr[temp_] * 0.114;
+						vlayer.back()[s][i][j].Rn.err = vErr[temp_++]; // before [temp_++] 3 times
 						vlayer.back()[s][i][j].Gn.err = vErr[temp_++];
 						vlayer.back()[s][i][j].Bn.err = vErr[temp_++];
-						::std::cout << vlayer.back()[s][i][j].Rn.err << ::std::endl;
-						::std::cout << vlayer.back()[s][i][j].Gn.err << ::std::endl;
-						::std::cout << vlayer.back()[s][i][j].Bn.err << ::std::endl;
 					}
 				}
 			}
@@ -1125,18 +1180,20 @@ namespace nndx
 				else
 				{
 					auto& kern = vkernel[vfunc[i]]; //											current stack of kernels
-					size_t szkern = kern.size(); //												it size
+					size_t szkern = kern.size(); //												kern size
 					for (size_t k = 0; k < szkern; ++k)
 					{
 						auto& prevlayer = vlayer[i - 1]; //										-previous- layer
-						size_t szprevlayer = prevlayer.size(); //								it size
-						size_t szcurkerny = kern[k].size(); //										current kernel size y
-						size_t szcurkernx = kern[k].back().size(); //								current kernel size x
+						auto& curkern__ = kern[k]; //											current kernel
+						size_t szprevlayer = prevlayer.size(); //								prevlayer size
+						size_t szcurkerny = curkern__.size(); //								current kernel size y
+						size_t szcurkernx = curkern__.back().size(); //							current kernel size x
 						for (size_t prev = 0; prev < szprevlayer; ++prev)
 						{
 							auto& next = vlayer[i][szkern * prev + k]; //						-current next- layer
-							size_t sznext = vlayer[i][szkern * prev + k].size(); //				it size y
-							size_t szbknext = vlayer[i][szkern * prev + k].back().size(); //	it size x
+							auto& curprevlayer__ = prevlayer[prev]; //							current previous layer
+							size_t sznext = next.size(); //										next size y
+							size_t szbknext = next.back().size(); //							next size x
 							for (size_t y = 0; y < sznext; ++y)
 							{
 								for (size_t x = 0; x < szbknext; ++x)
@@ -1145,54 +1202,54 @@ namespace nndx
 									{
 										for (size_t kx = 0; kx < szcurkernx; ++kx)
 										{
-											if (next[y][x].Rn.err != 0.)
+											auto& curprevlayer_ = curprevlayer__[y + ky][x + kx];
+											auto& curnextpoint_ = next[y][x];
+											auto& curkernpoint_ = curkern__[ky][kx];
+											if (curnextpoint_.Rn.err != 0.)
 											{
-												prevlayer[prev][y + ky][x + kx].Rn.err += next[y][x].Rn.err * kern[k][ky][kx].R.wg;
-												kern[k][ky][kx].R.grad += next[y][x].Rn.err * prevlayer[prev][y + ky][x + kx].Rn.data;
+												curprevlayer_.Rn.err += curnextpoint_.Rn.err * curkernpoint_.R.wg;
+												curkernpoint_.R.grad += curnextpoint_.Rn.err * curprevlayer_.Rn.data;
 											}
-											if (next[y][x].Gn.err != 0.)
+											if (curnextpoint_.Gn.err != 0.)
 											{
-												prevlayer[prev][y + ky][x + kx].Gn.err += next[y][x].Gn.err * kern[k][ky][kx].G.wg;
-												kern[k][ky][kx].G.grad += next[y][x].Gn.err * prevlayer[prev][y + ky][x + kx].Gn.data;
+												curprevlayer_.Gn.err += curnextpoint_.Gn.err * curkernpoint_.G.wg;
+												curkernpoint_.G.grad += curnextpoint_.Gn.err * curprevlayer_.Gn.data;
 											}
-											if (next[y][x].Bn.err != 0.)
+											if (curnextpoint_.Bn.err != 0.)
 											{
-												prevlayer[prev][y + ky][x + kx].Bn.err += next[y][x].Bn.err * kern[k][ky][kx].B.wg;
-												kern[k][ky][kx].B.grad += next[y][x].Bn.err * prevlayer[prev][y + ky][x + kx].Bn.data;
+												curprevlayer_.Bn.err += curnextpoint_.Bn.err * curkernpoint_.B.wg;
+												curkernpoint_.B.grad += curnextpoint_.Bn.err * curprevlayer_.Bn.data;
 											}
 										}
 									}
 								}
 							}
-							size_t szcurprevy = prevlayer[prev].size(); //						size y of current previous layer
-							size_t szcurprevx = prevlayer[prev].back().size(); //				size x of current previous layer
+							size_t szcurprevy = curprevlayer__.size(); //						size y of current previous layer
+							size_t szcurprevx = curprevlayer__.back().size(); //				size x of current previous layer
 							for (size_t y = 0; y < szcurprevy; ++y)
 							{
 								for (size_t x = 0; x < szcurprevx; ++x)
 								{
-									prevlayer[prev][y][x].Rn.err *= nndx::cneuron::mSIGMOID_DRV(prevlayer[prev][y][x].Rn.data);
+									auto& curpoint_ = curprevlayer__[y][x];
+									curpoint_.Rn.err *= nndx::cneuron::mSIGMOID_DRV(curpoint_.Rn.data);
+									curpoint_.Gn.err *= nndx::cneuron::mSIGMOID_DRV(curpoint_.Gn.data);
+									curpoint_.Bn.err *= nndx::cneuron::mSIGMOID_DRV(curpoint_.Bn.data);
 								}
 							}
 						}
 
-						for (size_t prev = 0; prev < szprevlayer; ++prev)
+						for (size_t ky = 0; ky < szcurkerny; ++ky)
 						{
-							auto& next = vlayer[i][szkern * prev + k];
-							size_t sznext = vlayer[i][szkern * prev + k].size();
-							size_t szbknext = vlayer[i][szkern * prev + k].back().size();
-							for (size_t ky = 0; ky < sztemp; ++ky)
+							for (size_t kx = 0; kx < szcurkernx; ++kx)
 							{
-								for (size_t kx = 0; kx < szbktemp; ++kx)
-								{
-									for (size_t y = 0; y < (sznext - sztemp + 1); ++y)
-									{
-										for (size_t x = 0; x < (szbknext - szbktemp + 1); ++x)
-										{
-											if (next[y][x].Error == 0.) continue;
-											kern[k][ky][kx] += u_net * next[y][x].Error * prevlayer[prev][y + ky][x + kx].Grayn;
-										}
-									}
-								}
+								auto& curkernpoint__ = curkern__[ky][kx];
+								curkernpoint__.R.dwg = u_net * curkernpoint__.R.grad + moment_net * curkernpoint__.R.dwg;
+								curkernpoint__.G.dwg = u_net * curkernpoint__.G.grad + moment_net * curkernpoint__.G.dwg;
+								curkernpoint__.B.dwg = u_net * curkernpoint__.B.grad + moment_net * curkernpoint__.B.dwg;
+
+								curkernpoint__.R.wg += curkernpoint__.R.dwg;
+								curkernpoint__.G.wg += curkernpoint__.G.dwg;
+								curkernpoint__.B.wg += curkernpoint__.B.dwg;
 							}
 						}
 					}
@@ -1201,7 +1258,59 @@ namespace nndx
 
 			if (vfunc[0] >= 0) // if first vfunc < 0, then do nothing(wWw in decrease layers don't changing)
 			{
+				auto& kern = vkernel[vfunc[0]]; //											current stack of kernels
+				size_t szkern = kern.size(); //												kern size
+				for (size_t k = 0; k < szkern; ++k)
+				{
+					auto& curkern__ = kern[k]; //											current kernel
+					size_t szcurkerny = curkern__.size(); //								current kernel size y
+					size_t szcurkernx = curkern__.back().size(); //							current kernel size x
+					auto& next = vlayer[0][k]; //											-current next- layer
+					size_t sznext = next.size(); //											next size y
+					size_t szbknext = next.back().size(); //								next size x
+					for (size_t y = 0; y < sznext; ++y)
+					{
+						for (size_t x = 0; x < szbknext; ++x)
+						{
+							for (size_t ky = 0; ky < szcurkerny; ++ky)
+							{
+								for (size_t kx = 0; kx < szcurkernx; ++kx)
+								{
+									auto& curprevlayer_ = vinLayer[y + ky][x + kx];
+									auto& curnextpoint_ = next[y][x];
+									auto& curkernpoint_ = curkern__[ky][kx];
+									if (curnextpoint_.Rn.err != 0.)
+									{
+										curkernpoint_.R.grad += curnextpoint_.Rn.err * curprevlayer_.Rn.data;
+									}
+									if (curnextpoint_.Gn.err != 0.)
+									{
+										curkernpoint_.G.grad += curnextpoint_.Gn.err * curprevlayer_.Gn.data;
+									}
+									if (curnextpoint_.Bn.err != 0.)
+									{
+										curkernpoint_.B.grad += curnextpoint_.Bn.err * curprevlayer_.Bn.data;
+									}
+								}
+							}
+						}
+					}
 
+					for (size_t ky = 0; ky < szcurkerny; ++ky)
+					{
+						for (size_t kx = 0; kx < szcurkernx; ++kx)
+						{
+							auto& curkernpoint__ = curkern__[ky][kx];
+							curkernpoint__.R.dwg = u_net * curkernpoint__.R.grad + moment_net * curkernpoint__.R.dwg;
+							curkernpoint__.G.dwg = u_net * curkernpoint__.G.grad + moment_net * curkernpoint__.G.dwg;
+							curkernpoint__.B.dwg = u_net * curkernpoint__.B.grad + moment_net * curkernpoint__.B.dwg;
+
+							curkernpoint__.R.wg += curkernpoint__.R.dwg;
+							curkernpoint__.G.wg += curkernpoint__.G.dwg;
+							curkernpoint__.B.wg += curkernpoint__.B.dwg;
+						}
+					}
+				}
 			}*/
 
 			return true;
@@ -1384,7 +1493,7 @@ namespace nndx
 	{
 		if (x > 1.)
 		{
-			ERROR_
+			//ERROR_
 				x = 1.;
 		}
 		return (x > 0) ? x : 0;

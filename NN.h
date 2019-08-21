@@ -20,8 +20,17 @@
 /*#define defDX__FILELINE		(__FILE__  " line " defDX_S__LINE__)
 #define ERROR_				::std::cout << "Error - " << defDX__FILELINE << ::std::endl; \
 							system("pause");*/
-
+#ifndef ERROR_
 #define ERROR_				throw ::std::exception((const char*)defDX_S_(__LINE__));
+#endif
+#ifndef ER_IF
+#define ER_IF(x) if ( (x) ) { ERROR_ }
+#define ER_IF(x, y) if ( (x) ) { ERROR_ y; }
+#endif
+#ifndef ER_IFN
+#define ER_IFN(x) if ( !(x) ) { ERROR_ }
+#define ER_IFN(x, y) if ( !(x) ) { ERROR_ y; }
+#endif
 
 // main flag
 #define _NNDX_NEURONET_DEF
@@ -68,7 +77,7 @@ namespace nndx
 //#define _fnSDEFAULTFUNC _m_fnTANH
 
 	public:
-		enum class _func : _dTYPEFUNC
+		static enum _func : _dTYPEFUNC
 		{
 			_fnSIGMOID		=	0b0000,
 			_fnTANH			=	0b0001,

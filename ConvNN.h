@@ -18,6 +18,11 @@
 
 constexpr unsigned char _clr_ = static_cast<unsigned char>(0b1111'1111);
 constexpr const char* _filend = "endOFfile";
+constexpr double FLAGS_DEFAULT =  (	nndx::CNN::CNN_PARAMS::IF_ALL_CLOSE |
+									nndx::CNN::CNN_PARAMS::SAVE_CNNET	|
+									nndx::CNN::CNN_PARAMS::SAVE_NNET	|
+									nndx::CNN::CNN_PARAMS::SAVE_LOG		|
+									nndx::CNN::CNN_PARAMS::SAVE_KRNLS   );
 constexpr double STOPVALUE_DEFAULT = 0.6;
 
 namespace nndx
@@ -172,6 +177,7 @@ namespace nndx
 		bool isReady;
 		double u_net;
 		double moment_net;
+		unsigned int FLAGS;								// activate some functions of network
 		mutable double STOPVALUE;
 
 		::std::string inputF;
@@ -185,9 +191,7 @@ namespace nndx
 		nndx::neuronet net;								// main forward neural network
 
 	public:
-		unsigned int FLAGS; // activate some functions of network
-
-		enum class CNN_PARAMS : unsigned int
+		static enum CNN_PARAMS : unsigned int
 		{
 			IF_ALL_CLOSE		=	0,					// STOPVALUE_DEFAULT
 			IF_ONE_CLOSE		=	1,					// STOPVALUE_DEFAULT
@@ -199,9 +203,10 @@ namespace nndx
 			SAVE_LOG			=	1 << 11
 		};
 
-		explicit CNN(double stop_rate = STOPVALUE_DEFAULT) : isReady(false), u_net(0.), moment_net(0.), STOPVALUE(stop_rate) {}
+		explicit CNN(double set_perams = FLAGS_DEFAULT, double stop_rate = STOPVALUE_DEFAULT)
+			: isReady(false), u_net(0.), moment_net(0.), FLAGS(set_perams), STOPVALUE(stop_rate) {}
 
-		explicit CNN(const cv::Mat& img, double stop_rate = STOPVALUE_DEFAULT) : isReady(false), u_net(0.), moment_net(0.), STOPVALUE(stop_rate)
+		explicit CNN(const cv::Mat& img) : isReady(false), u_net(0.), moment_net(0.), FLAGS(FLAGS_DEFAULT), STOPVALUE(STOPVALUE_DEFAULT)
 		{
 			if ((img.rows < 2) || (img.cols < 2))
 			{
@@ -227,6 +232,7 @@ namespace nndx
 			this->isReady			=		::std::forward<decltype(data.isReady)>(data.isReady);
 			this->u_net				=		::std::forward<decltype(data.u_net)>(data.u_net);
 			this->moment_net		=		::std::forward<decltype(data.moment_net)>(data.moment_net);
+			this->FLAGS				=		::std::forward<decltype(data.FLAGS)>(data.FLAGS);
 			this->STOPVALUE			=		::std::forward<decltype(data.STOPVALUE)>(data.STOPVALUE);
 			this->vinLayer			=		::std::forward<decltype(data.vinLayer)>(data.vinLayer);
 			this->vkernel			=		::std::forward<decltype(data.vkernel)>(data.vkernel);
@@ -370,7 +376,7 @@ namespace nndx
 			return true;
 		}
 
-		bool initKrnl(size_t idx_, size_t idxKernel, size_t sizex, size_t sizey, double func(void))
+		bool initKrnl(size_t idx_, size_t idxKernel, size_t sizex, size_t sizey, double rand_func(void))
 		{
 			if (idx_ > vkernel.size())
 			{
@@ -404,16 +410,27 @@ namespace nndx
 				vkernel[idx_][idxKernel].back().reserve(sizex);
 				for (size_t j = 0; j < sizex; ++j)
 				{
-					vkernel[idx_][idxKernel].back().emplace_back(cnnKernel_c3(func(), func(), func()));
+					vkernel[idx_][idxKernel].back().emplace_back(cnnKernel_c3(rand_func(), rand_func(), rand_func()));
 				}
 			}
 
 			return true;
 		}
 
-		bool change_STOPVALUE(const double& x)
+		void setParams(double x)
 		{
+			FLAGS = x;
+		}
+
+		bool change_STOPVALUE(double x)
+		{
+			if (x == 0.)
+			{
+				ERROR_
+					return false;
+			}
 			STOPVALUE = x;
+			return true;
 		}
 
 		//files must be with .krnl extension
@@ -813,8 +830,13 @@ namespace nndx
 			return net.getState();
 		}
 
-		bool fullNet_mA(const ::std::vector<::std::vector<double>>& results, const int& ittr, int func(int&), ::std::string subS, ::std::string extImg, int stopnum)
+		bool fullNet_mA(const ::std::vector<::std::vector<double>>& results, int func(int&), ::std::string subS, ::std::string extImg)
 		{
+			if (&results == nullptr)
+			{
+				ERROR_
+					return false;
+			}
 			if (!net.getState())
 			{
 				ERROR_
@@ -872,7 +894,7 @@ namespace nndx
 				::std::cout << "\n";
 
 				resT = ConvBackProp(results[func(i)]);
-				if (stopRate >= stopnum)
+				if (stopRate >= STOPVALUE)
 				{
 					::std::cout << "Learned!" << ::std::endl;
 					break;

@@ -189,20 +189,14 @@ namespace nndx
 		}
 		catch (int x)
 		{
-			if (x == 12)
-			{
-				ERROR_
-			}
+			ER_IF(x == 12)
 		}
 	}
 
 	neuronet::neuronet(const dy_tpl& temp, double func(void), neuron::_func fnIns) : funcInstance(fnIns)
 	{
 		this->GenWeight = func;
-		if (this->GenWeight == nullptr)
-		{
-			ERROR_
-		}
+		ER_IF(this->GenWeight == nullptr)
 		this->isReady = false;
 
 		switch (fnIns)
@@ -225,7 +219,8 @@ namespace nndx
 		for (int i = 0; i < temp.size(); i++)
 		{
 			int a = *pos++;
-			if (a > 0)
+			ER_IFN(a > 0)
+			else
 			{
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
@@ -238,18 +233,9 @@ namespace nndx
 				topology_save.reserve(topology_save.capacity() + 1);
 				topology_save.emplace_back(a);
 			}
-			else
-			{
-				ERROR_
-					system("pause");
-			}
 		}
 
-		if (data.empty())
-		{
-			ERROR_
-				system("pause");
-		}
+		ER_IF(data.empty)
 
 		for (size_t i = 0; i < data.size() - 1; i++)
 		{
@@ -321,10 +307,7 @@ namespace nndx
 		}
 		catch (int x)
 		{
-			if (x == 12)
-			{
-				ERROR_
-			}
+			ER_IF(x == 12)
 		}
 
 		return *this;
@@ -364,10 +347,7 @@ namespace nndx
 		}
 		catch (int x)
 		{
-			if (x == 12)
-			{
-				ERROR_
-			}
+			ER_IF(x == 12)
 		}
 
 		return *this;
@@ -375,11 +355,7 @@ namespace nndx
 
 	bool neuronet::init(const dy_tpl& temp, neuron::_func fnIns)
 	{
-		if (this->GenWeight == nullptr)
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(this->GenWeight == nullptr, return false)
 
 		funcInstance = fnIns;
 		switch (funcInstance)
@@ -410,7 +386,8 @@ namespace nndx
 		for (int i = 0; i < temp.size(); ++i)
 		{
 			int a = *pos++;
-			if (a > 0)
+			ER_IFN(a > 0, return false)
+			else
 			{
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
@@ -423,18 +400,9 @@ namespace nndx
 				topology_save.reserve(topology_save.capacity() + 1);
 				topology_save.emplace_back(a);
 			}
-			else
-			{
-				ERROR_
-				return false;
-			}
 		}
 
-		if (data.empty())
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(data.empty(), return false)
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
 		{
@@ -467,11 +435,7 @@ namespace nndx
 	
 	bool neuronet::init(const dy_tpl& temp)
 	{
-		if (this->GenWeight == nullptr)
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(this->GenWeight == nullptr, return false)
 		if (this->isReady)
 		{
 			data.clear();
@@ -484,7 +448,8 @@ namespace nndx
 		for (int i = 0; i < temp.size(); ++i)
 		{
 			int a = *pos++;
-			if (a > 0)
+			ER_IFN(a > 0, return false)
+			else
 			{
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
@@ -497,18 +462,9 @@ namespace nndx
 				topology_save.reserve(topology_save.capacity() + 1);
 				topology_save.emplace_back(a);
 			}
-			else
-			{
-				ERROR_
-					return false;
-			}
 		}
 
-		if (data.empty())
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(data.empty(), return false)
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
 		{

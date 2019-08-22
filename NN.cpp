@@ -497,16 +497,8 @@ namespace nndx
 
 	bool neuronet::init(const ::std::vector<int>& temp, neuron::_func fnIns)
 	{
-		if (temp.empty())
-		{
-			ERROR_
-				return false;
-		}
-		if (this->GenWeight == nullptr)
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(temp.empty(), return false)
+		ER_IF(this->GenWeight == nullptr, return false)
 
 		funcInstance = fnIns;
 		switch (funcInstance)
@@ -537,7 +529,8 @@ namespace nndx
 		for (int i = 0; i < temp.size(); ++i)
 		{
 			int a = *pos++;
-			if (a > 0)
+			ER_IFN(a > 0, return false)
+			else
 			{
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
@@ -550,18 +543,9 @@ namespace nndx
 				topology_save.reserve(topology_save.capacity() + 1);
 				topology_save.emplace_back(a);
 			}
-			else
-			{
-				ERROR_
-					return false;
-			}
 		}
 
-		if (data.empty())
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(data.empty(), return false)
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
 		{
@@ -594,16 +578,8 @@ namespace nndx
 
 	bool neuronet::init(const ::std::vector<int>& temp)
 	{
-		if (temp.empty())
-		{
-			ERROR_
-				return false;
-		}
-		if (this->GenWeight == nullptr)
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(temp.empty(), return false)
+		ER_IF(this->GenWeight == nullptr, return false)
 
 		if (this->isReady)
 		{
@@ -617,7 +593,8 @@ namespace nndx
 		for (int i = 0; i < temp.size(); ++i)
 		{
 			int a = *pos++;
-			if (a > 0)
+			ER_IFN(a > 0, return false)
+			else
 			{
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
@@ -630,18 +607,9 @@ namespace nndx
 				topology_save.reserve(topology_save.capacity() + 1);
 				topology_save.emplace_back(a);
 			}
-			else
-			{
-				ERROR_
-					return false;
-			}
 		}
 
-		if (data.empty())
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(data.empty(), return false)
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
 		{
@@ -674,11 +642,7 @@ namespace nndx
 
 	bool neuronet::initFromKeyboard()
 	{
-		if (this->GenWeight == nullptr)
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(this->GenWeight == nullptr, return false)
 		if (this->isReady)
 		{
 			data.clear();
@@ -693,7 +657,8 @@ namespace nndx
 		{
 			::std::cin >> a;
 			if (a == 0) continue;
-			if (a > 0)
+			ER_IFN(a > 0, return false)
+			else
 			{
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
@@ -706,18 +671,9 @@ namespace nndx
 				topology_save.reserve(topology_save.capacity() + 1);
 				topology_save.emplace_back(a);
 			}
-			else
-			{
-				ERROR_
-				return false;
-			}
 		} while (a);
 
-		if (data.empty())
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(data.empty(), return false)
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
 		{
@@ -759,12 +715,7 @@ namespace nndx
 			this->isReady = false;
 		}
 		::std::ifstream read(nDataNet);
-		if (!read.is_open())
-		{
-			read.close();
-			ERROR_
-				return false;
-		}
+		ER_IF(!read.is_open(), read.close(); return false)
 
 		auto a = 0;
 		do
@@ -785,11 +736,7 @@ namespace nndx
 			}
 		} while (a);
 
-		if (data.empty())
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(data.empty(), return false)
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
 		{
@@ -816,12 +763,7 @@ namespace nndx
 
 			::std::string check;
 			read >> check;
-			if (check != "-----")
-			{
-				read.close();
-				ERROR_
-					return false;
-			}
+			ER_IF(check != "-----", read.close(); return false)
 		}
 
 		weight.reserve(weight.capacity() + 1);
@@ -839,12 +781,7 @@ namespace nndx
 
 		::std::string check;
 		read >> check;
-		if (check != "-----")
-		{
-			read.close();
-			ERROR_
-				return false;
-		}
+		ER_IF(check != "-----", read.close(); return false)
 
 		read >> nTrainNote;
 		read.close();
@@ -881,11 +818,7 @@ namespace nndx
 
 	bool neuronet::setParams(double amoment, double au)
 	{
-		if ((amoment == 0) || (au == 0))
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF((amoment == 0) || (au == 0), return false)
 		this->moment = amoment;
 		this->u = au;
 		return true;
@@ -893,40 +826,20 @@ namespace nndx
 
 	bool neuronet::RunTraining(bool acomments)
 	{
-		if (!this->isReady)
-		{
-			ERROR_
-				return false;
-		}
-		if ((this->moment == 0) || (this->u == 0))
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(!this->isReady, return false)
+		ER_IF((this->moment == 0) || (this->u == 0), return false)
+
 		::std::ifstream read(nTrainNote);
-		if (!read.is_open())
-		{
-			read.close();
-			ERROR_
-				return false;
-		}
+		ER_IF(!read.is_open(), read.close(), return false)
 
 		int numT = 0;
 		int nums = 0;
 		read >> nums;
 
 		read >> numT;
-		if (numT != data[0].size() - 1)
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(numT != data[0].size() - 1, return false)
 		read >> numT;
-		if (numT != data.back().size())
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(numT != data.back().size(), return false)
 
 		numT = 0;
 		while (numT < nums)
@@ -959,76 +872,47 @@ namespace nndx
 
 	bool neuronet::SPECmA(const ::std::vector<double>& dataT)
 	{
-		if (!this->isReady)
-		{
-			ERROR_
-				return false;
-		}
-		if (dataT.size() == data[0].size() - 1)
+		ER_IF(!this->isReady, return false)
+		ER_IFN(dataT.size() == data[0].size() - 1, return false)
+		else
 		{
 			for (size_t i = 0; i < data[0].size() - 1; ++i)
 			{
 				data[0][i].data = dataT[i];
-				if (!data[0][i].isBias())
-				{
-					RunDRVFunc_T(data[0][i]);
-				}
+				ER_IF(data[0][i].isBias(), return false)
 				else
 				{
-					ERROR_
-						return false;
+					RunDRVFunc_T(data[0][i]);
 				}
 			}
 			activationF();
 			return true;
 		}
-		else
-		{
-			ERROR_
-				return false;
-		}
 	}
 
 	bool neuronet::fillInput(const ::std::vector<double>& dataT)
 	{
-		if (dataT.size() == data[0].size() - 1)
+		ER_IFN(dataT.size() == data[0].size() - 1, return false)
+		else
 		{
 			for (size_t i = 0; i < data[0].size() - 1; ++i)
 			{
 				data[0][i].data = dataT[i];
-				if (!data[0][i].isBias())
+				ER_IF(data[0][i].isBias(), return false)
+				else
 				{
 					RunDRVFunc_T(data[0][i]);
 				}
-				else
-				{
-					ERROR_
-						return false;
-				}
 			}
 			return true;
-		}
-		else
-		{
-			ERROR_
-				return false;
 		}
 	}
 
 	bool neuronet::saveF(const ::std::string& s)
 	{
-		if (!this->isReady)
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(!this->isReady, return false)
 		::std::ofstream f(s);
-		if (!f.is_open())
-		{
-			f.close();
-			ERROR_
-				return false;
-		}
+		ER_IF(!f.is_open(), f.close(); return false)
 
 		for (size_t i = 0; i < topology_save.size(); ++i)
 		{
@@ -1053,48 +937,24 @@ namespace nndx
 
 	bool neuronet::callActivationF()
 	{
-		if (!this->isReady)
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(!this->isReady, return false)
 		activationF();
 		return true;
 	}
 
 	bool neuronet::callBackProp(const ::std::vector<double>& d)
 	{
-		if (!this->isReady)
-		{
-			ERROR_
-				return false;
-		}
-		if ((this->moment == 0) || (this->u == 0))
-		{
-			ERROR_
-				return false;
-		}
-		if (d.size() != data.back().size())
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(!this->isReady, return false)
+		ER_IF((this->moment == 0) || (this->u == 0), return false)
+		ER_IF(d.size() != data.back().size(), return false)
 		backProp(d);
 		return true;
 	}
 
 	bool neuronet::callFuncHebb()
 	{
-		if (!this->isReady)
-		{
-			ERROR_
-				return false;
-		}
-		if (this->u == 0)
-		{
-			ERROR_
-				return false;
-		}
+		ER_IF(!this->isReady, return false)
+		ER_IF(this->u == 0, return false)
 		funcHebb();
 		return true;
 	}
@@ -1239,11 +1099,7 @@ namespace nndx
 
 	::std::vector<double> neuronet::getResults() const
 	{
-		if (!this->isReady)
-		{
-			ERROR_
-				return {};
-		}
+		ER_IF(!this->isReady, return {})
 		::std::vector<double> temp;
 		temp.reserve(data.back().size());
 		for (size_t i = 0; i < data.back().size(); ++i)

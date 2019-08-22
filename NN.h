@@ -24,12 +24,12 @@
 #define ERROR_				throw ::std::exception((const char*)defDX_S_(__LINE__));
 #endif
 #ifndef ER_IF
-#define ER_IF(x) if ( (x) ) { ERROR_ }
-#define ER_IF(x, y) if ( (x) ) { ERROR_ y; }
+//#define ER_IF(x) if ( (x) ) { ERROR_ }
+#define ER_IF(x, y) if ( (x) ) { ERROR_ y }
 #endif
 #ifndef ER_IFN
-#define ER_IFN(x) if ( !(x) ) { ERROR_ }
-#define ER_IFN(x, y) if ( !(x) ) { ERROR_ y; }
+//#define ER_IFN(x) if ( !(x) ) { ERROR_ }
+#define ER_IFN(x, y) if ( !(x) ) { ERROR_ y }
 #endif
 
 // main flag

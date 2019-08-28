@@ -77,7 +77,7 @@ namespace nndx
 //#define _fnSDEFAULTFUNC _m_fnTANH
 
 	public:
-		static enum _func : _dTYPEFUNC
+		enum _func : _dTYPEFUNC
 		{
 			_fnSIGMOID		=	0b0000,
 			_fnTANH			=	0b0001,

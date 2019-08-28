@@ -189,14 +189,14 @@ namespace nndx
 		}
 		catch (int x)
 		{
-			ER_IF(x == 12)
+			ER_IF(x == 12, )
 		}
 	}
 
 	neuronet::neuronet(const dy_tpl& temp, double func(void), neuron::_func fnIns) : funcInstance(fnIns)
 	{
 		this->GenWeight = func;
-		ER_IF(this->GenWeight == nullptr)
+		ER_IF(this->GenWeight == nullptr, )
 		this->isReady = false;
 
 		switch (fnIns)
@@ -219,7 +219,7 @@ namespace nndx
 		for (int i = 0; i < temp.size(); i++)
 		{
 			int a = *pos++;
-			ER_IFN(a > 0)
+			ER_IFN(a > 0, )
 			else
 			{
 				data.reserve(data.capacity() + 1);
@@ -235,7 +235,7 @@ namespace nndx
 			}
 		}
 
-		ER_IF(data.empty)
+		ER_IF(data.empty(), )
 
 		for (size_t i = 0; i < data.size() - 1; i++)
 		{
@@ -307,7 +307,7 @@ namespace nndx
 		}
 		catch (int x)
 		{
-			ER_IF(x == 12)
+			ER_IF(x == 12, )
 		}
 
 		return *this;
@@ -347,7 +347,7 @@ namespace nndx
 		}
 		catch (int x)
 		{
-			ER_IF(x == 12)
+			ER_IF(x == 12, )
 		}
 
 		return *this;
@@ -448,7 +448,7 @@ namespace nndx
 		for (int i = 0; i < temp.size(); ++i)
 		{
 			int a = *pos++;
-			ER_IFN(a > 0, return false)
+			ER_IFN(a > 0, return false; )
 			else
 			{
 				data.reserve(data.capacity() + 1);
@@ -464,7 +464,7 @@ namespace nndx
 			}
 		}
 
-		ER_IF(data.empty(), return false)
+		ER_IF(data.empty(), return false; )
 
 		for (size_t i = 0; i < data.size() - 1; ++i)
 		{

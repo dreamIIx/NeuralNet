@@ -39,8 +39,8 @@ typedef unsigned short int _dTYPEFUNC;
 
 namespace nndx
 {
-	int randT(HCRYPTPROV);
-	int randB(HCRYPTPROV);
+	unsigned int randT(HCRYPTPROV);
+	unsigned int randB(HCRYPTPROV);
 
 	struct dy_tpl
 	{

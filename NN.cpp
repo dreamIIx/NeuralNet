@@ -2,16 +2,16 @@
 
 namespace nndx
 {
-	int randT(HCRYPTPROV hProv)
+	unsigned int randT(HCRYPTPROV hProv)
 	{
 		BYTE Buf1 = 0b0;
 
 		if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 		{
-			int i = static_cast<int>(Buf1);
+			unsigned int i = static_cast<unsigned int>(Buf1);
 			if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 			{
-				i += static_cast<int>(Buf1);
+				i += static_cast<unsigned int>(Buf1);
 				return i;
 			}
 			else
@@ -25,28 +25,28 @@ namespace nndx
 		}
 	}
 
-	int randB(HCRYPTPROV hProv)
+	unsigned int randB(HCRYPTPROV hProv)
 	{
 		BYTE Buf1 = 0b0;
 
 		if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 		{
-			int i = static_cast<int>(Buf1);
+			unsigned int i = static_cast<unsigned int>(Buf1);
 			i <<= 0b1000;
 
 			if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 			{
-				i += static_cast<int>(Buf1);
+				i += static_cast<unsigned int>(Buf1);
 				i <<= 0b1000;
 
 				if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 				{
-					i += static_cast<int>(Buf1);
+					i += static_cast<unsigned int>(Buf1);
 					i <<= 0b1000; 
 
 					if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 					{
-						i += static_cast<int>(Buf1);
+						i += static_cast<unsigned int>(Buf1);
 						return i;
 					}
 					else

@@ -14,18 +14,30 @@
 
 #include "NN.h"
 
-//#define _mainDEBUG
 #define _CNN_COMMENTS
-
-constexpr unsigned char _clr_ = static_cast<unsigned char>(0b1111'1111);
-constexpr const char* _filend = "endOFfile";
 
 namespace nndx
 {
-	double max_4(double, double, double, double);
-	double min_4(double, double, double, double);
-	double mid_4(double, double, double, double);
-	double ReLU(double);
+	constexpr unsigned char _clr_ = static_cast<unsigned char>(0b1111'1111);
+	constexpr int parall_flag = 0b1111'1111;
+	constexpr const char* _filend = "endOFfile";
+
+	ptrdiff_t operator "" _prll(unsigned long long x)
+	{
+		ER_IF((x - parall_flag) < 0, )
+		return x - parall_flag;
+	}
+
+	ptrdiff_t operator "" _sprll(unsigned long long x)
+	{
+		return x + parall_flag;
+	}
+
+	inline double max_4(double, double, double, double);
+	inline double min_4(double, double, double, double);
+	inline double mid_4(double, double, double, double);
+	inline double ReLU(double);
+	inline double dxReLU(double);
 	template<typename _T>
 	::std::string nts(const _T&);
 
@@ -55,12 +67,12 @@ namespace nndx
 	{
 	public:
 		double data;
-		double mBIAS;
-		double err;
+		//double mBIAS;
+		//double err;
 
-		explicit cneuron() : data(0.), mBIAS(0.), err(0.) {}
+		explicit cneuron() : data(0.)/*, mBIAS(0.), err(0.)*/ {}
 
-		cneuron(double x, double bias) : data(x), mBIAS(bias), err(0.) {}
+		cneuron(double x/*, double bias*/) : data(x)/*, mBIAS(bias), err(0.)*/ {}
 
 		bool operator==(cneuron& x)
 		{
@@ -105,16 +117,16 @@ namespace nndx
 			return *this;
 		}*/
 
-		static double mSIGMOID(double value, double x)
+		static double mSIGMOID(double value)
 		{
 			//return 1. / (1. + exp(-value));
-			return value / x;
+			return value / 1000.;
 		}
 
 		static double mSIGMOID_DRV(double value)
 		{
-			//return value * (1. - value);
-			return 1.;
+			return value * (1. - value);
+			//return 1.;
 		}
 
 		~cneuron() {}
@@ -127,11 +139,11 @@ namespace nndx
 		cneuron Gn;
 		cneuron Bn;
 
-		explicit rgb_T(double func(void)) : Rn(0., func()), Gn(0., func()), Bn(0., func()) {}
+		//explicit rgb_T(double func(void)) : Rn(0./*, func()*/), Gn(0./*, func()*/), Bn(0./*, func()*/) {}
 
-		rgb_T(double r, double g, double b) : Rn(r, 0.), Gn(g, 0.), Bn(b, 0.) {}
+		rgb_T(double r, double g, double b) : Rn(r/*, 0.*/), Gn(g/*, 0.*/), Bn(b/*, 0.*/) {}
 
-		rgb_T(double rbias, double gbias, double bbias, double initx) : Rn(initx, rbias), Gn(initx, gbias), Bn(initx, bbias) {}
+		explicit rgb_T(/*double rbias, double gbias, double bbias, */double initx) : Rn(initx/*, rbias*/), Gn(initx/*, gbias*/), Bn(initx/*, bbias*/) {}
 
 		explicit rgb_T(const cv::Vec3b& v)
 		{
@@ -143,25 +155,34 @@ namespace nndx
 		void init(double r, double g, double b)
 		{
 			Rn.data = r;
-			Rn.err = 0.;
+			//Rn.err = 0.;
 			Gn.data = g;
-			Gn.err = 0.;
+			//Gn.err = 0.;
 			Bn.data = b;
-			Bn.err = 0.;
+			//Bn.err = 0.;
 		}
 
 		double Grayn() noexcept
 		{
 			return 0.299 * Rn.data + 0.587 * Gn.data + 0.114 * Bn.data;
 		}
+
+		~rgb_T() {}
+	};
+
+	struct tempwWw
+	{
+		double wg;
+
+		tempwWw(double num) noexcept : wg(num) {}
 	};
 
 	class cnnKernel_c3
 	{
 	public:
-		wWw R;
-		wWw G;
-		wWw B;
+		tempwWw R;
+		tempwWw G;
+		tempwWw B;
 
 		explicit cnnKernel_c3() : R(0.), G(0.), B(0.) {}
 
@@ -177,8 +198,8 @@ namespace nndx
 	{
 	private:
 		bool isReady;
-		double u_net;
-		double moment_net;
+		//double u_net;
+		//double moment_net;
 
 		::std::string inputF;
 		::std::string outputF;
@@ -187,14 +208,14 @@ namespace nndx
 		image vinLayer;									// input image
 		::std::vector<::std::vector<image>> vlayer;		// vector of layer's data
 		::std::vector<::std::vector<mapge>> vkernel;	// vector of kernel's data
-		::std::vector<int> vfunc;						// vector of functions(conv, decr)
+		::std::vector<ptrdiff_t> vfunc;		// vector of functions(conv, decr)
 		nndx::neuronet net;								// main forward neural network
-		nndx::neuronet Inet;							// neuronet between CNN and NN neurons (3n -> 1n)
+		//nndx::neuronet Inet;							// neuronet between CNN and NN neurons (3n -> 1n)
 
 	public:
-		explicit CNN() : isReady(false), u_net(0.), moment_net(0.) {}
+		explicit CNN() : isReady(false)/*, u_net(0.), moment_net(0.)*/ {}
 		
-		explicit CNN(const cv::Mat& img) : isReady(false), u_net(0.), moment_net(0.)
+		explicit CNN(const cv::Mat& img) : isReady(false)/*, u_net(0.), moment_net(0.)*/
 		{
 			ER_IF((img.rows < 2) || (img.cols < 2), )
 			else
@@ -212,13 +233,14 @@ namespace nndx
 			}
 		}
 
-		CNN(const char* filename, double rand_func(void)) : isReady(false), u_net(0.), moment_net(0.)
+		CNN(const char* filename, double rand_func(void)) : isReady(false)/*, u_net(0.), moment_net(0.)*/
 		{
 			::std::ifstream read(filename);
 			ER_IF(!read.is_open(), )
 			else
 			{
 				::std::string s1;
+				::std::string s2;
 				int temp1, temp2;
 				__bool res;
 
@@ -227,7 +249,7 @@ namespace nndx
 				read >> temp2;
 				res = init_image(temp1, temp2, 0., 0., 0.);
 				read >> s1;
-				::std::vector<int> vfuncIn;
+				::std::vector<ptrdiff_t> vfuncIn;
 				read >> temp1;
 				vfuncIn.reserve(temp1);
 				for (int i = 0; i < temp1; ++i)
@@ -259,8 +281,8 @@ namespace nndx
 						else if (s1 == "save")
 						{
 							res = initKrnlFromFile(i, j);
-							ER_IF(vkernel[i][j].size() != check1, )
-							ER_IF(vkernel[i][j].back().size() != check2, )
+							ER_IF(vkernel[i][j].size() != check2, )
+							ER_IF(vkernel[i][j].back().size() != check1, )
 						}
 						else
 						{
@@ -269,41 +291,18 @@ namespace nndx
 					}
 				}
 				read >> s1;
-				read >> u_net;
-				read >> s1;
-				read >> moment_net;
-				read >> s1;
-				if (s1 == "BIASES")
+				double d1;
+				double d2;
+				if (s1 == "netF2")
 				{
-					double d1 = 0.;
-					::std::vector<double> vd;
+					read >> s1;
+					read >> s2;
 					read >> temp1;
-					for (size_t idx = 0; idx < temp1; ++idx)
-					{
-						read >> temp2;
-						for (size_t k = 0; k < temp2; ++k)
-						{
-							size_t ytemp;
-							read >> ytemp;
-							for (size_t y = 0; y < ytemp; ++y)
-							{
-								size_t xtemp;
-								read >> xtemp;
-								for (size_t x = 0; x < xtemp; ++x)
-								{
-									read >> d1;
-									vd.reserve(vd.capacity() + 1);
-									vd.emplace_back(d1);
-								}
-							}
-						}
-					}
-					res = initFuncEx(vd, vfuncIn);
+					read >> d1;
+					read >> d2;
 				}
-				else
-				{
-					res = initFuncEx([]()->double { return 0.; }, vfuncIn);
-				}
+				res = initFuncEx(vfuncIn);
+				res = init_neuronet(s1, static_cast<nndx::neuron::_func>(temp1), d1, d2);
 				
 				read.close();
 			}
@@ -312,8 +311,8 @@ namespace nndx
 		CNN(CNN&& data)
 		{
 			this->isReady			=		::std::forward<decltype(data.isReady)>(data.isReady);
-			this->u_net				=		::std::forward<decltype(data.u_net)>(data.u_net);
-			this->moment_net		=		::std::forward<decltype(data.moment_net)>(data.moment_net);
+			/*this->u_net				=		::std::forward<decltype(data.u_net)>(data.u_net);
+			this->moment_net		=		::std::forward<decltype(data.moment_net)>(data.moment_net);*/
 			this->vinLayer			=		::std::forward<decltype(data.vinLayer)>(data.vinLayer);
 			this->vkernel			=		::std::forward<decltype(data.vkernel)>(data.vkernel);
 			this->vfunc				=		::std::forward<decltype(data.vfunc)>(data.vfunc);
@@ -322,15 +321,7 @@ namespace nndx
 			this->outputF			=		::std::forward<decltype(data.outputF)>(data.outputF);
 			this->dataF				=		::std::forward<decltype(data.dataF)>(data.dataF);
 			this->net				=		::std::forward<decltype(data.net)>(data.net);
-#ifdef _mainDEBUG
-			::std::cout << "[CNN] call &&constructor!" << ::std::endl;
-#endif
-		}
-
-		~CNN()
-		{
-			__bool res;
-			res = FullSave();
+			/*this->Inet				=		::std::forward<decltype(data.Inet)>(data.Inet);*/
 		}
 		
 		bool initDir(const ::std::string& in, const ::std::string& out, const ::std::string& data)
@@ -379,7 +370,7 @@ namespace nndx
 			return true;
 		}
 
-		//for filled images (R, G, B: 0 - 1)
+		//for filled images (R, G, B: [0.0 - 1.0])
 		bool init_image(size_t X, size_t Y, double R, double G, double B)
 		{
 			ER_IF((X < 2) || (Y < 2), return false; )
@@ -527,7 +518,7 @@ namespace nndx
 					read >> kernelTempR;
 					read >> kernelTempG;
 					read >> kernelTempB;
-					vkernel[idx_][idxKernel].back().emplace_back(kernelTempR * 0.1, kernelTempG * 0.1, kernelTempB * 0.1);
+					vkernel[idx_][idxKernel].back().emplace_back(kernelTempR, kernelTempG, kernelTempB);
 				}
 			}
 			read >> sfile;
@@ -545,7 +536,7 @@ namespace nndx
 		// -4 - decreaseX2_RGB(mid)
 		// !!! Init			all need kernels		before !!!
 		// !!! Init			input image				before !!!
-		bool initFuncEx(const ::std::vector<double>& biases, const ::std::vector<int>& args)
+		bool initFuncEx(/*double rand(void), */const ::std::vector<ptrdiff_t>& args)
 		{
 			ER_IF(vinLayer.empty(), return false; )
 			ER_IF(vkernel.empty(), return false; )
@@ -565,8 +556,8 @@ namespace nndx
 			{
 				vlayer.reserve(args.size());
 				vfunc.reserve(args.size());
-				
-				int functemp_ = args[0];
+
+				ptrdiff_t functemp_ = args[0];
 
 				// decl image()
 				// for layer forward inputLayer
@@ -577,87 +568,17 @@ namespace nndx
 					vlayer.back().emplace_back(image());
 					vfunc.emplace_back(functemp_);
 				}
-				else
+				else if (functemp_ >= parall_flag) // for parallel
 				{
-					ER_IF(functemp_ >= vkernel.size(), return false; )
+					ER_IF(operator ""_prll(functemp_) >= vkernel.size(), return false; )
 
 					vlayer.emplace_back(::std::vector<image>());
-					size_t temp_ = vkernel[functemp_].size();
+					size_t temp_ = vkernel[operator ""_prll(functemp_)].size();
 					vlayer.back().reserve(temp_);
 					for (size_t n = 0; n < temp_; n++)
 					{
 						vlayer.back().emplace_back(image());
 					}
-					vfunc.emplace_back(functemp_);
-				}
-
-				// for other layers // WHAT IS I AND IDARGS???
-				for (size_t i = 1; i < args.size(); ++i)
-				{
-					functemp_ = args[i];
-					if (functemp_ < 0)
-					{
-						vlayer.emplace_back(::std::vector<image>());
-						size_t temp_ = vlayer[i - 1].size();
-						vlayer.back().reserve(temp_);
-						for (size_t n = 0; n < temp_; n++)
-						{
-							vlayer.back().emplace_back(image());
-						}
-						vfunc.emplace_back(functemp_);
-					}
-					else
-					{
-						ER_IF(functemp_ >= vkernel.size(), return false; )
-
-						vlayer.emplace_back(::std::vector<image>());
-						size_t temp_ = vkernel[functemp_].size() * vlayer[i - 1].size();
-						vlayer.back().reserve(temp_);
-						for (size_t n = 0; n < temp_; n++)
-						{
-							vlayer.back().emplace_back(image());
-						}
-						vfunc.emplace_back(functemp_);
-					}
-				}
-
-				ER_IFN(specInit(biases), return false; )
-			}
-
-			isReady = true;
-			return isReady;
-		}
-
-		bool initFuncEx(double rand(), ::std::vector<int> args)
-		{
-			ER_IF(vinLayer.empty(), return false; )
-			ER_IF(vkernel.empty(), return false; )
-
-			isReady = false;
-			if (!vlayer.empty())
-			{
-				vlayer.clear();
-			}
-			if (!vfunc.empty())
-			{
-				vfunc.clear();
-			}
-
-			ER_IFN(args.size(), return false; )
-			else
-			{
-				vlayer.reserve(args.size());
-				vfunc.reserve(args.size());
-
-				int functemp_ = args[0];
-
-				// decl image()
-				// for layer forward inputLayer
-				if (functemp_ < 0)
-				{
-					vlayer.emplace_back(::std::vector<image>());
-					vlayer.back().reserve(1);
-					vlayer.back().emplace_back(image());
 					vfunc.emplace_back(functemp_);
 				}
 				else
@@ -689,6 +610,20 @@ namespace nndx
 						}
 						vfunc.emplace_back(functemp_);
 					}
+					else if (functemp_ >= parall_flag) // for parallel
+					{
+						ER_IF(operator ""_prll(functemp_) >= vkernel.size(), return false; )
+						ER_IF(vlayer[i - 1].size() != vkernel[operator ""_prll(functemp_)].size(), return false; )
+
+						vlayer.emplace_back(::std::vector<image>());
+						size_t temp_ = vlayer[i - 1].size();
+						vlayer.back().reserve(temp_);
+						for (size_t n = 0; n < temp_; n++)
+						{
+							vlayer.back().emplace_back(image());
+						}
+						vfunc.emplace_back(functemp_);
+					}
 					else
 					{
 						ER_IF(functemp_ >= vkernel.size(), return false; )
@@ -704,18 +639,18 @@ namespace nndx
 					}
 				}
 
-				ER_IFN(specInit(rand), return false; )
+				ER_IFN(specInit(/*rand*/), return false; )
 			}
 
 			isReady = true;
 			return isReady;
 		}
 
-		void setParams(double moment, double u)
+		/*void setParams(double moment, double u)
 		{
 			moment_net = moment;
 			u_net = u;
-		}
+		}*/
 
 		//initFuncEx must be called earlier
 		//mA() must be called earlier
@@ -742,31 +677,31 @@ namespace nndx
 			res = net.init(::std::forward<::std::vector<int>>(tplNet), funcNet);
 			res = net.setParams(moment, u);
 
-			// Inet init
-			if (Inet.getState())
-			{
-				Inet.~neuronet();
-				ER_IF(Inet.getState(), return false; )
-			}
-			else
-			{
-				res = Inet.setGenWeightsFunc(funcWeights);
-				res = Inet.init(::std::vector<int>{3, 2, 1}, funcNet);
-				res = Inet.setParams(moment, u);
-			}
+			//// Inet init
+			//if (Inet.getState())
+			//{
+			//	Inet.~neuronet();
+			//	ER_IF(Inet.getState(), return false; )
+			//}
+			//else
+			//{
+			//	res = Inet.setGenWeightsFunc(funcWeights);
+			//	res = Inet.init(::std::vector<int>{3, 2, 1}, funcNet);
+			//	res = Inet.setParams(moment, u);
+			//}
 
-			return (net.getState() && Inet.getState());
+			return net.getState()/* && Inet.getState())*/;
 		}
 
-		bool init_neuronet(nndx::neuronet&& x, nndx::neuronet&& Ix)
+		bool init_neuronet(nndx::neuronet&& x/*, nndx::neuronet&& Ix*/)
 		{
 			net = ::std::forward<decltype(x)>(x);
-			Inet = ::std::forward<decltype(Ix)>(Ix);
+			//Inet = ::std::forward<decltype(Ix)>(Ix);
 
-			return (net.getState() && Inet.getState());
+			return net.getState()/* && Inet.getState())*/;
 		}
 
-		bool init_neuronet(::std::string file, ::std::string Ifile, nndx::neuron::_func funcNet, double moment, double u)
+		bool init_neuronet(::std::string file,/* ::std::string Ifile,*/ nndx::neuron::_func funcNet, double moment, double u)
 		{
 			ER_IF(!isReady, return false; )
 			if (net.getState())
@@ -781,21 +716,21 @@ namespace nndx
 			res = net.setFunc(funcNet);
 			res = net.setParams(moment, u);
 
-			// Inet init
-			if (Inet.getState())
-			{
-				Inet.~neuronet();
-				ER_IF(Inet.getState(), return false; )
-			}
-			else
-			{
-				Inet.nDataNet = Ifile;
-				res = Inet.initFromFile();
-				res = Inet.setFunc(funcNet);
-				res = Inet.setParams(moment, u);
-			}
+			//// Inet init
+			//if (Inet.getState())
+			//{
+			//	Inet.~neuronet();
+			//	ER_IF(Inet.getState(), return false; )
+			//}
+			//else
+			//{
+			//	Inet.nDataNet = Ifile;
+			//	res = Inet.initFromFile();
+			//	res = Inet.setFunc(funcNet);
+			//	res = Inet.setParams(moment, u);
+			//}
 
-			return (net.getState() && Inet.getState());
+			return net.getState()/* && Inet.getState())*/;
 		}
 
 		bool SaveCNN()
@@ -822,11 +757,11 @@ namespace nndx
 				write << "	" << vkernel[id].size() << ::std::endl;
 				for (size_t j = 0; j < vkernel[id].size(); ++j)
 				{
-					write << "save " << vkernel[id][j].size() << " " << vkernel[id][j].back().size() << ::std::endl;
+					write << "save " << vkernel[id][j].back().size() << " " << vkernel[id][j].size() << ::std::endl;
 				}
 			}
 			write << ::std::endl;
-			write << "un " << u_net << ::std::endl;
+			/*write << "un " << u_net << ::std::endl;
 			write << "mn " << moment_net << ::std::endl;
 			write << "BIASES" << ::std::endl;
 			write << vlayer.size() << ::std::endl;
@@ -846,7 +781,7 @@ namespace nndx
 						write << ::std::endl;
 					}
 				}
-			}
+			}*/
 
 			write.close();
 			return true;
@@ -867,7 +802,7 @@ namespace nndx
 					::std::ofstream write(outputF + sstemp);
 					ER_IF(!write.is_open(), write.close(); return false; )
 
-					write << vkernel[id][j].size() << " " << vkernel[id][j].back().size() << ::std::endl;
+					write << vkernel[id][j].back().size() << " " << vkernel[id][j].size() << ::std::endl;
 					for (size_t y = 0; y < vkernel[id][j].size(); ++y)
 					{
 						for (size_t x = 0; x < vkernel[id][j].back().size(); ++x)
@@ -884,11 +819,11 @@ namespace nndx
 			return true;
 		}
 
-		inline bool FullSave()
+		__forceinline bool FullSave()
 		{
 			__bool temp;
 			temp = net.saveF(outputF + "net.txt");
-			temp = Inet.saveF(outputF + "Inet.txt");
+			/*temp = Inet.saveF(outputF + "Inet.txt");*/
 			temp = SaveCNN();
 			temp = SaveKrnl();
 
@@ -901,7 +836,7 @@ namespace nndx
 			ER_IF(iter == 0, return false; )
 			ER_IF(inputF.empty() || outputF.empty() || dataF.empty(), return false; )
 			ER_IF(!net.getState(), return false; )
-			ER_IF((u_net == 0.) || (moment_net == 0.), return false; )
+			/*ER_IF((u_net == 0.) || (moment_net == 0.), return false; )*/
 			ER_IF(!isReady, return false; )
 
 			::std::string sfile = inputF + subS;
@@ -915,9 +850,17 @@ namespace nndx
 
 				resT = mA();
 
-				//in.reserve(net.data[0].size() - 1); // <----------   important
-
-				resT = fillInputCNN(in);
+				for (size_t s = 0; s < vlayer.back().size(); ++s)
+				{
+					for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
+					{
+						for (size_t j = 0; j < vlayer.back()[s].back().size(); ++j)
+						{
+							in.reserve(in.capacity() + 1);
+							in.emplace_back(cneuron::mSIGMOID(vlayer.back()[s][i][j].Grayn()));
+						}
+					}
+				}
 
 				resT = net.fillInput(in);
 				resT = net.callActivationF();
@@ -931,7 +874,7 @@ namespace nndx
 				::std::cout << "\n";
 #endif
 
-				resT = ConvBackProp(results[func(i)]);
+				resT = net.callBackProp(results[func(i)]);
 			}
 			::std::cout << ::std::endl;
 
@@ -950,7 +893,7 @@ namespace nndx
 			}
 			ER_IF(inputF.empty() || outputF.empty() || dataF.empty(), return false; )
 			ER_IF(!net.getState(), return false; )
-			ER_IF((u_net == 0.) || (moment_net == 0.), return false; )
+			/*ER_IF((u_net == 0.) || (moment_net == 0.), return false; )*/
 			ER_IF(!isReady, return false; )
 
 			::std::string sfile = inputF + subS;
@@ -959,16 +902,26 @@ namespace nndx
 
 			unsigned int i = 0;
 			unsigned int numL = 0;
-			while(true)
+			unsigned int CHECK = 0;
+			bool finallyEnd = false;
+			while (true)
 			{
 				in.clear();
 				resT = init_image(cv::imread(sfile + nndx::nts(func(i)) + extImg));
 
 				resT = mA();
 
-				//in.reserve(net.data[0].size() - 1); // <----------   important
-
-				resT = fillInputCNN(in);
+				for (size_t s = 0; s < vlayer.back().size(); ++s)
+				{
+					for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
+					{
+						for (size_t j = 0; j < vlayer.back()[s].back().size(); ++j)
+						{
+							in.reserve(in.capacity() + 1);
+							in.emplace_back(cneuron::mSIGMOID(vlayer.back()[s][i][j].Grayn()));
+						}
+					}
+				}
 
 				resT = net.fillInput(in);
 				resT = net.callActivationF();
@@ -976,7 +929,7 @@ namespace nndx
 #ifdef _CNN_COMMENTS
 				::std::cout << " func(i) - " << func(i) << "\n";
 #endif
-				int tempid_ = 0;
+				size_t tempid_ = 0;
 				bool flagRes = true;
 				for (auto& x : net.getResults())
 				{
@@ -996,16 +949,36 @@ namespace nndx
 #ifdef _CNN_COMMENTS
 				::std::cout << "\n";
 #endif
+				if (!finallyEnd)	resT = net.callBackProp(results[func(i)]);
+				else				++CHECK;
 
-				resT = ConvBackProp(results[func(i)]);
-
+				if (CHECK >= Xnum)
+				{
+					if (numL < Xnum)
+					{
+						::std::cout << "!!!!!!!!!!!!!!!!!!      NOPE      !!!!!!!!!!!!!!!!!!" << ::std::endl;
+						numL = 0;
+						CHECK = 0;
+						finallyEnd = false;
+					}
+				}
 				if (numL >= Xnum)
 				{
-					::std::cout << "Learned!" << ::std::endl;
-					break;
+					if (finallyEnd)
+					{
+						::std::cout << "Learned!" << ::std::endl;
+						break;
+					}
+					else
+					{
+						::std::cout << "!!!!!!!!!!!!!!!!!!      CHECKING      !!!!!!!!!!!!!!!!!!" << ::std::endl;
+						numL = 0;
+						CHECK = 0;
+						finallyEnd = true;
+					}
 				}
 
-				++i;
+				++i; // best 11020
 			}
 			::std::cout << ::std::endl;
 
@@ -1021,11 +994,20 @@ namespace nndx
 
 			::std::vector<double> in;
 			__bool resT;
+
 			resT = mA();
 
-			//in.reserve(net.data[0].size() - 1); // <----------   important
-
-			resT = fillInputCNN(in);
+			for (size_t s = 0; s < vlayer.back().size(); ++s)
+			{
+				for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
+				{
+					for (size_t j = 0; j < vlayer.back()[s].back().size(); ++j)
+					{
+						in.reserve(in.capacity() + 1);
+						in.emplace_back(cneuron::mSIGMOID(vlayer.back()[s][i][j].Grayn()));
+					}
+				}
+			}
 
 			resT = net.fillInput(in);
 			resT = net.callActivationF();
@@ -1040,7 +1022,7 @@ namespace nndx
 		}
 
 	private:
-		inline bool fillInputCNN(::std::vector<double>& input)
+		/*bool fillInputCNN(::std::vector<double>& input)
 		{
 			for (size_t s = 0; s < vlayer.back().size(); ++s)
 			{
@@ -1048,19 +1030,23 @@ namespace nndx
 				{
 					for (size_t j = 0; j < vlayer.back()[s].back().size(); ++j)
 					{
-						Inet.fillInput(::std::vector<double>{vlayer.back()[s][i][j].Rn.data, vlayer.back()[s][i][j].Gn.data, vlayer.back()[s][i][j].Bn.data});
-						Inet.activationF();
-						double resInet = Inet.getResults()[0];
+						//::std::cout << vlayer.back()[s][i][j].Rn.data << ::std::endl;
+						//::std::cout << vlayer.back()[s][i][j].Gn.data << ::std::endl;
+						//::std::cout << vlayer.back()[s][i][j].Bn.data << ::std::endl;
+						//Inet.fillInput(::std::vector<double>{vlayer.back()[s][i][j].Rn.data, vlayer.back()[s][i][j].Gn.data, vlayer.back()[s][i][j].Bn.data});
+						//Inet.activationF();
+						//double resInet = Inet.getResults()[0];
 						input.reserve(input.capacity() + 1);
-						input.emplace_back(resInet);
+						input.emplace_back(cneuron::mSIGMOID(vlayer.back()[s][i][j].Grayn()));
 					}
 				}
 			}
+			//::std::cout << ::std::endl;
 
 			return true;
-		}
+		}*/
 
-		bool specInit(double randForBias())
+		/*bool specInit(double randForBias())
 		{
 			// init to zero-s
 			// for layer forward inputLayer
@@ -1082,6 +1068,30 @@ namespace nndx
 						vlayer[0].back().back().emplace_back(rgb_T(randForBias));
 					}
 				}
+			}
+			else if (vfunc[0] >= parall_flag) // for parallel
+			{
+				size_t szKrnl = vkernel[operator ""_prll(vfunc[0])].size();
+#ifdef _DEBUG
+				ER_IF(vlayer[0].size() != szKrnl, return false; )
+#endif
+					for (size_t i = 0; i < szKrnl; ++i)
+					{
+						ER_IF((vinLayer.size() < vkernel[operator ""_prll(vfunc[0])][i].size()) || (vinLayer.back().size() < vkernel[operator ""_prll(vfunc[0])][i].back().size()), return false; )
+
+						size_t localy = vinLayer.size() - vkernel[operator ""_prll(vfunc[0])][i].size() + 1;
+						size_t localx = vinLayer.back().size() - vkernel[operator ""_prll(vfunc[0])][i].back().size() + 1;
+						vlayer[0][i].reserve(localy);
+						for (size_t y = 0; y < localy; ++y)
+						{
+							vlayer[0][i].emplace_back(::std::vector<rgb_T>());
+							vlayer[0][i].back().reserve(localx);
+							for (size_t x = 0; x < localx; ++x)
+							{
+								vlayer[0][i].back().emplace_back(rgb_T(randForBias));
+							}
+						}
+					}
 			}
 			else
 			{
@@ -1135,6 +1145,30 @@ namespace nndx
 						}
 					}
 				}
+				else if (vfunc[i] >= parall_flag) // for parallel
+				{
+					size_t szKrnl = vkernel[operator ""_prll(vfunc[i])].size();
+#ifdef _DEBUG
+					ER_IF(vlayer[i].size() != vlayer[i - 1].size(), return false; )
+#endif
+					for (size_t prev = 0; prev < vlayer[i - 1].size(); ++prev)
+					{
+						ER_IF((vlayer[i - 1][prev].size() < vkernel[operator ""_prll(vfunc[i])][prev].size()) || (vlayer[i - 1][prev].back().size() < vkernel[operator ""_prll(vfunc[i])][prev].back().size()), return false; )
+
+						size_t localy = vlayer[i - 1][prev].size() - vkernel[operator ""_prll(vfunc[i])][prev].size() + 1;
+						size_t localx = vlayer[i - 1][prev].back().size() - vkernel[operator ""_prll(vfunc[i])][prev].back().size() + 1;
+						vlayer[i][prev].reserve(localy);
+						for (size_t y = 0; y < localy; ++y)
+						{
+							vlayer[i][prev].emplace_back(::std::vector<rgb_T>());
+							vlayer[i][prev].back().reserve(localx);
+							for (size_t x = 0; x < localx; ++x)
+							{
+								vlayer[i][prev].back().emplace_back(rgb_T(randForBias));
+							}
+						}
+					}
+				}
 				else
 				{
 					size_t szKrnl = vkernel[vfunc[i]].size();
@@ -1145,7 +1179,7 @@ namespace nndx
 					{
 						for (size_t k = 0; k < szKrnl; ++k)
 						{
-							ER_IF((vlayer[i - 1][prev].size() < vkernel[vfunc[i]][k].size()) || (vlayer[i - 1][prev].back().size() < vkernel[vfunc[0]][k].back().size()), return false; )
+							ER_IF((vlayer[i - 1][prev].size() < vkernel[vfunc[i]][k].size()) || (vlayer[i - 1][prev].back().size() < vkernel[vfunc[i]][k].back().size()), return false; )
 
 							size_t localy = vlayer[i - 1][prev].size() - vkernel[vfunc[i]][k].size() + 1;
 							size_t localx = vlayer[i - 1][prev].back().size() - vkernel[vfunc[i]][k].back().size() + 1;
@@ -1165,9 +1199,9 @@ namespace nndx
 			}
 
 			return true;
-		}
+		}*/
 
-		bool specInit(const ::std::vector<double>& bias)
+		bool specInit(/*const ::std::vector<double>& bias*/)
 		{
 			size_t idxBias = 0;
 			// init to zero-s
@@ -1187,9 +1221,33 @@ namespace nndx
 					vlayer[0].back().back().reserve(cols);
 					for (size_t x = 0; x < cols; ++x)
 					{
-						vlayer[0].back().back().emplace_back(rgb_T(bias[idxBias++], bias[idxBias++], bias[idxBias++], 0.));
+						vlayer[0].back().back().emplace_back(rgb_T(0.));
 					}
 				}
+			}
+			else if (vfunc[0] >= parall_flag) // for parallel
+			{
+				size_t szKrnl = vkernel[operator ""_prll(vfunc[0])].size();
+#ifdef _DEBUG
+				ER_IF(vlayer[0].size() != szKrnl, return false; )
+#endif
+					for (size_t i = 0; i < szKrnl; ++i)
+					{
+						ER_IF((vinLayer.size() < vkernel[operator ""_prll(vfunc[0])][i].size()) || (vinLayer.back().size() < vkernel[operator ""_prll(vfunc[0])][i].back().size()), return false; )
+
+							size_t localy = vinLayer.size() - vkernel[operator ""_prll(vfunc[0])][i].size() + 1;
+						size_t localx = vinLayer.back().size() - vkernel[operator ""_prll(vfunc[0])][i].back().size() + 1;
+						vlayer[0][i].reserve(localy);
+						for (size_t y = 0; y < localy; ++y)
+						{
+							vlayer[0][i].emplace_back(::std::vector<rgb_T>());
+							vlayer[0][i].back().reserve(localx);
+							for (size_t x = 0; x < localx; ++x)
+							{
+								vlayer[0][i].back().emplace_back(rgb_T(0.));
+							}
+						}
+					}
 			}
 			else
 			{
@@ -1210,7 +1268,7 @@ namespace nndx
 						vlayer[0][i].back().reserve(localx);
 						for (size_t x = 0; x < localx; ++x)
 						{
-							vlayer[0][i].back().emplace_back(rgb_T(bias[idxBias++], bias[idxBias++], bias[idxBias++], 0.));
+							vlayer[0][i].back().emplace_back(rgb_T(0.));
 						}
 					}
 				}
@@ -1238,10 +1296,34 @@ namespace nndx
 							vlayer[i][prev].back().reserve(cols);
 							for (size_t x = 0; x < cols; ++x)
 							{
-								vlayer[i][prev].back().emplace_back(rgb_T(bias[idxBias++], bias[idxBias++], bias[idxBias++], 0.));
+								vlayer[i][prev].back().emplace_back(rgb_T(0.));
 							}
 						}
 					}
+				}
+				else if (vfunc[i] >= parall_flag) // for parallel
+				{
+					size_t szKrnl = vkernel[operator ""_prll(vfunc[i])].size();
+#ifdef _DEBUG
+					ER_IF(vlayer[i].size() != vlayer[i - 1].size(), return false; )
+#endif
+						for (size_t prev = 0; prev < vlayer[i - 1].size(); ++prev)
+						{
+							ER_IF((vlayer[i - 1][prev].size() < vkernel[operator ""_prll(vfunc[i])][prev].size()) || (vlayer[i - 1][prev].back().size() < vkernel[operator ""_prll(vfunc[i])][prev].back().size()), return false; )
+
+								size_t localy = vlayer[i - 1][prev].size() - vkernel[operator ""_prll(vfunc[i])][prev].size() + 1;
+							size_t localx = vlayer[i - 1][prev].back().size() - vkernel[operator ""_prll(vfunc[i])][prev].back().size() + 1;
+							vlayer[i][prev].reserve(localy);
+							for (size_t y = 0; y < localy; ++y)
+							{
+								vlayer[i][prev].emplace_back(::std::vector<rgb_T>());
+								vlayer[i][prev].back().reserve(localx);
+								for (size_t x = 0; x < localx; ++x)
+								{
+									vlayer[i][prev].back().emplace_back(rgb_T(rgb_T(0.)));
+								}
+							}
+						}
 				}
 				else
 				{
@@ -1264,7 +1346,7 @@ namespace nndx
 								vlayer[i][szKrnl * prev + k].back().reserve(localx);
 								for (size_t x = 0; x < localx; ++x)
 								{
-									vlayer[i][szKrnl * prev + k].back().emplace_back(rgb_T(bias[idxBias++], bias[idxBias++], bias[idxBias++], 0.));
+									vlayer[i][szKrnl * prev + k].back().emplace_back(rgb_T(0.));
 								}
 							}
 						}
@@ -1358,67 +1440,114 @@ namespace nndx
 		//convolution func
 		bool convFunc_RGB(ptrdiff_t idxSource, size_t idxKernel)
 		{
-			size_t szKrnl = vkernel[idxKernel].size();
 			if (idxSource == -1)
 			{
-				for (size_t i = 0; i < szKrnl; ++i)
+				if (idxKernel >= parall_flag)
 				{
-					for (size_t y = 0; y < vlayer[0][i].size(); ++y)
+					size_t szKrnl = vkernel[operator ""_prll(idxKernel)].size();
+					for (size_t i = 0; i < szKrnl; ++i)
 					{
-						for (size_t x = 0; x < vlayer[0][i].back().size(); ++x)
+						for (size_t y = 0; y < vlayer[0][i].size(); ++y)
 						{
-							double sumR = vlayer[0][i][y][x].Rn.mBIAS;
-							double sumG = vlayer[0][i][y][x].Gn.mBIAS;
-							double sumB = vlayer[0][i][y][x].Bn.mBIAS;
-							double sumKernelR = 0.;
-							double sumKernelG = 0.;
-							double sumKernelB = 0.;
-							for (size_t ky = 0; ky < vkernel[idxKernel][i].size(); ++ky)
+							for (size_t x = 0; x < vlayer[0][i].back().size(); ++x)
 							{
-								for (size_t kx = 0; kx < vkernel[idxKernel][i].back().size(); ++kx)
+								double sumR = 0.;
+								double sumG = 0.;
+								double sumB = 0.;
+								for (size_t ky = 0; ky < vkernel[operator ""_prll(idxKernel)][i].size(); ++ky)
 								{
-									sumR += vkernel[idxKernel][i][ky][kx].R.wg * vinLayer[y + ky][x + kx].Rn.data;
-									sumKernelR += vkernel[idxKernel][i][ky][kx].R.wg;
-									sumG += vkernel[idxKernel][i][ky][kx].G.wg * vinLayer[y + ky][x + kx].Gn.data;
-									sumKernelG += vkernel[idxKernel][i][ky][kx].G.wg;
-									sumB += vkernel[idxKernel][i][ky][kx].B.wg * vinLayer[y + ky][x + kx].Bn.data;
-									sumKernelB += vkernel[idxKernel][i][ky][kx].B.wg;
+									for (size_t kx = 0; kx < vkernel[operator ""_prll(idxKernel)][i].back().size(); ++kx)
+									{
+										sumR += vkernel[operator ""_prll(idxKernel)][i][ky][kx].R.wg * vinLayer[y + ky][x + kx].Rn.data;
+										sumG += vkernel[operator ""_prll(idxKernel)][i][ky][kx].G.wg * vinLayer[y + ky][x + kx].Gn.data;
+										sumB += vkernel[operator ""_prll(idxKernel)][i][ky][kx].B.wg * vinLayer[y + ky][x + kx].Bn.data;
+									}
 								}
+								vlayer[0][i][y][x].init(ReLU(sumR), ReLU(sumG), ReLU(sumB));
 							}
-							vlayer[0][i][y][x].init(nndx::cneuron::mSIGMOID(sumR, sumKernelR), nndx::cneuron::mSIGMOID(sumG, sumKernelG), nndx::cneuron::mSIGMOID(sumB, sumKernelB));
+						}
+					}
+				}
+				else
+				{
+					size_t szKrnl = vkernel[idxKernel].size();
+					for (size_t i = 0; i < szKrnl; ++i)
+					{
+						for (size_t y = 0; y < vlayer[0][i].size(); ++y)
+						{
+							for (size_t x = 0; x < vlayer[0][i].back().size(); ++x)
+							{
+								double sumR = 0.;
+								double sumG = 0.;
+								double sumB = 0.;
+								for (size_t ky = 0; ky < vkernel[idxKernel][i].size(); ++ky)
+								{
+									for (size_t kx = 0; kx < vkernel[idxKernel][i].back().size(); ++kx)
+									{
+										sumR += vkernel[idxKernel][i][ky][kx].R.wg * vinLayer[y + ky][x + kx].Rn.data;
+										sumG += vkernel[idxKernel][i][ky][kx].G.wg * vinLayer[y + ky][x + kx].Gn.data;
+										sumB += vkernel[idxKernel][i][ky][kx].B.wg * vinLayer[y + ky][x + kx].Bn.data;
+									}
+								}
+								vlayer[0][i][y][x].init(ReLU(sumR), ReLU(sumG), ReLU(sumB));
+							}
 						}
 					}
 				}
 			}
 			else
 			{
-				for (size_t j = 0; j < vlayer[idxSource].size(); ++j)
+				if (idxKernel >= parall_flag)
 				{
-					for (size_t k = 0; k < szKrnl; ++k)
+					size_t szKrnl = vkernel[operator ""_prll(idxKernel)].size();
+					for (size_t j = 0; j < vlayer[idxSource].size(); ++j)
 					{
-						for (size_t y = 0; y < vlayer[idxSource + 1][szKrnl * j + k].size(); ++y)
+						for (size_t y = 0; y < vlayer[idxSource + 1][j].size(); ++y)
 						{
-							for (size_t x = 0; x < vlayer[idxSource + 1][szKrnl * j + k].back().size(); ++x)
+							for (size_t x = 0; x < vlayer[idxSource + 1][j].back().size(); ++x)
 							{
-								double sumR = vlayer[idxSource + 1][szKrnl * j + k][y][x].Rn.mBIAS;
-								double sumG = vlayer[idxSource + 1][szKrnl * j + k][y][x].Gn.mBIAS;
-								double sumB = vlayer[idxSource + 1][szKrnl * j + k][y][x].Bn.mBIAS;
-								double sumKernelR = 0.;
-								double sumKernelG = 0.;
-								double sumKernelB = 0.;
-								for (size_t ky = 0; ky < vkernel[idxKernel][k].size(); ++ky)
+								double sumR = 0.;
+								double sumG = 0.;
+								double sumB = 0.;
+								for (size_t ky = 0; ky < vkernel[operator ""_prll(idxKernel)][j].size(); ++ky)
 								{
-									for (size_t kx = 0; kx < vkernel[idxKernel][k].back().size(); ++kx)
+									for (size_t kx = 0; kx < vkernel[operator ""_prll(idxKernel)][j].back().size(); ++kx)
 									{
-										sumR += vkernel[idxKernel][k][ky][kx].R.wg * vlayer[idxSource][j][y + ky][x + kx].Rn.data;
-										sumKernelR += vkernel[idxKernel][k][ky][kx].R.wg;
-										sumG += vkernel[idxKernel][k][ky][kx].G.wg * vlayer[idxSource][j][y + ky][x + kx].Gn.data;
-										sumKernelG += vkernel[idxKernel][k][ky][kx].G.wg;
-										sumB += vkernel[idxKernel][k][ky][kx].B.wg * vlayer[idxSource][j][y + ky][x + kx].Bn.data;
-										sumKernelB += vkernel[idxKernel][k][ky][kx].B.wg;
+										sumR += vkernel[operator ""_prll(idxKernel)][j][ky][kx].R.wg * vlayer[idxSource][j][y + ky][x + kx].Rn.data;
+										sumG += vkernel[operator ""_prll(idxKernel)][j][ky][kx].G.wg * vlayer[idxSource][j][y + ky][x + kx].Gn.data;
+										sumB += vkernel[operator ""_prll(idxKernel)][j][ky][kx].B.wg * vlayer[idxSource][j][y + ky][x + kx].Bn.data;
 									}
 								}
-								vlayer[idxSource + 1][szKrnl * j + k][y][x].init(nndx::cneuron::mSIGMOID(sumR, sumKernelR), nndx::cneuron::mSIGMOID(sumG, sumKernelG), nndx::cneuron::mSIGMOID(sumB, sumKernelB));
+								vlayer[idxSource + 1][j][y][x].init(ReLU(sumR), ReLU(sumG), ReLU(sumB));
+							}
+						}
+					}
+				}
+				else
+				{
+					size_t szKrnl = vkernel[idxKernel].size();
+					for (size_t j = 0; j < vlayer[idxSource].size(); ++j)
+					{
+						for (size_t k = 0; k < szKrnl; ++k)
+						{
+							for (size_t y = 0; y < vlayer[idxSource + 1][szKrnl * j + k].size(); ++y)
+							{
+								for (size_t x = 0; x < vlayer[idxSource + 1][szKrnl * j + k].back().size(); ++x)
+								{
+									double sumR = 0.;
+									double sumG = 0.;
+									double sumB = 0.;
+									for (size_t ky = 0; ky < vkernel[idxKernel][k].size(); ++ky)
+									{
+										for (size_t kx = 0; kx < vkernel[idxKernel][k].back().size(); ++kx)
+										{
+											sumR += vkernel[idxKernel][k][ky][kx].R.wg * vlayer[idxSource][j][y + ky][x + kx].Rn.data;
+											sumG += vkernel[idxKernel][k][ky][kx].G.wg * vlayer[idxSource][j][y + ky][x + kx].Gn.data;
+											sumB += vkernel[idxKernel][k][ky][kx].B.wg * vlayer[idxSource][j][y + ky][x + kx].Bn.data;
+										}
+									}
+									vlayer[idxSource + 1][szKrnl * j + k][y][x].init(ReLU(sumR), ReLU(sumG), ReLU(sumB));
+								}
 							}
 						}
 					}
@@ -1427,16 +1556,22 @@ namespace nndx
 			return true;
 		}
 
-		bool ConvBackProp(const ::std::vector<double>& res)
+		/*bool ConvBackProp(const ::std::vector<double>& res)
 		{
 			//receive Error
-			::std::vector<double> vErr, vErr2;
+			::std::vector<double> vErr;
 			net.callBackProp(res, vErr);
+
 			for (auto& x : vErr)
 			{
 				Inet.callBackProp(::std::vector<double>{ x }, vErr2);
 			}
 
+			//
+			//
+			// NOT VALID FOR LATEST V. SINCE PARALLEL!!!!!!!!!
+			//
+			//
 			//init error into back layer
 			size_t temp_ = 0;
 			for (size_t s = 0; s < vlayer.back().size(); ++s)
@@ -1449,9 +1584,9 @@ namespace nndx
 						//* 0.587;
 						//* 0.114;
 
-						vlayer.back()[s][i][j].Rn.err = vErr2[temp_++]; // before [temp_++] 3 times
-						vlayer.back()[s][i][j].Gn.err = vErr2[temp_++];
-						vlayer.back()[s][i][j].Bn.err = vErr2[temp_++];
+						vlayer.back()[s][i][j].Rn.err = vErr[temp_] * 0.299;
+						vlayer.back()[s][i][j].Gn.err = vErr[temp_] * 0.587;
+						vlayer.back()[s][i][j].Bn.err = vErr[temp_] * 0.114;
 					}
 				}
 			}
@@ -1472,25 +1607,25 @@ namespace nndx
 									auto& temp2 = vlayer[i][layer][y][x];
 									if (temp2.Rn.err != 0.)
 									{
-										vlayer[i - 1][layer][y * 2][x * 2].Rn.err = temp2.Rn.err;
-										vlayer[i - 1][layer][y * 2 + 1][x * 2].Rn.err = temp2.Rn.err;
-										vlayer[i - 1][layer][y * 2][x * 2 + 1].Rn.err = temp2.Rn.err;
-										vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Rn.err = temp2.Rn.err;
+										vlayer[i - 1][layer][y * 2][x * 2].Rn.err			= temp2.Rn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2].Rn.err		= temp2.Rn.err;
+										vlayer[i - 1][layer][y * 2][x * 2 + 1].Rn.err		= temp2.Rn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Rn.err	= temp2.Rn.err;
 									}
 									if (temp2.Gn.err != 0.)
 									{
-										vlayer[i - 1][layer][y * 2][x * 2].Gn.err = temp2.Gn.err;
-										vlayer[i - 1][layer][y * 2 + 1][x * 2].Gn.err = temp2.Gn.err;
-										vlayer[i - 1][layer][y * 2][x * 2 + 1].Gn.err = temp2.Gn.err;
-										vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Gn.err = temp2.Gn.err;
+										vlayer[i - 1][layer][y * 2][x * 2].Gn.err			= temp2.Gn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2].Gn.err		= temp2.Gn.err;
+										vlayer[i - 1][layer][y * 2][x * 2 + 1].Gn.err		= temp2.Gn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Gn.err	= temp2.Gn.err;
 									}
 									if (temp2.Bn.err != 0.)
 									{
 
-										vlayer[i - 1][layer][y * 2][x * 2].Bn.err = temp2.Bn.err;
-										vlayer[i - 1][layer][y * 2 + 1][x * 2].Bn.err = temp2.Bn.err;
-										vlayer[i - 1][layer][y * 2][x * 2 + 1].Bn.err = temp2.Bn.err;
-										vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Bn.err = temp2.Bn.err;
+										vlayer[i - 1][layer][y * 2][x * 2].Bn.err			= temp2.Bn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2].Bn.err		= temp2.Bn.err;
+										vlayer[i - 1][layer][y * 2][x * 2 + 1].Bn.err		= temp2.Bn.err;
+										vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Bn.err	= temp2.Bn.err;
 									}
 								}
 							}
@@ -1532,6 +1667,79 @@ namespace nndx
 					{
 						ERROR_
 							return false;
+					}
+				}
+				else if (vfunc[i] >= parall_flag)
+				{
+					auto& kern = vkernel[operator ""_prll(vfunc[i])]; //					current stack of kernels
+					auto& prevlayer = vlayer[i - 1]; //										-previous- layer
+					size_t szprevlayer = prevlayer.size(); //								prevlayer size
+					for (size_t prev = 0; prev < szprevlayer; ++prev)
+					{
+						auto& curkern__ = kern[prev]; //									current kernel
+						size_t szcurkerny = curkern__.size(); //							current kernel size y
+						size_t szcurkernx = curkern__.back().size(); //						current kernel size x
+						auto& next = vlayer[i][prev]; //									-current next- layer
+						auto& curprevlayer__ = prevlayer[prev]; //							current previous layer
+						size_t sznext = next.size(); //										next size y
+						size_t szbknext = next.back().size(); //							next size x
+						for (size_t y = 0; y < sznext; ++y)
+						{
+							for (size_t x = 0; x < szbknext; ++x)
+							{
+								for (size_t ky = 0; ky < szcurkerny; ++ky)
+								{
+									for (size_t kx = 0; kx < szcurkernx; ++kx)
+									{
+										auto& curprevlayer_ = curprevlayer__[y + ky][x + kx];
+										auto& curnextpoint_ = next[y][x];
+										auto& curkernpoint_ = curkern__[ky][kx];
+										if (curnextpoint_.Rn.err != 0.)
+										{
+											curprevlayer_.Rn.err += curnextpoint_.Rn.err * curkernpoint_.R.wg;
+											curkernpoint_.R.grad += curnextpoint_.Rn.err * curprevlayer_.Rn.data;
+										}
+										if (curnextpoint_.Gn.err != 0.)
+										{
+											curprevlayer_.Gn.err += curnextpoint_.Gn.err * curkernpoint_.G.wg;
+											curkernpoint_.G.grad += curnextpoint_.Gn.err * curprevlayer_.Gn.data;
+										}
+										if (curnextpoint_.Bn.err != 0.)
+										{
+											curprevlayer_.Bn.err += curnextpoint_.Bn.err * curkernpoint_.B.wg;
+											curkernpoint_.B.grad += curnextpoint_.Bn.err * curprevlayer_.Bn.data;
+										}
+									}
+								}
+							}
+						}
+						size_t szcurprevy = curprevlayer__.size(); //						size y of current previous layer
+						size_t szcurprevx = curprevlayer__.back().size(); //				size x of current previous layer
+						for (size_t y = 0; y < szcurprevy; ++y)
+						{
+							for (size_t x = 0; x < szcurprevx; ++x)
+							{
+								auto& curpoint_ = curprevlayer__[y][x];
+								curpoint_.Rn.err *= dxReLU(curpoint_.Rn.data);
+								curpoint_.Gn.err *= dxReLU(curpoint_.Gn.data);
+								curpoint_.Bn.err *= dxReLU(curpoint_.Bn.data);
+							}
+						}
+
+						for (size_t ky = 0; ky < szcurkerny; ++ky)
+						{
+							for (size_t kx = 0; kx < szcurkernx; ++kx)
+							{
+								auto& curkernpoint__ = curkern__[ky][kx];
+								curkernpoint__.R.dwg = u_net * curkernpoint__.R.grad + moment_net * curkernpoint__.R.dwg;
+								curkernpoint__.G.dwg = u_net * curkernpoint__.G.grad + moment_net * curkernpoint__.G.dwg;
+								curkernpoint__.B.dwg = u_net * curkernpoint__.B.grad + moment_net * curkernpoint__.B.dwg;
+
+								curkernpoint__.R.wg += curkernpoint__.R.dwg;
+								curkernpoint__.G.wg += curkernpoint__.G.dwg;
+								curkernpoint__.B.wg += curkernpoint__.B.dwg;
+							}
+						}
 					}
 				}
 				else
@@ -1588,9 +1796,9 @@ namespace nndx
 								for (size_t x = 0; x < szcurprevx; ++x)
 								{
 									auto& curpoint_ = curprevlayer__[y][x];
-									curpoint_.Rn.err *= nndx::cneuron::mSIGMOID_DRV(curpoint_.Rn.data);
-									curpoint_.Gn.err *= nndx::cneuron::mSIGMOID_DRV(curpoint_.Gn.data);
-									curpoint_.Bn.err *= nndx::cneuron::mSIGMOID_DRV(curpoint_.Bn.data);
+									curpoint_.Rn.err *= dxReLU(curpoint_.Rn.data);
+									curpoint_.Gn.err *= dxReLU(curpoint_.Gn.data);
+									curpoint_.Bn.err *= dxReLU(curpoint_.Bn.data);
 								}
 							}
 						}
@@ -1615,7 +1823,7 @@ namespace nndx
 
 			if (vfunc[0] >= 0) // if first vfunc < 0, then do nothing(wWw in decrease layers don't changing)
 			{
-				auto& kern = vkernel[vfunc[0]]; //											current stack of kernels
+				auto& kern = vkernel[vfunc[0] >= parall_flag ? operator ""_prll(vfunc[0]) : vfunc[0]]; //											current stack of kernels
 				size_t szkern = kern.size(); //												kern size
 				for (size_t k = 0; k < szkern; ++k)
 				{
@@ -1671,7 +1879,7 @@ namespace nndx
 			}
 
 			return true;
-		}
+		}*/
 
 		bool saveIm_RGB(size_t idx)
 		{
@@ -1787,7 +1995,8 @@ namespace nndx
 		}
 	};
 
-	double max_4(double f1, double f2, double f3, double f4)
+	// func -2
+	inline double max_4(double f1, double f2, double f3, double f4)
 	{
 		double max = f1 > f2 ? f1 : f2;
 		max = max > f3 ? max : f3;
@@ -1795,7 +2004,8 @@ namespace nndx
 		return max;
 	}
 
-	double min_4(double f1, double f2, double f3, double f4)
+	// func -3
+	inline double min_4(double f1, double f2, double f3, double f4)
 	{
 		double min = f1 > f2 ? f2 : f1;
 		min = min > f3 ? f3 : min;
@@ -1803,19 +2013,28 @@ namespace nndx
 		return min;
 	}
 
-	double mid_4(double f1, double f2, double f3, double f4)
+	// func -4
+	inline double mid_4(double f1, double f2, double f3, double f4)
 	{
 		return static_cast<double>((f1 + f2 + f3 + f4) / 4.);
 	}
 
-	double ReLU(double x)
+	inline double ReLU(double x)
 	{
-		if (x > 1.)
+		/*if (x > 1.)
 		{
-			//ERROR_
-				x = 1.;
-		}
-		return (x > 0) ? x : 0;
+			ERROR_
+		}*/
+		return (x > 0.) ? x : 0.;
+	}
+
+	inline double dxReLU(double x)
+	{
+		/*if (x > 1.)
+		{
+			ERROR_
+		}*/
+		return (x > 0.) ? 1. : 0.;
 	}
 
 	template<typename _T>
@@ -1904,7 +2123,7 @@ namespace nndx
 			}
 		}
 		
-		for (size_t i = 0; i < errR[0].size() - 1; ++i) // -1 BIAS ERROR, since BIAS dont connected with previos layer
+		for (size_t i = 0; i < errR[0].size() - 1; ++i) // -1 BIAS ERROR, since BIAS don't connected with previos layer
 		{
 			errback.reserve(errback.capacity() + 1);
 			errback.emplace_back(errR[0][i]);

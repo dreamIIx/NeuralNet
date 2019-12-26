@@ -2,6 +2,11 @@
 
 namespace nndx
 {
+	/*void somefunc(void somefunc2(), bool somefunc3(bool, bool) noexcept(false))
+	{
+
+	}*/
+
 	unsigned int randT(HCRYPTPROV hProv)
 	{
 		BYTE Buf1 = 0b0;

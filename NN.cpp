@@ -2,7 +2,7 @@
 
 namespace nndx
 {
-	/*void somefunc(void somefunc2(), bool somefunc3(bool, bool) noexcept(false))
+	/*void somefunc(void somefunc2(bool, int, double), bool somefunc3(bool, bool) noexcept(false))
 	{
 
 	}*/
@@ -230,7 +230,7 @@ namespace nndx
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
 
-				for (int i = 0; i < a; i++)
+				for (int j = 0; j < a; j++)
 				{
 					data.back().reserve(data.back().capacity() + 1);
 					data.back().emplace_back(neuron(0));
@@ -397,7 +397,7 @@ namespace nndx
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
 
-				for (int i = 0; i < a; ++i)
+				for (int j = 0; j < a; ++j)
 				{
 					data.back().reserve(data.back().capacity() + 1);
 					data.back().emplace_back(neuron(0));
@@ -459,7 +459,7 @@ namespace nndx
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
 
-				for (int i = 0; i < a; ++i)
+				for (int j = 0; j < a; ++j)
 				{
 					data.back().reserve(data.back().capacity() + 1);
 					data.back().emplace_back(neuron(0));
@@ -540,7 +540,7 @@ namespace nndx
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
 
-				for (int i = 0; i < a; ++i)
+				for (int j = 0; j < a; ++j)
 				{
 					data.back().reserve(data.back().capacity() + 1);
 					data.back().emplace_back(neuron(0));
@@ -604,7 +604,7 @@ namespace nndx
 				data.reserve(data.capacity() + 1);
 				data.emplace_back(dataA());
 
-				for (int i = 0; i < a; ++i)
+				for (int j = 0; j < a; ++j)
 				{
 					data.back().reserve(data.back().capacity() + 1);
 					data.back().emplace_back(neuron(0));

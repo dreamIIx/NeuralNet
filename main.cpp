@@ -10,12 +10,23 @@
 #include <thread>
 #include <vector>
 #include <atomic>
+
 #include "SFML/Graphics.hpp"
+
+#if defined(__unix__)
+#if defined(__linux__)
+#include <X11/Xlib.h>
+#else
+#error This UNIX operating system is not supported by dx::NN
+#endif
+#endif
 
 template <typename T>
 T def_FI(::std::ifstream&);
 
 #include "NN.h"
+
+#define WEIGHT_FUNC ((nndx::randT(hProv) % 6) - 3)
 
 constexpr unsigned int def_WIN_X	=	1000;
 constexpr unsigned int def_WIN_Y	=	400;
@@ -34,10 +45,31 @@ constexpr int def_POSY				=	(def_POSY_WALL + 80);
 constexpr int def_SZ_TOPOLOGY		=	3;
 constexpr int def_PRE_DISTANCE		=	200;
 
-constexpr double		def_KF				=	0.5; // in replacement DEFINE
-constexpr const char*	def_FILEIMAGE		=	"files/image.png"; // in replacement DEFINE
+constexpr double		def_KF				=	0.5;
 
-HCRYPTPROV hProv; // for random number generator(NN.h, Object.h, main.cpp)
+#if defined(_WIN32)
+dxCRYPT hProv; // for random number generator(NN.h, Object.h, main.cpp)
+
+#define	def_FILECFG "inf.cfg"
+#define	def_FILEIMAGE "files/image.png"
+#define def_LOGFILE "files/output/log.txt"
+#define def_ENDPOINT "output/endpoint_log.txt"
+
+#elif defined(__unix__)
+    #if defined(__linux__)
+dxCRYPT hProv;
+
+#define	def_FILECFG "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/inf.cfg"
+#define	def_FILEIMAGE "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/files/image.png"
+#define def_LOGFILE "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/files/output/log.txt"
+#define def_ENDPOINT "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/output/endpoint_log.txt"
+
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 
 #include "Object.h"
 
@@ -49,7 +81,18 @@ void mainA(sf::RenderWindow&, sf::View&, ::std::vector<Object>&, ::std::vector<:
 
 int main()
 {
+#if defined(_WIN32)
 	ShowWindow(GetConsoleWindow(), SW_HIDE);
+#elif defined(__unix__)
+    #if defined(__linux__)
+		// terminal take off
+    	XInitThreads();
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 
 	sf::RenderWindow win({ def_WIN_X, def_WIN_Y }, "NN");
 	win.setVerticalSyncEnabled(true);
@@ -57,19 +100,20 @@ int main()
 
 	/* default filename with settings - inf.cfg*/
 	::std::ifstream _tempRead;
-	_tempRead.open("inf.cfg");
+	_tempRead.open(def_FILECFG);
 	if (!_tempRead.is_open())
 	{
 		ERROR_
 			return 1;
 	}
-	volatile ::std::atomic_uint TIMESET_ = 0;
+	volatile ::std::atomic_uint TIMESET_;
+	TIMESET_.store(0);
 	win.setFramerateLimit(def_FI<unsigned int>(_tempRead));
 	TIMESET_.store(def_FI<unsigned int>(_tempRead));
 	_tempRead.close();
 
 	sf::Image image_;
-	image_.loadFromFile("files/image.png");
+	image_.loadFromFile(def_FILEIMAGE);
 	sf::Texture t_;
 	t_.loadFromImage(image_);
 
@@ -83,11 +127,17 @@ int main()
 	v_Wll_.reserve(def_SIZE_VECTOR_WALL);
 	target_.reserve(def_SIZE_VECTOR_WALL);
 
-	volatile ::std::atomic_bool isOpen		=	true;
-	volatile ::std::atomic_bool runA		=	false;
-	volatile ::std::atomic_bool newA		=	false;
-	volatile ::std::atomic_bool auto_move	=	true;
+	volatile ::std::atomic_bool isOpen;
+	isOpen.store(true);
+	volatile ::std::atomic_bool runA;
+	runA.store(false);
+	volatile ::std::atomic_bool newA;
+	newA.store(false);
+	volatile ::std::atomic_bool auto_move;
+	auto_move.store(true);
 
+	
+#if defined(_WIN32)
 	if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
 		if (GetLastError() == NTE_BAD_KEYSET)
 			if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
@@ -96,6 +146,15 @@ int main()
 					system("pause");
 				return 0;
 			}
+#elif defined(__unix__)
+    #if defined(__linux__)
+		hProv.seed(::std::chrono::system_clock::to_time_t(::std::chrono::system_clock::now()));
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 
 	::std::thread mainThread(mainA, ::std::ref(win), ::std::ref(view), ::std::ref(v_Obj_), ::std::ref(v_Wll_), ::std::ref(target_), ::std::ref(t_), ::std::ref(TIMESET_), ::std::ref(isOpen),
 		::std::ref(runA), ::std::ref(newA), ::std::ref(auto_move));
@@ -121,14 +180,34 @@ int main()
 				}
 				else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
 				{
+#if defined(_WIN32)
 					ShowWindow(GetConsoleWindow(), SW_SHOW);
+#elif defined(__unix__)
+    #if defined(__linux__)
+		// terminal take off
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 
 					int _temp_int = 0;
 					::std::cout << "TIME(0 - 9): ";
 					::std::cin >> _temp_int;
 
+#if defined(_WIN32)
 					ShowWindow(GetConsoleWindow(), SW_HIDE);
 					system("cls");
+#elif defined(__unix__)
+    #if defined(__linux__)
+		// terminal take off
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 
 					_temp_int = abs(_temp_int);
 					if (_temp_int == 0)
@@ -180,7 +259,17 @@ int main()
 	}
 
 	mainThread.join();
+#if defined(_WIN32)
 	CryptReleaseContext(hProv, 0);
+#elif defined(__unix__)
+    #if defined(__linux__)
+		// release dxCRYPT
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 	win.setActive(true);
 	win.close();
 
@@ -204,7 +293,7 @@ int main()
 		v_Obj_[i].net.saveF(::std::move(s));
 	}
 
-	::std::ofstream out("output/log.txt");
+	::std::ofstream out(def_LOGFILE);
 	for (int i = 0; i < def__SIZE_; ++i)
 	{
 		out << "net_" << i << " - " << v_Obj_[i].score << ::std::endl;
@@ -258,12 +347,22 @@ void mainA
 	TimeGet tm;
 
 	int numITER = 0;
-	::std::ofstream endP("output/endpoint_log.txt");
+	::std::ofstream endP(def_ENDPOINT);
 	if (!endP.is_open())
 	{
 		::std::cout << "error of opening file - endpoint_log.txt" << ::std::endl;
 		ERROR_
+#if defined(_WIN32)
 		system("pause");
+#elif defined(__unix__)
+    #if defined(__linux__)
+		// pause
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 	}
 
 	while (is_Open.load())
@@ -453,17 +552,23 @@ void radixSort(::std::vector<Object*>& a)
 
 void mA_gen(::std::vector<Object*>& obj, int tg)
 {
-	obj[8]->net.weight = obj[10]->net.weight;
-	size_t index = nndx::randT(hProv) % obj[10]->net.weight.size();
-	mT(obj[8]->net.weight, index, nndx::randT(hProv) % obj[10]->net.weight[index].size());
+	obj[8]->net.weight = obj[11]->net.weight;
+	size_t index = nndx::randT(hProv) % obj[11]->net.weight.size();
+	mT(obj[8]->net.weight, index, index + 1);
 
-	obj[7]->net.weight = obj[9]->net.weight;
+	obj[7]->net.weight = obj[11]->net.weight;
+	index = nndx::randT(hProv) % obj[11]->net.weight.size();
+	mT(obj[7]->net.weight, index, index + 1);
+
+	obj[6]->net.weight = obj[10]->net.weight;
+	index = nndx::randT(hProv) % obj[10]->net.weight.size();
+	mT(obj[6]->net.weight, index, index + 1);
+
+	obj[5]->net.weight = obj[9]->net.weight;
 	index = nndx::randT(hProv) % obj[9]->net.weight.size();
-	mT(obj[7]->net.weight, index, nndx::randT(hProv) % obj[9]->net.weight[index].size());
+	mT(obj[5]->net.weight, index, index + 1);
 
-	mT(obj[6]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
-	mT(obj[5]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
-	mT(obj[4]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
+	mT(obj[4]->net.weight, static_cast<size_t>(nndx::randT(hProv) % obj[11]->net.weight.size()), obj[11]->net.weight.size());
 
 	for (size_t i = 0; i < tg - 2; ++i)
 	{
@@ -474,7 +579,7 @@ void mA_gen(::std::vector<Object*>& obj, int tg)
 	if (nndx::randT(hProv) % 3 == 2)
 	{
 		index = nndx::randT(hProv) % obj[3]->net.weight.size();
-		mT(obj[3]->net.weight, index, nndx::randT(hProv) % obj[3]->net.weight[index].size());
+		mT(obj[3]->net.weight, index, index + 1);
 	}
 
 	for (size_t i = 0; i < tg - 2; ++i)
@@ -485,30 +590,20 @@ void mA_gen(::std::vector<Object*>& obj, int tg)
 	if (nndx::randT(hProv) % 3 == 2)
 	{
 		index = nndx::randT(hProv) % obj[2]->net.weight.size();
-		mT(obj[2]->net.weight, index, nndx::randT(hProv) % obj[2]->net.weight[index].size());
+		mT(obj[2]->net.weight, index, index + 1);
 	}
 
-	mT(obj[1]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
-	mT(obj[0]->net.weight, obj[11]->net.weight.size(), obj[11]->net.weight.back().size());
+	mT(obj[1]->net.weight, 0, obj[11]->net.weight.size());
+	mT(obj[0]->net.weight, 0, obj[11]->net.weight.size());
 }
 
 void mT(::std::vector<nndx::dataW>& v, size_t index1, size_t index2)
 {
-	for (size_t i = 0; i < index1; ++i)
+	for (size_t i = index1; i < index2; ++i)
 	{
-		if (i != index1 - 1)
+		for (size_t j = 0; j < v[i].size(); ++j)
 		{
-			for (size_t j = 0; j < v[i].size(); ++j)
-			{
-				v[i][j].wg = static_cast<double>(nndx::randT(hProv) % 6) - 2;
-			}
-		}
-		else
-		{
-			for (size_t j = 0; j < index2; ++j)
-			{
-				v[i][j].wg = static_cast<double>(nndx::randT(hProv) % 6) - 2;
-			}
+			v[i][j].wg = static_cast<double>(WEIGHT_FUNC);
 		}
 	}
 }

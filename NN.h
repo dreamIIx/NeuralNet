@@ -6,13 +6,30 @@
 //Actual version 4.2
 //The library include functions and classes to provide support the work with Neural Networks
 
-#include <Windows.h>
+#if defined(_WIN32)
+	#include <Windows.h>
+	typedef HCRYPTPROV dxCRYPT;
+	typedef unsigned long int dxFastInt32; // !for check on Windows!
+#elif defined(__unix__)
+    #if defined(__linux__)
+		#include <random>
+		#include <chrono>
+		typedef ::std::mt19937 dxCRYPT;
+		typedef uint_fast32_t dxFastInt32;
+		#define	def_FILEROOT "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/"
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 
 #include <iostream>
-#include <exception>
+#include <stdexcept>
 #include <fstream>
 #include <string>
 #include <vector>
+#include <cstdarg>
 
 #define defDX_S(x)		#x
 #define defDX_S_(x)		defDX_S(x)
@@ -21,7 +38,19 @@
 #define ERROR_				::std::cout << "Error - " << defDX__FILELINE << ::std::endl; \
 							system("pause");*/
 #ifndef ERROR_
+
+#if defined(_WIN32)
 #define ERROR_				throw ::std::exception((const char*)defDX_S_(__LINE__));
+#elif defined(__unix__)
+#if defined(__linux__)
+#define ERROR_				throw ::std::exception(); // ((const char*)defDX_S_(__LINE__))
+#else
+#error This UNIX operating system is not supported by dx::NN
+#endif
+#else
+#error This operating system is not supported by dx::NN
+#endif
+
 #endif
 #ifndef ER_IF
 //#define ER_IF(x) if ( (x) ) { ERROR_ }
@@ -39,8 +68,8 @@ typedef unsigned short int _dTYPEFUNC;
 
 namespace nndx
 {
-	unsigned int randT(HCRYPTPROV);
-	unsigned int randB(HCRYPTPROV);
+	dxFastInt32 randT(dxCRYPT&);
+	dxFastInt32 randB(dxCRYPT&);
 
 	struct dy_tpl
 	{

@@ -6,17 +6,17 @@ namespace nndx
 	{
 
 	}*/
-
-	unsigned int randT(HCRYPTPROV hProv)
+#if defined(_WIN32)
+	dxFastInt32 randT(dxCRYPT& hProv)
 	{
 		BYTE Buf1 = 0b0;
 
 		if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 		{
-			unsigned int i = static_cast<unsigned int>(Buf1);
+			dxFastInt32 i = static_cast<dxFastInt32>(Buf1);
 			if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 			{
-				i += static_cast<unsigned int>(Buf1);
+				i += static_cast<dxFastInt32>(Buf1);
 				return i;
 			}
 			else
@@ -30,28 +30,28 @@ namespace nndx
 		}
 	}
 
-	unsigned int randB(HCRYPTPROV hProv)
+	dxFastInt32 randB(dxCRYPT& hProv)
 	{
 		BYTE Buf1 = 0b0;
 
 		if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 		{
-			unsigned int i = static_cast<unsigned int>(Buf1);
+			dxFastInt32 i = static_cast<dxFastInt32>(Buf1);
 			i <<= 0b1000;
 
 			if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 			{
-				i += static_cast<unsigned int>(Buf1);
+				i += static_cast<dxFastInt32>(Buf1);
 				i <<= 0b1000;
 
 				if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 				{
-					i += static_cast<unsigned int>(Buf1);
+					i += static_cast<dxFastInt32>(Buf1);
 					i <<= 0b1000; 
 
 					if (CryptGenRandom(hProv, DWORD(sizeof(BYTE)), &Buf1))
 					{
-						i += static_cast<unsigned int>(Buf1);
+						i += static_cast<dxFastInt32>(Buf1);
 						return i;
 					}
 					else
@@ -74,6 +74,28 @@ namespace nndx
 			return 0;
 		}
 	}
+#elif defined(__unix__)
+    #if defined(__linux__)
+		dxFastInt32 randT(dxCRYPT& hProv)
+		{
+			/*dxFastInt32 temp = hProv() % 0b1'1111'1111;
+			::std::cout << temp << ::std::endl;*/
+			return hProv() % 0b1'1111'1111;
+		}
+
+		dxFastInt32 randB(dxCRYPT& hProv)
+		{
+			/*dxFastInt32 temp = hProv();
+			::std::cout << temp << ::std::endl;*/
+			return hProv();
+		}
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
+	
 
 	dy_tpl::dy_tpl(int size, ...)
 	{
@@ -916,7 +938,7 @@ namespace nndx
 	bool neuronet::saveF(const ::std::string& s)
 	{
 		ER_IF(!this->isReady, return false; )
-		::std::ofstream f(s);
+		::std::ofstream f(def_FILEROOT + s);
 		ER_IF(!f.is_open(), f.close(); return false; )
 
 		for (size_t i = 0; i < topology_save.size(); ++i)

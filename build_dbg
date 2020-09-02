@@ -1,0 +1,11 @@
+#!/bin/bash
+clear
+echo "DBG --Project2--"
+echo "compiling..."
+g++ -c Project2/main.cpp Project2/NN.cpp -Wall
+# -Wfatal-errors -fpermissive -Wall -Werror
+# -fsyntax-only
+echo "linking..."
+g++ -o /run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/g++_Project2 main.o NN.o -pthread -lsfml-system -lsfml-window -lsfml-graphics -lX11 -std=c++17
+#echo "starting..."
+#./run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/g++_Project2

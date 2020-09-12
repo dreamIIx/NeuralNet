@@ -34,16 +34,19 @@
 #define defDX_S(x)		#x
 #define defDX_S_(x)		defDX_S(x)
 #define defDX_S__LINE__	defDX_S_(__LINE__)
-/*#define defDX__FILELINE		(__FILE__  " line " defDX_S__LINE__)
+#define defDX__FILELINE		(__FILE__  " line " defDX_S__LINE__)
+/*
 #define ERROR_				::std::cout << "Error - " << defDX__FILELINE << ::std::endl; \
-							system("pause");*/
+							system("pause");
+*/
 #ifndef ERROR_
 
 #if defined(_WIN32)
 #define ERROR_				throw ::std::exception((const char*)defDX_S_(__LINE__));
 #elif defined(__unix__)
 #if defined(__linux__)
-#define ERROR_				throw ::std::exception(); // ((const char*)defDX_S_(__LINE__))
+#define ERROR_				::std::cout << (const char*)defDX__FILELINE << ::std::endl; \
+                            throw ::std::exception(); // ((const char*)defDX_S_(__LINE__))
 #else
 #error This UNIX operating system is not supported by dx::NN
 #endif

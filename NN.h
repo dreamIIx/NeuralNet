@@ -9,7 +9,7 @@
 #if defined(_WIN32)
 	#include <Windows.h>
 	typedef HCRYPTPROV dxCRYPT;
-	typedef unsigned long int dxFastInt32; // !for check on Windows!
+	typedef unsigned long int dxFastInt32;
 #elif defined(__unix__)
     #if defined(__linux__)
 		#include <random>
@@ -171,7 +171,7 @@ namespace nndx
 		bool initFromFile(); // ch
 		bool setFunc(neuron::_func); // ch
 		bool setGenWeightsFunc(double(void));
-		bool setParams(double, double); // ch
+		bool setParams(double amoment, double au); // ch
 
 		bool RunTraining(bool); // ch
 		bool SPECmA(const ::std::vector<double>&); // ch

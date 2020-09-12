@@ -26,7 +26,7 @@ T def_FI(::std::ifstream&);
 
 #include "NN.h"
 
-#define WEIGHT_FUNC ((nndx::randT(hProv) % 6) - 3)
+#define WEIGHT_FUNC ((nndx::randT(hProv) % 3) - 1)
 
 constexpr unsigned int def_WIN_X	=	1000;
 constexpr unsigned int def_WIN_Y	=	400;
@@ -43,12 +43,13 @@ constexpr int def_POSX_WALL			=	(def_POSX + 60);
 constexpr int def_POSY_WALL			=	140;
 constexpr int def_POSY				=	(def_POSY_WALL + 80);
 constexpr int def_SZ_TOPOLOGY		=	3;
+#define			def_TOPOLOGY			2, 3, 2
 constexpr int def_PRE_DISTANCE		=	200;
 
-constexpr double		def_KF				=	0.5;
+constexpr double		def_KF_X				=	0.15;
+constexpr double		def_KF_Y				=	0.75;
 
 #if defined(_WIN32)
-dxCRYPT hProv; // for random number generator(NN.h, Object.h, main.cpp)
 
 #define	def_FILECFG "inf.cfg"
 #define	def_FILEIMAGE "files/image.png"
@@ -57,8 +58,7 @@ dxCRYPT hProv; // for random number generator(NN.h, Object.h, main.cpp)
 
 #elif defined(__unix__)
     #if defined(__linux__)
-dxCRYPT hProv;
-
+	
 #define	def_FILECFG "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/inf.cfg"
 #define	def_FILEIMAGE "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/files/image.png"
 #define def_LOGFILE "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/files/output/log.txt"
@@ -70,14 +70,16 @@ dxCRYPT hProv;
 #else
     #error This operating system is not supported by dx::NN
 #endif
+dxCRYPT hProv; // for random number generator(NN.h, Object.h, main.cpp)
 
 #include "Object.h"
 
 void radixSort(::std::vector<Object*>&);
 void mA_gen(::std::vector<Object*>&, int);
 void mT(::std::vector<nndx::dataW>&, size_t, size_t);
-void mainA(sf::RenderWindow&, sf::View&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&, volatile ::std::atomic_uint&,
-	volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&);
+void mainA(sf::RenderWindow&, sf::View&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&,
+	volatile ::std::atomic_uint&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&,
+	volatile ::std::atomic_bool&, volatile ::std::atomic_bool&);
 
 int main()
 {
@@ -128,13 +130,15 @@ int main()
 	target_.reserve(def_SIZE_VECTOR_WALL);
 
 	volatile ::std::atomic_bool isOpen;
-	isOpen.store(true);
 	volatile ::std::atomic_bool runA;
-	runA.store(false);
 	volatile ::std::atomic_bool newA;
-	newA.store(false);
 	volatile ::std::atomic_bool auto_move;
+	volatile ::std::atomic_bool Lclick_;
+	isOpen.store(true);
+	runA.store(false);
+	newA.store(false);
 	auto_move.store(true);
+	Lclick_.store(false);
 
 	
 #if defined(_WIN32)
@@ -157,7 +161,7 @@ int main()
 #endif
 
 	::std::thread mainThread(mainA, ::std::ref(win), ::std::ref(view), ::std::ref(v_Obj_), ::std::ref(v_Wll_), ::std::ref(target_), ::std::ref(t_), ::std::ref(TIMESET_), ::std::ref(isOpen),
-		::std::ref(runA), ::std::ref(newA), ::std::ref(auto_move));
+		::std::ref(runA), ::std::ref(newA), ::std::ref(auto_move), ::std::ref(Lclick_));
 
 	while (isOpen.load())
 	{
@@ -249,6 +253,17 @@ int main()
 					{
 						win.setFramerateLimit(60);
 					}
+					else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num0))
+					{
+						win.setFramerateLimit(0);
+					}
+				}
+			}
+			else if (event.type == sf::Event::MouseButtonPressed)
+			{
+				if (event.mouseButton.button == sf::Mouse::Left)
+				{
+					Lclick_.store(true);
 				}
 			}
 			else if (event.type == sf::Event::Resized)
@@ -315,16 +330,23 @@ void mainA
 	volatile ::std::atomic_bool& is_Open,
 	volatile ::std::atomic_bool& run_,
 	volatile ::std::atomic_bool& newA_,
-	volatile ::std::atomic_bool& auto_move
+	volatile ::std::atomic_bool& auto_move,
+	volatile ::std::atomic_bool& mLclick
 )
 {
 	win.setActive(true);
 
 	for (int i = 0; i < def__SIZE_; ++i)
 	{
-		v_Obj.emplace_back(t, nndx::dy_tpl(def_SZ_TOPOLOGY, 2, 3, 2), i);
+		v_Obj.emplace_back(t, nndx::dy_tpl(def_SZ_TOPOLOGY, def_TOPOLOGY), i);
 		if (!v_Obj.back().net.getState()) ERROR_
 	}
+	Object& DBG_Obj = v_Obj.front();
+	sf::Sprite DBG_Tx;
+	DBG_Tx.setTexture(t);
+	DBG_Tx.setTextureRect(sf::IntRect(def_TEXTURE_OBJ_X, def_TEXTURE_OBJ_Y, def_TEXTURE_OBJ_X, def_TEXTURE_OBJ_Y));
+	DBG_Tx.setOrigin(DBG_Obj.obj.getOrigin());
+	DBG_Tx.setPosition(DBG_Obj.obj.getPosition());
 
 	int tmpy = nndx::randT(hProv) % def__NUM_ACTIVE_WALL;
 	int next = nndx::randT(hProv) % def__NUM_ACTIVE_WALL;
@@ -365,6 +387,8 @@ void mainA
 #endif
 	}
 
+	sf::Vector2i mPos;
+
 	while (is_Open.load())
 	{
 		if (!auto_move.load())
@@ -393,6 +417,8 @@ void mainA
 
 		if (_ptr.size())
 		{
+			mPos = static_cast<sf::Vector2i>(win.mapPixelToCoords(sf::Mouse::getPosition(win)));
+
 			if (v_Wll[0][0].wall.getPosition().x < minposx_obj)
 			{
 				for (int i = 0; i < static_cast<int>((minposx_obj - v_Wll[0][0].wall.getPosition().x) / def_TEXTURE_WLL_X) - 1; ++i)
@@ -424,6 +450,20 @@ void mainA
 		if (_ptr.size() && (((!auto_move.load()) && (!newA_.load()))
 			|| (auto_move.load() && (((bufsizeO == _ptr.size()) ? *tm < TIMESET.load() : tm.restart()) || (TIMESET.load() == 0xFFFFFFFF)))))
 		{
+			if (mLclick.load())
+			{
+				mLclick.store(false);
+				for (size_t i = 0; i < _ptr.size(); ++i)
+				{
+					if (_ptr[i]->obj.getGlobalBounds().contains(mPos.x, mPos.y))
+					{
+						DBG_Obj = *_ptr[i];
+						::std::cout << "SET" << ::std::endl;
+						break;
+					}
+				}
+			}
+
 			bufsizeO = _ptr.size();
 			for (size_t i = 0; i < _ptr.size(); ++i)
 			{
@@ -440,6 +480,14 @@ void mainA
 						if (res)
 						{
 							_ptr[i]->mA(std::move(_ptr[i]->net.getResults()));
+							//
+							if (i == 0)
+							{
+								::std::cout << "[0] -  " << DBG_Obj.net.getResults()[0] << ::std::endl;
+								::std::cout << "[1] -  " << DBG_Obj.net.getResults()[1] << ::std::endl;
+								::std::cout << "----------------------------------------" << ::std::endl;
+							}
+							//
 						}
 						else
 						{
@@ -452,14 +500,25 @@ void mainA
 
 			for (size_t i = 0; i < _ptr.size(); ++i)
 			{
-				for (size_t j = 0; j < v_Wll.size(); ++j)
+				if (_ptr[i]->stepA < 1)
 				{
-					for (size_t k = 0; k < v_Wll[j].size(); ++k)
+					_ptr[i]->life = false;
+					//_ptr[i]->net.callFuncHebb(); // optional
+				}
+				else
+				{
+					for (size_t j = 0; j < v_Wll.size(); ++j)
 					{
-						if (_ptr[i]->obj.getGlobalBounds().intersects(v_Wll[j][k].wall.getGlobalBounds()))	_ptr[i]->life = false;
+						for (size_t k = 0; k < v_Wll[j].size(); ++k)
+						{
+							if (_ptr[i]->obj.getGlobalBounds().intersects(v_Wll[j][k].wall.getGlobalBounds()))
+							{
+								_ptr[i]->life = false;
+								//_ptr[i]->net.callFuncHebb(); // optional
+							}
+						}
 					}
 				}
-				if (_ptr[i]->stepA < 1)	_ptr[i]->life = false;
 			}
 		}
 		else
@@ -472,8 +531,8 @@ void mainA
 			}
 			radixSort(_ptr);
 			endP << _ptr.back()->score << ::std::endl;
-			++numITER;
 			mA_gen(_ptr, def_SZ_TOPOLOGY);
+			++numITER;
 
 			for (size_t i = 0; i < v_Obj.size(); ++i)
 			{
@@ -501,6 +560,7 @@ void mainA
 			bufsizeO = def__SIZE_;
 			tm.restart();
 		}
+		DBG_Tx.setPosition(DBG_Obj.obj.getPosition());
 
 		view.setCenter(static_cast<float>(maxposx_obj), 250.0f);
 
@@ -517,6 +577,7 @@ void mainA
 		{
 			win.draw(_ptr[i]->obj);
 		}
+		win.draw(DBG_Tx);
 		win.display();
 	}
 

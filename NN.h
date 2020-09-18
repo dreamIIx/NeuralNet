@@ -57,11 +57,11 @@
 #endif
 #ifndef ER_IF
 //#define ER_IF(x) if ( (x) ) { ERROR_ }
-#define ER_IF(x, y) if ( (x) ) { ERROR_ y }
+#define ER_IF(x, beforeExc, AfterExc) if ( (x) ) { beforeExc ERROR_ AfterExc }
 #endif
 #ifndef ER_IFN
 //#define ER_IFN(x) if ( !(x) ) { ERROR_ }
-#define ER_IFN(x, y) if ( !(x) ) { ERROR_ y }
+#define ER_IFN(x, beforeExc, AfterExc) if ( !(x) ) { beforeExc ERROR_ AfterExc }
 #endif
 
 // main flag

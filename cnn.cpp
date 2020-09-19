@@ -10,17 +10,50 @@
 
 #include "ConvNN.h"
 
-HCRYPTPROV hProv;
+#if defined(__unix__)
+#if defined(__linux__)
+#include <X11/Xlib.h>
+#else
+#error This UNIX operating system is not supported by dx::NN
+#endif
+#endif
+
+dxCRYPT hProv;
 
 int main()
 {
+#if defined(_WIN32)
+	ShowWindow(GetConsoleWindow(), SW_HIDE);
+#elif defined(__unix__)
+    #if defined(__linux__)
+		// terminal take off
+    	XInitThreads();
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
+
+		
+#if defined(_WIN32)
 	if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
 		if (GetLastError() == NTE_BAD_KEYSET)
 			if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
 			{
 				ERROR_
-					return 0;
+					system("pause");
+				return 0;
 			}
+#elif defined(__unix__)
+    #if defined(__linux__)
+		hProv.seed(::std::chrono::system_clock::to_time_t(::std::chrono::system_clock::now()));
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 
 	//nndx::CNN test;
 	nndx::CNN test("output/savedCNN.txt", []()->double { return static_cast<double>((nndx::randB(hProv) % 100) / 100.); });

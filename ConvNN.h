@@ -1580,10 +1580,16 @@ namespace nndx
 								for (size_t kx = 0; kx < vkernel[tempIdxKernel][i].back().size(); ++kx)
 								{
 									sumR += vkernel[tempIdxKernel][i][ky][kx].R.wg * vinLayer[y + ky][x + kx].Rn.data;
+									//::std::cout << "RED - " << vinLayer[y + ky][x + kx].Rn.data << ::std::endl;
 									sumG += vkernel[tempIdxKernel][i][ky][kx].G.wg * vinLayer[y + ky][x + kx].Gn.data;
+									//::std::cout << "GREEN - " << vinLayer[y + ky][x + kx].Gn.data << ::std::endl;
 									sumB += vkernel[tempIdxKernel][i][ky][kx].B.wg * vinLayer[y + ky][x + kx].Bn.data;
+									//::std::cout << "BLUE - " << vinLayer[y + ky][x + kx].Bn.data << ::std::endl;
 								}
 							}
+							//::std::cout << "sumR - " << sumR << ::std::endl;
+							//::std::cout << "sumG - " << sumG << ::std::endl;
+							//::std::cout << "sumB - " << sumB << ::std::endl;
 							vlayer[0][i][y][x].init(ReLU(sumR), ReLU(sumG), ReLU(sumB));
 						}
 					}

@@ -10,6 +10,7 @@
 	#include <Windows.h>
 	typedef HCRYPTPROV dxCRYPT;
 	typedef unsigned long int dxFastInt32;
+	#define	def_FILEROOT "./"
 #elif defined(__unix__)
     #if defined(__linux__)
 		#include <random>
@@ -42,11 +43,20 @@
 #ifndef ERROR_
 
 #if defined(_WIN32)
-#define ERROR_				throw ::std::exception((const char*)defDX_S_(__LINE__));
+#define ERROR_				try {																	\
+                            	throw ::std::exception();											\
+							} catch (::std::exception x) {											\
+								::std::cout << (const char*)defDX__FILELINE << ::std::endl;			\
+							}
+							// ((const char*)defDX_S_(__LINE__))
 #elif defined(__unix__)
 #if defined(__linux__)
-#define ERROR_				::std::cout << (const char*)defDX__FILELINE << ::std::endl; \
-                            throw ::std::exception(); // ((const char*)defDX_S_(__LINE__))
+#define ERROR_				try {																	\
+                            	throw ::std::exception();											\
+							} catch (::std::exception x) {											\
+								::std::cout << (const char*)defDX__FILELINE << ::std::endl;			\
+							}
+							// ((const char*)defDX_S_(__LINE__))
 #else
 #error This UNIX operating system is not supported by dx::NN
 #endif

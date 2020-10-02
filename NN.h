@@ -45,7 +45,7 @@
 #if defined(_WIN32)
 #define ERROR_				try {																	\
                             	throw ::std::exception();											\
-							} catch (::std::exception x) {											\
+							} catch (::std::exception& x) {											\
 								::std::cout << (const char*)defDX__FILELINE << ::std::endl;			\
 							}
 							// ((const char*)defDX_S_(__LINE__))
@@ -53,7 +53,7 @@
 #if defined(__linux__)
 #define ERROR_				try {																	\
                             	throw ::std::exception();											\
-							} catch (::std::exception x) {											\
+							} catch (::std::exception& x) {											\
 								::std::cout << (const char*)defDX__FILELINE << ::std::endl;			\
 							}
 							// ((const char*)defDX_S_(__LINE__))

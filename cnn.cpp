@@ -56,7 +56,7 @@ int main(int argc, char** argv)
 	ER_IFN(test.initDir("images/", "output/", "data/"), , return 1; )
 #elif defined(__unix__)
 #if defined(__linux__)
-	ER_IFN(test.initDir("./images", "./output", "./data"), , return 1; )
+	ER_IFN(test.initDir("./images/", "./output/", "./data/"), , return 1; )
 #else
 #error This UNIX operating system is not supported by dx::NN
 #endif
@@ -167,6 +167,7 @@ example: 9 --loadkrnl 3 1 kr11 0 kr12 1 kr21 --initfunc 2 prll 0 -2
 			-2 - decreaseX2_RGB(max)
 			-3 - decreaseX2_RGB(min)
 			-4 - decreaseX2_RGB(mid)
+Also, default dirs(pathes) should be ./image/, ./output/, ./data/
 					)" << ::std::endl;
 				return 0;
 			}
@@ -183,7 +184,8 @@ example: 9 --loadkrnl 3 1 kr11 0 kr12 1 kr21 --initfunc 2 prll 0 -2
 	test.init_neuronet(::std::vector<int>{10, 1}, []()->double { return static_cast<double>(((nndx::randB(hProv) % 100) - 50.) / 100.); },
 		nndx::neuron::_func::_fnSIGMOID, 0.3, 0.5);
 
-	ER_IFN(test.mA_Res(),, return 1; )
+	ER_IFN(test.mA_Res(), ::std::cout << "test.mA_Res() returns - false" << ::std::endl; , return 1; )
+	ER_IFN(test.FullSave(), ::std::cout << "test.FullSave() returns - false" << ::std::endl; , return 1; )
 
 /*
 	ER_IFN(test.defKrnlFromFile(0, 0),, return 1; )

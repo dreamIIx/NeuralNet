@@ -780,17 +780,17 @@ namespace nndx
 			ER_IFN(net.setParams(moment, u),, )
 
 			//// Inet init
-			//if (Inet.getState())
-			//{
-			//	Inet.~neuronet();
-			//	ER_IF(Inet.getState(),, return false; )
-			//}
-			//else
-			//{
-			//	res = Inet.setGenWeightsFunc(funcWeights);
-			//	res = Inet.init(::std::vector<int>{3, 2, 1}, funcNet);
-			//	res = Inet.setParams(moment, u);
-			//}
+			if (Inet.getState())
+			{
+				Inet.~neuronet();
+				ER_IF(Inet.getState(),, return false; )
+			}
+			else
+			{
+				ER_IFN(Inet.setGenWeightsFunc(funcWeights),, return false; )
+				ER_IFN(Inet.init(::std::vector<int>{3, 2, 1}, funcNet),, return false; )
+				ER_IFN(Inet.setParams(moment, u),, return false; )
+			}
 
 			return (net.getState() && Inet.getState());
 		}
@@ -798,7 +798,7 @@ namespace nndx
 		bool init_neuronet(nndx::neuronet&& x, nndx::neuronet&& Ix)
 		{
 			net = ::std::forward<decltype(x)>(x);
-			//Inet = ::std::forward<decltype(Ix)>(Ix);
+			Inet = ::std::forward<decltype(Ix)>(Ix);
 
 			return (net.getState() && Inet.getState());
 		}
@@ -819,18 +819,18 @@ namespace nndx
 			ER_IFN(net.setParams(moment, u),, )
 
 			//// Inet init
-			//if (Inet.getState())
-			//{
-			//	Inet.~neuronet();
-			//	ER_IF(Inet.getState(),, return false; )
-			//}
-			//else
-			//{
-			//	Inet.nDataNet = Ifile;
-			//	res = Inet.initFromFile();
-			//	res = Inet.setFunc(funcNet);
-			//	res = Inet.setParams(moment, u);
-			//}
+			if (Inet.getState())
+			{
+				Inet.~neuronet();
+				ER_IF(Inet.getState(),, return false; )
+			}
+			else
+			{
+				Inet.nDataNet = Ifile;
+				ER_IFN(Inet.initFromFile(),, return false; )
+				ER_IFN(Inet.setFunc(funcNet),, return false; )
+				ER_IFN(Inet.setParams(moment, u),, return false; )
+			}
 
 			return (net.getState() && Inet.getState());
 		}
@@ -933,13 +933,14 @@ namespace nndx
 #endif
 		{
 			//__bool temp;
-			bool res = true;
-			ER_IFN(res = net.saveF(outputF + "net.txt"),, return res; )
-			ER_IFN(res = Inet.saveF(outputF + "Inet.txt"),, return res; )
-			ER_IFN(res = SaveCNN(),, return res; )
-			ER_IFN(res = SaveKrnl(),, return res; )
+			::std::string temp1 = outputF + "net.txt";
+			::std::string temp2 = outputF + "Inet.txt";
+			ER_IFN(net.saveF(temp1.c_str()),, return false; )
+			ER_IFN(Inet.saveF(temp2.c_str()),, return false; )
+			ER_IFN(SaveCNN(),, return false; )
+			ER_IFN(SaveKrnl(),, return false; )
 
-			return res;
+			return true;
 		}
 
 		bool mA_Iter(const ::std::vector<::std::vector<double>>& results, unsigned int iter, size_t func(unsigned int&), ::std::string subS, ::std::string extImg)
@@ -1149,13 +1150,15 @@ namespace nndx
 						//::std::cout << vlayer.back()[s][i][j].Rn.data << ::std::endl;
 						//::std::cout << vlayer.back()[s][i][j].Gn.data << ::std::endl;
 						//::std::cout << vlayer.back()[s][i][j].Bn.data << ::std::endl;
-						//Inet.fillInput(::std::vector<double>{vlayer.back()[s][i][j].Rn.data, vlayer.back()[s][i][j].Gn.data, vlayer.back()[s][i][j].Bn.data});
-						//Inet.activationF();
-						//double resInet = Inet.getResults()[0];
+						Inet.fillInput(::std::vector<double>{vlayer.back()[s][i][j].Rn.data, vlayer.back()[s][i][j].Gn.data, vlayer.back()[s][i][j].Bn.data});
+						Inet.activationF();
+						double resInet = Inet.getResults()[0];
 						input.reserve(input.capacity() + 1);
-						double tempVal = /*cneuron::mSIGMOID(*/vlayer.back()[s][i][j].Grayn();//);
-						if (tempVal > maxVal) maxVal = tempVal;
-						input.emplace_back(tempVal);
+						//double tempVal = /*cneuron::mSIGMOID(*/vlayer.back()[s][i][j].Grayn();//);
+						//if (tempVal > maxVal) maxVal = tempVal;
+						if (resInet > maxVal) maxVal = resInet;
+						//input.emplace_back(tempVal);
+						input.emplace_back(resInet);
 					}
 				}
 			}

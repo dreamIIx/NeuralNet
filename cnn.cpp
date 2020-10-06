@@ -52,14 +52,26 @@ int main(int argc, char** argv)
 	::std::vector<ptrdiff_t> vArg;
 	cv::Mat img;
 
-	ER_IFN(test.initDir("./images", "./output", "./data"),, return 1; )
+#if defined(_WIN32)
+	ER_IFN(test.initDir("images/", "output/", "data/"), , return 1; )
+#elif defined(__unix__)
+#if defined(__linux__)
+	ER_IFN(test.initDir("./images", "./output", "./data"), , return 1; )
+#else
+#error This UNIX operating system is not supported by dx::NN
+#endif
+#else
+#error This operating system is not supported by dx::NN
+#endif
 
 	// <NUMOFARGV (ARGC)> <option1> <numofargv of option1> <argv of option1> <option2> ...
 	// example: 9 loadkrnl 3 1 kr11 0 kr12 1 kr21 initfunc 3 prll 0 -2
-	// initimg: <filename of input image (without ext - .png, .jpg)>
+	// initimg: <path/filename.extension (of input image)>
 	// loadkrnl: loadkrnl <numofargs> <bool flag1: create new vkernel element> <filename1 of kernel1 (without ext - .krnl)> <flag2> <filename2> ...
 	// loadkrnl: <flag> <filename> - is ONE arg
 	// loadkrnl: mostly first argv should be "1 <name>", since vkernel.size() == 0 (for emplace first vkernel element)
+	// loadkinf: <path/filename.kinf (of kernel info file)>
+	// .kinf files: syntax same as loadkrnl init (without first arg - numofargs)
 	// initfunc: initfunc <numofargs> <arg1: vfunc> <arg2: vfunc> ...
 	// initfunc: initfunc <numofargs> ... "prll" <parallel arg> ...
 	// initfunc: "prll" <parallel arg> - is ONE arg
@@ -74,7 +86,7 @@ int main(int argc, char** argv)
 		while(i < argc)
 		{
 			::std::string option = argv[i++];
-			if (option == "loadkrnl")
+			if (option == "--loadkrnl")
 			{
 				int num = ::std::atoi(argv[i++]);
 				ER_IFN(num > 0,, return 1; )
@@ -85,13 +97,44 @@ int main(int argc, char** argv)
 					ER_IFN(test.addKrnlFromFile((flag == 0) ? false : true, option.c_str()),, return 1; )
 				}
 			}
-			else if (option == "initimg")
+			else if (option == "--loadkinf")
 			{
-				//option = argv[i++];
-				img = cv::imread(argv[i++]);
-				ER_IFN(test.init_image(img),, return 1; )
+				option = argv[i++];
+				::std::ifstream read(option);
+				ER_IFN(read.is_open(),
+					::std::cout << "read.is_open() returns - false" << ::std::endl;
+					::std::cout << "option = " << option << ::std::endl;, return 1; )
+				else
+				{
+					while (!read.eof())
+					{
+						read >> option;
+						int flag = ::std::atoi(option.c_str());
+						read >> option;
+						ER_IFN(test.addKrnlFromFile((flag == 0) ? false : true, option.c_str()),, return 1; )
+					}
+				}
 			}
-			else if (option == "initfunc")
+			else if (option == "--initimg")
+			{
+/*
+#if defined(_WIN32)
+				option = "images\\";
+#elif defined(__unix__)
+#if defined(__linux__)
+				option = "./images/";
+#else
+#error This UNIX operating system is not supported by dx::NN
+#endif
+#else
+#error This operating system is not supported by dx::NN
+#endif
+*/
+				option = argv[i++];
+				img = cv::imread(option);
+				ER_IFN(test.init_image(img), ::std::cout << "option = " << option << ::std::endl; , return 1; )
+			}
+			else if (option == "--initfunc")
 			{
 				int num = ::std::atoi(argv[i++]);
 				ER_IFN(num > 0,, return 1; )
@@ -105,9 +148,31 @@ int main(int argc, char** argv)
 					vArg.emplace_back(arg);
 				}
 			}
+			else if (option == "--help")
+			{
+				::std::cout << R"(
+<NUMOFARGV (ARGC)> <option1> <numofargv of option1> <argv of option1> <option2> ...
+example: 9 --loadkrnl 3 1 kr11 0 kr12 1 kr21 --initfunc 2 prll 0 -2
+--initimg: <path/filename.extension (of input image)>
+--loadkrnl: --loadkrnl <numofargs> <bool flag1: create new vkernel element> <filename1 of kernel1 (without ext - .krnl)> <flag2> <filename2> ...
+--loadkrnl: <flag> <filename> - is ONE arg
+--loadkrnl: mostly first argv should be "1 <name>", since vkernel.size() == 0 (for emplace first vkernel element)
+--loadkinf: <path/filename.kinf (of kernel info file)>
+.kinf files: syntax same as --loadkrnl init (without first arg - numofargs)
+--initfunc: --initfunc <numofargs> <arg1: vfunc> <arg2: vfunc> ...
+--initfunc: --initfunc <numofargs> ... "prll" <parallel arg> ...
+--initfunc: "prll" <parallel arg> - is ONE arg
+			vfunc:
+			x >= 0 - convFunc_RGB (x - idx of kernel's layer)
+			-2 - decreaseX2_RGB(max)
+			-3 - decreaseX2_RGB(min)
+			-4 - decreaseX2_RGB(mid)
+					)" << ::std::endl;
+				return 0;
+			}
 			else
 			{
-				::std::cout << "option - " << option << ::std::endl;
+				::std::cout << "unknown option - " << option << ::std::endl;
 				ERROR_
 				return 1;
 			}

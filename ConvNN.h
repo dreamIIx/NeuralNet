@@ -35,7 +35,7 @@
 
 namespace nndx
 {
-	constexpr unsigned char _clr_ = static_cast<unsigned char>(0b1111'1111);
+	constexpr unsigned /*char*/int _clr_ = static_cast<unsigned /*char*/int>(0b1111'1111);
 	constexpr int parall_flag = 0b1111'1111;
 	constexpr const char* kernel_ext = ".krnl";
 	constexpr const char* _filend = "endOFfile";
@@ -144,14 +144,14 @@ namespace nndx
 		static double mSIGMOID(double value)
 		{
 			//return 1. / (1. + exp(-value));
-			return value / 1000.;
+			return value / _clr_;
 		}
 
-		static double mSIGMOID_DRV(double value)
+		/*static double mSIGMOID_DRV(double value)
 		{
 			return value * (1. - value);
 			//return 1.;
-		}
+		}*/
 
 		~cneuron() {}
 	};
@@ -171,9 +171,9 @@ namespace nndx
 
 		rgb_T(const cv::Vec3b& v)
 		{
-			Bn.data = v[0] / _clr_;
-			Gn.data = v[1] / _clr_;
-			Rn.data = v[2] / _clr_;
+			Bn.data = v[0];// / _clr_;
+			Gn.data = v[1];// / _clr_;
+			Rn.data = v[2];// / _clr_;
 		}
 
 		rgb_T(const rgb_T& instance)
@@ -387,7 +387,6 @@ namespace nndx
 		//count of rows and cols of image must be greater than 1, type - CV_8UC3
 		bool init_image(const cv::Mat& img)
 		{
-			
 			ER_IF((img.rows < 2) || (img.cols < 2),, return false; )
 			if (!vinLayer.empty())
 			{
@@ -649,8 +648,8 @@ namespace nndx
 		// !!! Init			input image				before !!!
 		bool initFuncEx(double rand(void), const ::std::vector<ptrdiff_t>& args)
 		{
-			ER_IF(vinLayer.empty(),, return false; )
-			ER_IF(vkernel.empty(),, return false; )
+			ER_IF(vinLayer.empty(), ::std::cout << "Input image is not initialized!" << ::std::endl; , return false; )
+			ER_IF(vkernel.empty(), ::std::cout << "There are not any initialized kernel!" << ::std::endl; , return false; )
 
 			isReady = false;
 			if (!vlayer.empty())
@@ -963,7 +962,7 @@ namespace nndx
 
 				ER_IFN(mA(),, return false; )
 
-				for (size_t s = 0; s < vlayer.back().size(); ++s)
+				/*for (size_t s = 0; s < vlayer.back().size(); ++s)
 				{
 					for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
 					{
@@ -973,10 +972,11 @@ namespace nndx
 							in.emplace_back(cneuron::mSIGMOID(vlayer.back()[s][i][j].Grayn()));
 						}
 					}
-				}
+				}*/
 
-				ER_IFN(net.fillInput(in),, return false; )
-				ER_IFN(net.callActivationF(),, return false; )
+				ER_IFN(fillInputCNN(in), ::std::cout << "[CNN] fillInputCNN() returns false" << ::std::endl; , return false; )
+				ER_IFN(net.fillInput(in), ::std::cout << "[CNN] net.fillInput() returns false" << ::std::endl; , return false; )
+				ER_IFN(net.callActivationF(), ::std::cout << "[CNN] net.callActivationF() returns false" << ::std::endl; , return false; )
 
 #ifdef _CNN_COMMENTS
 				::std::cout << " func(i) - " << func(i) << "\n";
@@ -1024,7 +1024,7 @@ namespace nndx
 
 				ER_IFN(mA(),, return false; )
 
-				for (size_t s = 0; s < vlayer.back().size(); ++s)
+				/*for (size_t s = 0; s < vlayer.back().size(); ++s)
 				{
 					for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
 					{
@@ -1034,10 +1034,11 @@ namespace nndx
 							in.emplace_back(cneuron::mSIGMOID(vlayer.back()[s][i][j].Grayn()));
 						}
 					}
-				}
+				}*/
 
-				ER_IFN(net.fillInput(in),, return false; )
-				ER_IFN(net.callActivationF(),, return false; )
+				ER_IFN(fillInputCNN(in), ::std::cout << "[CNN] fillInputCNN() returns false" << ::std::endl; , return false; )
+				ER_IFN(net.fillInput(in), ::std::cout << "[CNN] net.fillInput() returns false" << ::std::endl; , return false; )
+				ER_IFN(net.callActivationF(), ::std::cout << "[CNN] net.callActivationF() returns false" << ::std::endl; , return false; )
 
 #ifdef _CNN_COMMENTS
 				::std::cout << " func(i) - " << func(i) << "\n";
@@ -1103,14 +1104,14 @@ namespace nndx
 
 		bool mA_Res()
 		{
-			ER_IF(!isReady,, return false; )
+			ER_IF(!isReady, ::std::cout << "[CNN] isReady = false" << ::std::endl; , return false; )
 
 			::std::vector<double> in;
 			//__bool resT;
 
-			ER_IFN(mA(),, return false; )
+			ER_IFN(mA(), ::std::cout << "mA() returns false" << ::std::endl; , return false; )
 
-			for (size_t s = 0; s < vlayer.back().size(); ++s)
+			/*for (size_t s = 0; s < vlayer.back().size(); ++s)
 			{
 				for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
 				{
@@ -1120,10 +1121,11 @@ namespace nndx
 						in.emplace_back(cneuron::mSIGMOID(vlayer.back()[s][i][j].Grayn()));
 					}
 				}
-			}
+			}*/
 
-			ER_IFN(net.fillInput(in),, return false; )
-			ER_IFN(net.callActivationF(),, return false; )
+			ER_IFN(fillInputCNN(in), ::std::cout << "[CNN] fillInputCNN() returns false" << ::std::endl; , return false; )
+			ER_IFN(net.fillInput(in), ::std::cout << "[CNN] net.fillInput() returns false" << ::std::endl; , return false; )
+			ER_IFN(net.callActivationF(), ::std::cout << "[CNN] net.callActivationF() returns false" << ::std::endl; , return false; )
 
 			for (auto& x : net.getResults())
 			{
@@ -1137,6 +1139,7 @@ namespace nndx
 	private:
 		bool fillInputCNN(::std::vector<double>& input)
 		{
+			double maxVal = -10000.;
 			for (size_t s = 0; s < vlayer.back().size(); ++s)
 			{
 				for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
@@ -1150,11 +1153,17 @@ namespace nndx
 						//Inet.activationF();
 						//double resInet = Inet.getResults()[0];
 						input.reserve(input.capacity() + 1);
-						input.emplace_back(cneuron::mSIGMOID(vlayer.back()[s][i][j].Grayn()));
+						double tempVal = /*cneuron::mSIGMOID(*/vlayer.back()[s][i][j].Grayn();//);
+						if (tempVal > maxVal) maxVal = tempVal;
+						input.emplace_back(tempVal);
 					}
 				}
 			}
-			//::std::cout << ::std::endl;
+			//::std::cout << "MaxValue = " << maxVal << ::std::endl;
+			for(auto& x : input)
+			{
+				x /= maxVal;
+			}
 
 			return true;
 		}
@@ -1998,9 +2007,9 @@ namespace nndx
 				{
 					for (size_t x = 0; x < locX; ++x)
 					{
-						output.at<cv::Vec3b>(cv::Point(x, y))[2] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Rn.data  * _clr_);
-						output.at<cv::Vec3b>(cv::Point(x, y))[1] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Gn.data  * _clr_);
-						output.at<cv::Vec3b>(cv::Point(x, y))[0] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Bn.data  * _clr_);
+						output.at<cv::Vec3b>(cv::Point(x, y))[2] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Rn.data/*  * _clr_*/);
+						output.at<cv::Vec3b>(cv::Point(x, y))[1] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Gn.data/*  * _clr_*/);
+						output.at<cv::Vec3b>(cv::Point(x, y))[0] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Bn.data/*  * _clr_*/);
 					}
 				}
 				::std::string s = outputF + "imRGB" + nts(idx);
@@ -2025,7 +2034,7 @@ namespace nndx
 				{
 					for (size_t x = 0; x < locX; ++x)
 					{
-						output.at<uint8_t>(cv::Point(x, y)) = static_cast<unsigned char>(vlayer[idx][cur][y][x].Grayn() * _clr_);
+						output.at<uint8_t>(cv::Point(x, y)) = static_cast<unsigned char>(vlayer[idx][cur][y][x].Grayn()/* * _clr_*/);
 					}
 				}
 				::std::string s = outputF + "imGray" + nts(idx);
@@ -2056,9 +2065,9 @@ namespace nndx
 				{
 					for (size_t x = 0; x < locX; ++x)
 					{
-						write << vlayer[idx][cur][y][x].Rn.data * _clr_ << ' ';
-						write << vlayer[idx][cur][y][x].Gn.data * _clr_ << ' ';
-						write << vlayer[idx][cur][y][x].Bn.data * _clr_ << ::std::endl;
+						write << vlayer[idx][cur][y][x].Rn.data/* * _clr_*/ << ' ';
+						write << vlayer[idx][cur][y][x].Gn.data/* * _clr_*/ << ' ';
+						write << vlayer[idx][cur][y][x].Bn.data/* * _clr_*/ << ::std::endl;
 					}
 				}
 				write << _filend;

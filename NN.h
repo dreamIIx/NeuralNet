@@ -43,18 +43,22 @@
 #ifndef ERROR_
 
 #if defined(_WIN32)
-#define ERROR_				try {																	\
-                            	throw ::std::exception();											\
-							} catch (::std::exception& x) {											\
-								::std::cout << (const char*)defDX__FILELINE << ::std::endl;			\
-							}
+#define ERROR_				::std::cout << "![EXCPT]" << (const char*)defDX__FILELINE << ::std::endl; 	\
+							throw ::std::exception();
+							/*try {																		\
+                            	throw ::std::exception();												\
+							} catch (::std::exception& x) {												\
+								::std::cout << (const char*)defDX__FILELINE << ::std::endl;				\
+							}*/
 							// ((const char*)defDX_S_(__LINE__))
+							//::std::cout << (const char*)defDX__FILELINE << ::std::endl; \
+							//throw ::std::exception();
 #elif defined(__unix__)
 #if defined(__linux__)
-#define ERROR_				try {																	\
-                            	throw ::std::exception();											\
-							} catch (::std::exception& x) {											\
-								::std::cout << (const char*)defDX__FILELINE << ::std::endl;			\
+#define ERROR_				try {																			\
+                            	throw ::std::exception();													\
+							} catch (::std::exception& x) {													\
+								::std::cout << "![EXCPT]" << (const char*)defDX__FILELINE << ::std::endl;	\
 							}
 							// ((const char*)defDX_S_(__LINE__))
 #else

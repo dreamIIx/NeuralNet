@@ -10,14 +10,14 @@
 	#include <Windows.h>
 	typedef HCRYPTPROV dxCRYPT;
 	typedef unsigned long int dxFastInt32;
-	#define	def_FILEROOT "./"
+	//#define	def_FILEROOT "./" is BAD
 #elif defined(__unix__)
     #if defined(__linux__)
 		#include <random>
 		#include <chrono>
 		typedef ::std::mt19937 dxCRYPT;
 		typedef uint_fast32_t dxFastInt32;
-		#define	def_FILEROOT "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/"
+		//#define	def_FILEROOT "./" is BAD
     #else
         #error This UNIX operating system is not supported by dx::NN
     #endif

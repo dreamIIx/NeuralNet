@@ -938,7 +938,7 @@ namespace nndx
 	bool neuronet::saveF(const ::std::string& s)
 	{
 		ER_IF(!this->isReady,, return false; )
-		::std::ofstream f(def_FILEROOT + s);
+		::std::ofstream f(s);
 		ER_IF(!f.is_open(), f.close();, return false; )
 
 		for (size_t i = 0; i < topology_save.size(); ++i)

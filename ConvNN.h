@@ -935,8 +935,8 @@ namespace nndx
 			//__bool temp;
 			::std::string temp1 = outputF + "net.txt";
 			::std::string temp2 = outputF + "Inet.txt";
-			ER_IFN(net.saveF(temp1.c_str()),, return false; )
-			ER_IFN(Inet.saveF(temp2.c_str()),, return false; )
+			ER_IFN(net.saveF(temp1),, return false; )
+			ER_IFN(Inet.saveF(temp2),, return false; )
 			ER_IFN(SaveCNN(),, return false; )
 			ER_IFN(SaveKrnl(),, return false; )
 

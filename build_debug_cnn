@@ -2,7 +2,7 @@
 clear
 echo "DBG _TEST_"
 echo "compiling..."
-g++ -fpermissive -c _TEST_/cnn.cpp
+g++ -fpermissive -c _TEST_/cnn.cpp _TEST_/NN.cpp
 # _TEST_/NN.cpp 
 # -Wfatal-errors -fpermissive -Wall -Werror
 # -fsyntax-only

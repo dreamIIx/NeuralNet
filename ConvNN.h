@@ -24,7 +24,7 @@
 #include <vector>
 #include <string>
 
-#include "opencv2/opencv.hpp"
+#include <opencv2/opencv.hpp>
 
 // main flag
 #define _NNDX_CONV_NEURONET_DEF

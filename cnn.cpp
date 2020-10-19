@@ -64,22 +64,24 @@ int main(int argc, char** argv)
 #error This operating system is not supported by dx::NN
 #endif
 
-	// <NUMOFARGV (ARGC)> <option1> <numofargv of option1> <argv of option1> <option2> ...
-	// example: 9 loadkrnl 3 1 kr11 0 kr12 1 kr21 initfunc 3 prll 0 -2
-	// initimg: <path/filename.extension (of input image)>
-	// loadkrnl: loadkrnl <numofargs> <bool flag1: create new vkernel element> <filename1 of kernel1 (without ext - .krnl)> <flag2> <filename2> ...
-	// loadkrnl: <flag> <filename> - is ONE arg
-	// loadkrnl: mostly first argv should be "1 <name>", since vkernel.size() == 0 (for emplace first vkernel element)
-	// loadkinf: <path/filename.kinf (of kernel info file)>
-	// .kinf files: syntax same as loadkrnl init (without first arg - numofargs)
-	// initfunc: initfunc <numofargs> <arg1: vfunc> <arg2: vfunc> ...
-	// initfunc: initfunc <numofargs> ... "prll" <parallel arg> ...
-	// initfunc: "prll" <parallel arg> - is ONE arg
+	// <NUMOFARGV (ARGC)> --<option1> <numofargv of option1> <argv of option1> --<option2> ...
+	// example: 9 --loadkrnl 3 1 kr11 0 kr12 1 kr21 --initfunc 3 prll 0 -2
+	// --initimg: <path/filename.extension (of input image)>
+	// --loadkrnl: --loadkrnl <numofargs> <bool flag1: create new vkernel element> <filename1 of kernel1 (without ext - .krnl)> <flag2> <filename2> ...
+	// --loadkrnl: <flag> <filename> - is ONE arg
+	// --loadkrnl: mostly first argv should be "1 <name>", since vkernel.size() == 0 (for emplace first vkernel element)
+	// --loadkinf: <path/filename.kinf (of kernel info file)>
+	// .kinf files: syntax same as --loadkrnl init (without first arg - numofargs)
+	// --initfunc: --initfunc <numofargs> <arg1: vfunc> <arg2: vfunc> ...
+	// --initfunc: --initfunc <numofargs> ... "prll" <parallel arg> ...
+	// --initfunc: "prll" <parallel arg> - is ONE arg
 	// 				vfunc:
 	// 				x >= 0 - convFunc_RGB (x - idx of kernel's layer)
 	// 				-2 - decreaseX2_RGB(max)
 	// 				-3 - decreaseX2_RGB(min)
 	// 				-4 - decreaseX2_RGB(mid)
+	// --loadfunc: <path/filename.finf (of functions info file)>
+	// .finf files: syntax same as --initfunc init (without first arg - numofargs)
 	if (argc > 0)
 	{
 		int i = 1;
@@ -148,6 +150,33 @@ int main(int argc, char** argv)
 					vArg.emplace_back(arg);
 				}
 			}
+			else if (option == "--loadfunc")
+			{
+				option = argv[i++];
+				::std::ifstream read(option);
+				ER_IFN(read.is_open(),
+					::std::cout << "read.is_open() returns - false" << ::std::endl;
+					::std::cout << "option = " << option << ::std::endl; , return 1; )
+				else
+				{
+					while (!read.eof())
+					{
+						int arg;
+						read >> option;
+						if (option != "prll")
+						{
+							arg = ::std::atoi(option.c_str());
+						}
+						else
+						{
+							read >> arg;
+							arg = nndx::operator ""_sprll(arg);
+						}
+						vArg.reserve(vArg.capacity() + 1);
+						vArg.emplace_back(arg);
+					}
+				}
+			}
 			else if (option == "--help")
 			{
 				::std::cout << R"(
@@ -167,6 +196,8 @@ example: 9 --loadkrnl 3 1 kr11 0 kr12 1 kr21 --initfunc 2 prll 0 -2
 			-2 - decreaseX2_RGB(max)
 			-3 - decreaseX2_RGB(min)
 			-4 - decreaseX2_RGB(mid)
+--loadfunc: <path/filename.finf (of functions info file)>
+.finf files: syntax same as --initfunc init (without first arg - numofargs)
 Also, default dirs(pathes) should be ./image/, ./output/, ./data/
 					)" << ::std::endl;
 				return 0;

@@ -37,14 +37,14 @@
 #define defDX_S__LINE__	defDX_S_(__LINE__)
 #define defDX__FILELINE		(__FILE__  " line " defDX_S__LINE__)
 /*
-#define ERROR_				::std::cout << "Error - " << defDX__FILELINE << ::std::endl; \
-							system("pause");
+#define ERROR_				{ ::std::cout << "Error - " << defDX__FILELINE << ::std::endl; \
+							system("pause"); }
 */
 #ifndef ERROR_
 
 #if defined(_WIN32)
-#define ERROR_				::std::cout << "![EXCPT]" << (const char*)defDX__FILELINE << ::std::endl; 	\
-							throw ::std::exception();
+#define ERROR_				{ ::std::cout << "![EXCPT]" << (const char*)defDX__FILELINE << ::std::endl; 	\
+							throw ::std::exception(); }
 							/*try {																		\
                             	throw ::std::exception();												\
 							} catch (::std::exception& x) {												\
@@ -123,7 +123,7 @@ namespace nndx
 //#define _fnSDEFAULTFUNC _m_fnTANH
 
 	public:
-		enum _func : _dTYPEFUNC
+		enum class _func : _dTYPEFUNC
 		{
 			_fnSIGMOID		=	0b0000,
 			_fnTANH			=	0b0001,
@@ -173,12 +173,12 @@ namespace nndx
 	public:
 		explicit neuronet() noexcept; // ch
 		explicit neuronet(neuron::_func) noexcept; // ch
-		neuronet(neuronet&&); // ch
+		explicit neuronet(neuronet&&) noexcept(false); // ch
 		neuronet(const dy_tpl&, double(void), neuron::_func); // ch
 		~neuronet(); // ch
 
 		neuronet& operator=(const neuronet&);
-		neuronet& operator=(neuronet&&);
+		neuronet& operator=(neuronet&&) noexcept(false);
 
 		bool init(const dy_tpl&, neuron::_func); // ch
 		bool init(const dy_tpl&); // ch

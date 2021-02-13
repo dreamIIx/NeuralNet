@@ -159,16 +159,16 @@ namespace nndx
 		return this->BIAS;
 	}
 
-	wWw::wWw(double num) noexcept : wg(num), dwg(0.0), grad(0.0) {}
+	wWw::wWw(double num) noexcept : wg(num), dwg(0.), grad(0.) {}
 
-	neuronet::neuronet() noexcept : funcInstance(neuron::_func::_fnDEFAULTFUNC), moment(0.0), u(0.0), isReady(false)
+	neuronet::neuronet() noexcept : funcInstance(neuron::_func::_fnDEFAULTFUNC), moment(0.), u(0.), isReady(false)
 	{
 			RunFunc_T		=	&neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T	=	&neuron::_fnSDRVDEFFUNC;
 			GenWeight		=	nullptr;
 	}
 
-	neuronet::neuronet(neuron::_func fnIns) noexcept : funcInstance(fnIns), moment(0.0), u(0.0), isReady(false)
+	neuronet::neuronet(neuron::_func fnIns) noexcept : funcInstance(fnIns), moment(0.), u(0.), isReady(false)
 	{
 		switch (fnIns)
 		{
@@ -188,7 +188,7 @@ namespace nndx
 		GenWeight = nullptr;
 	}
 
-	neuronet::neuronet(neuronet&& anet)
+	neuronet::neuronet(neuronet&& anet) noexcept(false)
 	{
 		this->isReady = false;
 		try
@@ -199,17 +199,17 @@ namespace nndx
 			}
 			else
 			{
-				this->funcInstance		=	::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
-				this->moment			=	::std::forward<decltype(anet.moment)>(anet.moment);
-				this->u					=	::std::forward<decltype(anet.u)>(anet.u);
-				this->data				=	::std::forward<decltype(anet.data)>(anet.data);
-				this->weight			=	::std::forward<decltype(anet.weight)>(anet.weight);
-				this->topology_save		=	::std::forward<decltype(anet.topology_save)>(anet.topology_save);
-				this->nDataNet			=	::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
-				this->nTrainNote		=	::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
-				this->RunDRVFunc_T		=	::std::forward<decltype(anet.RunDRVFunc_T)>(anet.RunDRVFunc_T);
-				this->RunFunc_T			=	::std::forward<decltype(anet.RunFunc_T)>(anet.RunFunc_T);
-				this->GenWeight			=	::std::forward<decltype(anet.GenWeight)>(anet.GenWeight);
+				this->funcInstance		=	/*::std::forward<decltype(anet.funcInstance)>*/ ::std::move(anet.funcInstance);
+				this->moment			=	/*::std::forward<decltype(anet.moment)>*/ ::std::move(anet.moment);
+				this->u					=	/*::std::forward<decltype(anet.u)>*/ ::std::move(anet.u);
+				this->data				=	/*::std::forward<decltype(anet.data)>*/ ::std::move(anet.data);
+				this->weight			=	/*::std::forward<decltype(anet.weight)>*/ ::std::move(anet.weight);
+				this->topology_save		=	/*::std::forward<decltype(anet.topology_save)>*/ ::std::move(anet.topology_save);
+				this->nDataNet			=	/*::std::forward<decltype(anet.nDataNet)>*/ ::std::move(anet.nDataNet);
+				this->nTrainNote		=	/*::std::forward<decltype(anet.nTrainNote)>*/ ::std::move(anet.nTrainNote);
+				this->RunDRVFunc_T		=	/*::std::forward<decltype(anet.RunDRVFunc_T)>*/ ::std::move(anet.RunDRVFunc_T);
+				this->RunFunc_T			=	/*::std::forward<decltype(anet.RunFunc_T)>*/ ::std::move(anet.RunFunc_T);
+				this->GenWeight			=	/*::std::forward<decltype(anet.GenWeight)>*/ ::std::move(anet.GenWeight);
 				this->isReady			=	true;
 				anet.isReady			=	false;
 			}
@@ -220,7 +220,7 @@ namespace nndx
 		}
 	}
 
-	neuronet::neuronet(const dy_tpl& temp, double func(void), neuron::_func fnIns) : funcInstance(fnIns)
+	neuronet::neuronet(const dy_tpl& temp, double func(void), neuron::_func fnIns) : funcInstance(fnIns), moment(0.), u(0.)
 	{
 		this->GenWeight = func;
 		ER_IF(this->GenWeight == nullptr,, )
@@ -340,7 +340,7 @@ namespace nndx
 		return *this;
 	}
 
-	neuronet& neuronet::operator=(neuronet&& anet)
+	neuronet& neuronet::operator=(neuronet&& anet) noexcept(false)
 	{
 		try
 		{
@@ -356,17 +356,17 @@ namespace nndx
 				}
 				else
 				{
-					this->funcInstance			=	::std::forward<decltype(anet.funcInstance)>(anet.funcInstance);
-					this->moment				=	::std::forward<decltype(anet.moment)>(anet.moment);
-					this->u						=	::std::forward<decltype(anet.u)>(anet.u);
-					this->data					=	::std::forward<decltype(anet.data)>(anet.data);
-					this->weight				=	::std::forward<decltype(anet.weight)>(anet.weight);
-					this->topology_save			=	::std::forward<decltype(anet.topology_save)>(anet.topology_save);
-					this->nDataNet				=	::std::forward<decltype(anet.nDataNet)>(anet.nDataNet);
-					this->nTrainNote			=	::std::forward<decltype(anet.nTrainNote)>(anet.nTrainNote);
-					this->RunDRVFunc_T			=	::std::forward<decltype(anet.RunDRVFunc_T)>(anet.RunDRVFunc_T);
-					this->RunFunc_T				=	::std::forward<decltype(anet.RunFunc_T)>(anet.RunFunc_T);
-					this->GenWeight				=	::std::forward<decltype(anet.GenWeight)>(anet.GenWeight);
+					this->funcInstance			=	/*::std::forward<decltype(anet.funcInstance)>*/ ::std::move(anet.funcInstance);
+					this->moment				=	/*::std::forward<decltype(anet.moment)>*/ ::std::move(anet.moment);
+					this->u						=	/*::std::forward<decltype(anet.u)>*/ ::std::move(anet.u);
+					this->data					=	/*::std::forward<decltype(anet.data)>*/ ::std::move(anet.data);
+					this->weight				=	/*::std::forward<decltype(anet.weight)>*/ ::std::move(anet.weight);
+					this->topology_save			=	/*::std::forward<decltype(anet.topology_save)>*/ ::std::move(anet.topology_save);
+					this->nDataNet				=	/*::std::forward<decltype(anet.nDataNet)>*/ ::std::move(anet.nDataNet);
+					this->nTrainNote			=	/*::std::forward<decltype(anet.nTrainNote)>*/ ::std::move(anet.nTrainNote);
+					this->RunDRVFunc_T			=	/*::std::forward<decltype(anet.RunDRVFunc_T)>*/ ::std::move(anet.RunDRVFunc_T);
+					this->RunFunc_T				=	/*::std::forward<decltype(anet.RunFunc_T)>*/ ::std::move(anet.RunFunc_T);
+					this->GenWeight				=	/*::std::forward<decltype(anet.GenWeight)>*/ ::std::move(anet.GenWeight);
 					this->isReady				=	true;
 					anet.isReady				=	false;
 				}
@@ -772,7 +772,7 @@ namespace nndx
 			data[i].back().setAsBias();
 		}
 
-		auto w = 0.0;
+		auto w = 0.;
 		for (size_t i = 0; i < data.size() - 2; ++i)
 		{
 			weight.reserve(weight.capacity() + 1);

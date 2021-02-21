@@ -24,7 +24,7 @@
 #include <vector>
 #include <string>
 
-#include <opencv2/opencv.hpp>
+#include "opencv2/opencv.hpp"
 
 // main flag
 #define _NNDX_CONV_NEURONET_DEF
@@ -105,9 +105,9 @@ namespace nndx
 			}
 			else
 			{
-				this->data	=	::std::forward<decltype(x.data)>(x.data);
-				this->mBIAS =	::std::forward<decltype(x.mBIAS)>(x.mBIAS);
-				this->err	=	::std::forward<decltype(x.err)>(x.mBIAS);
+				this->data	=	/*::std::forward<decltype(x.data)>*/::std::move(x.data);
+				this->mBIAS =	/*::std::forward<decltype(x.mBIAS)>*/::std::move(x.mBIAS);
+				this->err	=	/*::std::forward<decltype(x.err)>*/::std::move(x.mBIAS);
 				return *this;
 			}
 		}
@@ -349,18 +349,18 @@ namespace nndx
 
 		CNN(CNN&& data)
 		{
-			this->isReady			=		::std::forward<decltype(data.isReady)>(data.isReady);
-			this->u_net				=		::std::forward<decltype(data.u_net)>(data.u_net);
-			this->moment_net		=		::std::forward<decltype(data.moment_net)>(data.moment_net);
-			this->vinLayer			=		::std::forward<decltype(data.vinLayer)>(data.vinLayer);
-			this->vkernel			=		::std::forward<decltype(data.vkernel)>(data.vkernel);
-			this->vfunc				=		::std::forward<decltype(data.vfunc)>(data.vfunc);
-			this->vlayer			=		::std::forward<decltype(data.vlayer)>(data.vlayer);
-			this->inputF			=		::std::forward<decltype(data.inputF)>(data.inputF);
-			this->outputF			=		::std::forward<decltype(data.outputF)>(data.outputF);
-			this->dataF				=		::std::forward<decltype(data.dataF)>(data.dataF);
-			this->net				=		::std::forward<decltype(data.net)>(data.net);
-			this->Inet				=		::std::forward<decltype(data.Inet)>(data.Inet);
+			this->isReady			=		/*::std::forward<decltype(data.isReady)>*/::std::move(data.isReady);
+			this->u_net				=		/*::std::forward<decltype(data.u_net)>*/ ::std::move(data.u_net);
+			this->moment_net		=		/*::std::forward<decltype(data.moment_net)>*/ ::std::move(data.moment_net);
+			this->vinLayer			=		/*::std::forward<decltype(data.vinLayer)>*/ ::std::move(data.vinLayer);
+			this->vkernel			=		/*::std::forward<decltype(data.vkernel)>*/ ::std::move(data.vkernel);
+			this->vfunc				=		/*::std::forward<decltype(data.vfunc)>*/ ::std::move(data.vfunc);
+			this->vlayer			=		/*::std::forward<decltype(data.vlayer)>*/ ::std::move(data.vlayer);
+			this->inputF			=		/*::std::forward<decltype(data.inputF)>*/ ::std::move(data.inputF);
+			this->outputF			=		/*::std::forward<decltype(data.outputF)>*/ ::std::move(data.outputF);
+			this->dataF				=		/*::std::forward<decltype(data.dataF)>*/ ::std::move(data.dataF);
+			this->net				=		/*::std::forward<decltype(data.net)>*/ ::std::move(data.net);
+			this->Inet				=		/*::std::forward<decltype(data.Inet)>*/ ::std::move(data.Inet);
 		}
 		
 		bool initDir(const ::std::string& in, const ::std::string& out, const ::std::string& data)
@@ -756,7 +756,7 @@ namespace nndx
 
 		//initFuncEx must be called earlier
 		//mA() must be called earlier (?)
-		bool init_neuronet(::std::vector<int>&& tplNet, double funcWeights(), nndx::neuron::_func funcNet, double moment, double u)
+		bool init_neuronet(::std::vector<int>&& tplNet, double funcWeights(), nndx::neuron::_func&& funcNet, double moment, double u)
 		{
 			ER_IF(!isReady,, return false; )
 			if (net.getState())
@@ -776,7 +776,7 @@ namespace nndx
 			tplNet.emplace(tplNet.begin(), num);
 
 			ER_IFN(net.setGenWeightsFunc(funcWeights),, )
-			ER_IFN(net.init(::std::forward<::std::vector<int>>(tplNet), funcNet),, )
+			ER_IFN(net.init(/*::std::forward<::std::vector<int>>*/::std::move(tplNet), funcNet),, )
 			ER_IFN(net.setParams(moment, u),, )
 
 			//// Inet init
@@ -797,8 +797,8 @@ namespace nndx
 
 		bool init_neuronet(nndx::neuronet&& x, nndx::neuronet&& Ix)
 		{
-			net = ::std::forward<decltype(x)>(x);
-			Inet = ::std::forward<decltype(Ix)>(Ix);
+			net = /*::std::forward<decltype(x)>*/::std::move(x);
+			Inet = /*::std::forward<decltype(Ix)>*/::std::move(Ix);
 
 			return (net.getState() && Inet.getState());
 		}

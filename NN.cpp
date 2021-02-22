@@ -1052,7 +1052,7 @@ namespace nndx
 		ErrorQuad /= 2.;
 		for (size_t i = 0; i < data.back().size(); ++i)
 		{
-			errR.back().emplace_back(ErrorQuad * -(d[i] - data.back()[i].data));
+			errR.back().emplace_back(ErrorQuad * (d[i] - data.back()[i].data));
 		}
 		*/
 
@@ -1066,7 +1066,7 @@ namespace nndx
 				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data.back().size() * j + next].wg;
 				weight[data.size() - 2][data.back().size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
 			}
-			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV); // comment <data[data.size() - 2][j].funcDRV>, if quad error is using
+			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}
 		for (ptrdiff_t i = static_cast<ptrdiff_t>(data.size() - 3); i >= 0; --i)
 		{

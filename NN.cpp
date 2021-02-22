@@ -111,12 +111,12 @@ namespace nndx
 		va_end(args);
 	}
 
-	size_t dy_tpl::size() const noexcept
+	size_t dy_tpl::size() const noexcept(true)
 	{
 		return tempDATA.size();
 	}
 
-	auto dy_tpl::data() const noexcept
+	auto dy_tpl::data() const noexcept(true)
 	{
 		return tempDATA.data();
 	}
@@ -126,7 +126,7 @@ namespace nndx
 		tempDATA.clear();
 	}
 
-	neuron::neuron(const double& num) noexcept : data(num), prevdata(0.), funcDRV(0.), BIAS(false) {}
+	neuron::neuron(const double& num) noexcept(true) : data(num), prevdata(0.), funcDRV(0.), BIAS(false) {}
 
 	void neuron::_m_fnSIGMOID(neuron& n, const double& value)
 	{
@@ -148,27 +148,27 @@ namespace nndx
 		n.funcDRV = 1. - n.data * n.data;
 	}
 
-	void neuron::setAsBias() noexcept
+	void neuron::setAsBias() noexcept(true)
 	{
 		BIAS = true;
 		funcDRV = 1.;
 	}
 
-	bool neuron::isBias() const noexcept
+	bool neuron::isBias() const noexcept(true)
 	{
 		return this->BIAS;
 	}
 
-	wWw::wWw(double num) noexcept : wg(num), dwg(0.), grad(0.) {}
+	wWw::wWw(double num) noexcept(true) : wg(num), dwg(0.), grad(0.) {}
 
-	neuronet::neuronet() noexcept : funcInstance(neuron::_func::_fnDEFAULTFUNC), moment(0.), u(0.), isReady(false)
+	neuronet::neuronet() noexcept(true) : funcInstance(neuron::_func::_fnDEFAULTFUNC), moment(0.), u(0.), isReady(false)
 	{
 			RunFunc_T		=	&neuron::_fnSDEFAULTFUNC;
 			RunDRVFunc_T	=	&neuron::_fnSDRVDEFFUNC;
 			GenWeight		=	nullptr;
 	}
 
-	neuronet::neuronet(neuron::_func fnIns) noexcept : funcInstance(fnIns), moment(0.), u(0.), isReady(false)
+	neuronet::neuronet(neuron::_func fnIns) noexcept(true) : funcInstance(fnIns), moment(0.), u(0.), isReady(false)
 	{
 		switch (fnIns)
 		{
@@ -1034,11 +1034,27 @@ namespace nndx
 			errR.emplace_back(dw());
 		}
 
+		
 		//default error
 		for (size_t i = 0; i < data.back().size(); ++i)
 		{
 			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
 		}
+		
+
+		/*
+		//quad error
+		double ErrorQuad = 0.;
+		for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			ErrorQuad += ::std::pow(d[i] - data.back()[i].data, 2);
+		}
+		ErrorQuad /= 2.;
+		for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			errR.back().emplace_back(ErrorQuad/* * (-(d[i] - data.back()[i].data)));
+		}
+		*/
 
 		double local_sum = 0.;
 		errR[data.size() - 2].reserve(data[data.size() - 2].size());
@@ -1063,7 +1079,7 @@ namespace nndx
 					local_sum += errR[i + 1][next] * weight[i][(data[i + 1].size() - 1) * j + next].wg;
 					weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data;
 				}
-				errR[i].emplace_back(local_sum * data[i][j].funcDRV);
+				errR[i].emplace_back(local_sum * data[i][j].funcDRV/* * data[i][j].funcDRV*/);
 			}
 		}
 

@@ -2185,11 +2185,27 @@ namespace nndx
 			errR.emplace_back(dw());
 		}
 
+
 		//default error
 		for (size_t i = 0; i < data.back().size(); ++i)
 		{
 			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
 		}
+
+
+		/*
+		//quad error
+		double ErrorQuad = 0.;
+		for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			ErrorQuad += ::std::pow(d[i] - data.back()[i].data, 2);
+		}
+		ErrorQuad /= 2.;
+		for (size_t i = 0; i < data.back().size(); ++i)
+		{
+			errR.back().emplace_back(ErrorQuad * (d[i] - data.back()[i].data));
+		}
+		*/
 
 		double local_sum = 0.;
 		errR[data.size() - 2].reserve(data[data.size() - 2].size());

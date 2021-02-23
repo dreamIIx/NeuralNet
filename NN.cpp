@@ -992,34 +992,34 @@ namespace nndx
 
 		for (size_t i = 1; i < data.size() - 1; ++i)
 		{
-			for (size_t j = 0; j < data[i].size(); ++j)
+			for (size_t j = 0; j < data[i].size() - 1; ++j)
 			{
-				if (!data[i][j].isBias())
+				//if (!data[i][j].isBias()) // useless
+				//{
+				local_sum = 0.;
+				for (size_t prev = 0; prev < data[i - 1].size(); ++prev)
 				{
-					local_sum = 0.;
-					for (size_t prev = 0; prev < data[i - 1].size(); ++prev)
-					{
-						local_sum += data[i - 1][prev].data * weight[i - 1][prev * (data[i].size() - 1) + j].wg;
-					}
-					data[i][j].prevdata = data[i][j].data;
-					RunFunc_T(data[i][j], local_sum);
-					RunDRVFunc_T(data[i][j]);
+					local_sum += data[i - 1][prev].data * weight[i - 1][prev * (data[i].size() - 1) + j].wg;
 				}
+				data[i][j].prevdata = data[i][j].data;
+				RunFunc_T(data[i][j], local_sum);
+				RunDRVFunc_T(data[i][j]);
+				//}
 			}
 		}
 		for (size_t j = 0; j < data.back().size(); ++j)
 		{
-			if (!data.back()[j].isBias())
+			//if (!data.back()[j].isBias()) // useless
+			//{
+			local_sum = 0.;
+			for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
 			{
-				local_sum = 0.;
-				for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
-				{
-					local_sum += data[data.size() - 2][prev].data * weight[data.size() - 2][prev * data.back().size() + j].wg;
-				}
-				data.back()[j].prevdata = data.back()[j].data;
-				RunFunc_T(data.back()[j], local_sum);
-				RunDRVFunc_T(data.back()[j]);
+				local_sum += data[data.size() - 2][prev].data * weight[data.size() - 2][prev * data.back().size() + j].wg;
 			}
+			data.back()[j].prevdata = data.back()[j].data;
+			RunFunc_T(data.back()[j], local_sum);
+			RunDRVFunc_T(data.back()[j]);
+			//}
 		}
 	}
 

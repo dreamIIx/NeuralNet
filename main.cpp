@@ -11,7 +11,7 @@
 #include <vector>
 #include <atomic>
 
-#include "SFML/Graphics.hpp"
+#include <SFML/Graphics.hpp>
 
 #if defined(__unix__)
 #if defined(__linux__)
@@ -30,7 +30,7 @@ T def_FI(::std::ifstream&);
 
 constexpr unsigned int def_WIN_X	=	1000;
 constexpr unsigned int def_WIN_Y	=	400;
-constexpr int def__SIZE_			=	12;
+constexpr size_t def__SIZE_			=	{12};
 constexpr int def__NUM_ACTIVE_WALL	=	7;
 constexpr int def_STEPA_			=	(def__NUM_ACTIVE_WALL + 2);
 constexpr int def_TEXTURE_OBJ_X		=	20;
@@ -44,7 +44,7 @@ constexpr int def_POSY_WALL			=	140;
 constexpr int def_POSY				=	(def_POSY_WALL + 80);
 constexpr int def_SZ_TOPOLOGY		=	3;
 #define			def_TOPOLOGY			2, 3, 2
-constexpr int def_PRE_DISTANCE		=	200;
+constexpr size_t def_PRE_DISTANCE	=	{200};
 
 constexpr double		def_KF_X				=	0.15;
 constexpr double		def_KF_Y				=	0.75;
@@ -59,10 +59,10 @@ constexpr double		def_KF_Y				=	0.75;
 #elif defined(__unix__)
     #if defined(__linux__)
 	
-#define	def_FILECFG "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/inf.cfg"
-#define	def_FILEIMAGE "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/files/image.png"
-#define def_LOGFILE "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/files/output/log.txt"
-#define def_ENDPOINT "/run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/output/endpoint_log.txt"
+#define	def_FILECFG "./inf.cfg"
+#define	def_FILEIMAGE "./files/image.png"
+#define def_LOGFILE "./files/log.txt"
+#define def_ENDPOINT "./output/endpoint_log.txt"
 
     #else
         #error This UNIX operating system is not supported by dx::NN
@@ -75,10 +75,10 @@ dxCRYPT hProv; // for random number generator(NN.h, Object.h, main.cpp)
 #include "Object.h"
 
 void radixSort(::std::vector<Object*>&);
-void mA_gen(::std::vector<Object*>&, int);
+void mA_gen(::std::vector<Object*>&, size_t);
 void mT(::std::vector<nndx::dataW>&, size_t, size_t);
 void mainA(sf::RenderWindow&, sf::View&, ::std::vector<Object>&, ::std::vector<::std::vector<Wall>>&, ::std::vector<int>&, sf::Texture&,
-	volatile ::std::atomic_uint&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&,
+	volatile ::std::atomic_int&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&, volatile ::std::atomic_bool&,
 	volatile ::std::atomic_bool&, volatile ::std::atomic_bool&);
 
 int main()
@@ -103,12 +103,9 @@ int main()
 	/* default filename with settings - inf.cfg*/
 	::std::ifstream _tempRead;
 	_tempRead.open(def_FILECFG);
-	if (!_tempRead.is_open())
-	{
-		ERROR_
-			return 1;
-	}
-	volatile ::std::atomic_uint TIMESET_;
+	ER_IF(!_tempRead.is_open(),, return 1; )
+
+	volatile ::std::atomic_int TIMESET_;
 	TIMESET_.store(0);
 	win.setFramerateLimit(def_FI<unsigned int>(_tempRead));
 	TIMESET_.store(def_FI<unsigned int>(_tempRead));
@@ -144,12 +141,7 @@ int main()
 #if defined(_WIN32)
 	if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, 0))
 		if (GetLastError() == NTE_BAD_KEYSET)
-			if (!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET))
-			{
-				ERROR_
-					system("pause");
-				return 0;
-			}
+			ER_IF(!CryptAcquireContext(&hProv, 0, NULL, PROV_RSA_FULL, CRYPT_NEWKEYSET),, return 0; )
 #elif defined(__unix__)
     #if defined(__linux__)
 		hProv.seed(::std::chrono::system_clock::to_time_t(::std::chrono::system_clock::now()));
@@ -288,9 +280,19 @@ int main()
 	win.setActive(true);
 	win.close();
 
-	for (int i = 0; i < def__SIZE_; ++i)
+	for (size_t i = {0}; i < def__SIZE_; ++i)
 	{
-		::std::string s = "output/net_";
+#if defined(_WIN32)
+		::std::string s = "./output/net_"; // (?) !check it!
+#elif defined(__unix__)
+    #if defined(__linux__)
+		::std::string s = "./output/net_";
+    #else
+        #error This UNIX operating system is not supported by dx::NN
+    #endif
+#else
+    #error This operating system is not supported by dx::NN
+#endif
 		char ch;
 		if (i < 10)
 		{
@@ -305,11 +307,13 @@ int main()
 			s += ch;
 			s += ".txt";
 		}
-		v_Obj_[i].net.saveF(::std::move(s));
+		ER_IFN(v_Obj_[i].net.saveF(s),
+			::std::cout << "v_Obj_[i].net.saveF(s) returns - false" << ::std::endl;
+			::std::cout << "s - " << s << ::std::endl;, return 1; )
 	}
 
 	::std::ofstream out(def_LOGFILE);
-	for (int i = 0; i < def__SIZE_; ++i)
+	for (size_t i = {0}; i < def__SIZE_; ++i)
 	{
 		out << "net_" << i << " - " << v_Obj_[i].score << ::std::endl;
 	}
@@ -326,7 +330,7 @@ void mainA
 	::std::vector<::std::vector<Wall>>& v_Wll,
 	::std::vector<int>& target,
 	sf::Texture& t,
-	volatile ::std::atomic_uint& TIMESET,
+	volatile ::std::atomic_int& TIMESET,
 	volatile ::std::atomic_bool& is_Open,
 	volatile ::std::atomic_bool& run_,
 	volatile ::std::atomic_bool& newA_,
@@ -336,10 +340,10 @@ void mainA
 {
 	win.setActive(true);
 
-	for (int i = 0; i < def__SIZE_; ++i)
+	for (size_t i = {0}; i < def__SIZE_; ++i)
 	{
 		v_Obj.emplace_back(t, nndx::dy_tpl(def_SZ_TOPOLOGY, def_TOPOLOGY), i);
-		if (!v_Obj.back().net.getState()) ERROR_
+		ER_IF(!v_Obj.back().net.getState(),, )
 	}
 	Object& DBG_Obj = v_Obj.front();
 	sf::Sprite DBG_Tx;
@@ -370,6 +374,8 @@ void mainA
 
 	int numITER = 0;
 	::std::ofstream endP(def_ENDPOINT);
+	ER_IF(!endP.is_open(),, )
+/*
 	if (!endP.is_open())
 	{
 		::std::cout << "error of opening file - endpoint_log.txt" << ::std::endl;
@@ -386,7 +392,7 @@ void mainA
     #error This operating system is not supported by dx::NN
 #endif
 	}
-
+*/
 	sf::Vector2i mPos;
 
 	while (is_Open.load())
@@ -402,14 +408,14 @@ void mainA
 		}
 
 		::std::vector<Object*> _ptr;
-		for (int i = 0; i < def__SIZE_; ++i)
+		for (size_t i = {0}; i < def__SIZE_; ++i)
 		{
 			if (v_Obj[i].life)	_ptr.emplace_back(&v_Obj[i]);
 		}
 
 		int minposx_obj = 0x7FFFFFFF;
 		int maxposx_obj = -0x7FFFFFFF;
-		for (size_t i = 0; i < _ptr.size(); ++i)
+		for (size_t i = {0}; i < _ptr.size(); ++i)
 		{
 			if (minposx_obj > _ptr[i]->obj.getPosition().x)	minposx_obj = static_cast<int>(_ptr[i]->obj.getPosition().x);
 			if (maxposx_obj < _ptr[i]->obj.getPosition().x)	maxposx_obj = static_cast<int>(_ptr[i]->obj.getPosition().x);
@@ -453,7 +459,7 @@ void mainA
 			if (mLclick.load())
 			{
 				mLclick.store(false);
-				for (size_t i = 0; i < _ptr.size(); ++i)
+				for (size_t i = {0}; i < _ptr.size(); ++i)
 				{
 					if (_ptr[i]->obj.getGlobalBounds().contains(mPos.x, mPos.y))
 					{
@@ -465,9 +471,9 @@ void mainA
 			}
 
 			bufsizeO = _ptr.size();
-			for (size_t i = 0; i < _ptr.size(); ++i)
+			for (size_t i = {0}; i < _ptr.size(); ++i)
 			{
-				for (size_t j = 0; j < target.size(); ++j)
+				for (size_t j = {0}; j < target.size(); ++j)
 				{
 					if (v_Wll[j][0].wall.getPosition().x > _ptr[i]->obj.getPosition().x)
 					{
@@ -477,28 +483,25 @@ void mainA
 						packet.emplace_back(1);
 						packet.emplace_back(toY * 0.01);
 						bool res = _ptr[i]->net.SPECmA(packet);
-						if (res)
+						ER_IFN(res,, )
+						else
 						{
 							_ptr[i]->mA(std::move(_ptr[i]->net.getResults()));
-							//
+							/*
 							if (i == 0)
 							{
 								::std::cout << "[0] -  " << DBG_Obj.net.getResults()[0] << ::std::endl;
 								::std::cout << "[1] -  " << DBG_Obj.net.getResults()[1] << ::std::endl;
 								::std::cout << "----------------------------------------" << ::std::endl;
 							}
-							//
-						}
-						else
-						{
-							ERROR_
+							*/
 						}
 						break;
 					}
 				}
 			}
 
-			for (size_t i = 0; i < _ptr.size(); ++i)
+			for (size_t i = {0}; i < _ptr.size(); ++i)
 			{
 				if (_ptr[i]->stepA < 1)
 				{
@@ -507,9 +510,9 @@ void mainA
 				}
 				else
 				{
-					for (size_t j = 0; j < v_Wll.size(); ++j)
+					for (size_t j = {0}; j < v_Wll.size(); ++j)
 					{
-						for (size_t k = 0; k < v_Wll[j].size(); ++k)
+						for (size_t k = {0}; k < v_Wll[j].size(); ++k)
 						{
 							if (_ptr[i]->obj.getGlobalBounds().intersects(v_Wll[j][k].wall.getGlobalBounds()))
 							{
@@ -525,7 +528,7 @@ void mainA
 		{
 			newA_ = false;
 
-			for (int i = 0; i < def__SIZE_; ++i)
+			for (size_t i = {0}; i < def__SIZE_; ++i)
 			{
 				_ptr.emplace_back(&v_Obj[i]);
 			}
@@ -534,7 +537,7 @@ void mainA
 			mA_gen(_ptr, def_SZ_TOPOLOGY);
 			++numITER;
 
-			for (size_t i = 0; i < v_Obj.size(); ++i)
+			for (size_t i = {0}; i < v_Obj.size(); ++i)
 			{
 				v_Obj[i].obj.setPosition(static_cast<float>(def_POSX), static_cast<float>(def_POSY));
 				v_Obj[i].life = true;
@@ -566,14 +569,14 @@ void mainA
 
 		win.clear();
 		win.setView(view);
-		for (size_t i = 0; i < v_Wll.size(); ++i)
+		for (size_t i = {0}; i < v_Wll.size(); ++i)
 		{
-			for (size_t j = 0; j < v_Wll[i].size(); ++j)
+			for (size_t j = {0}; j < v_Wll[i].size(); ++j)
 			{
 				win.draw(v_Wll[i][j].wall);
 			}
 		}
-		for (size_t i = 0; i < _ptr.size(); ++i)
+		for (size_t i = {0}; i < _ptr.size(); ++i)
 		{
 			win.draw(_ptr[i]->obj);
 		}
@@ -611,7 +614,7 @@ void radixSort(::std::vector<Object*>& a)
 	}
 }
 
-void mA_gen(::std::vector<Object*>& obj, int tg)
+void mA_gen(::std::vector<Object*>& obj, size_t tg)
 {
 	obj[8]->net.weight = obj[11]->net.weight;
 	size_t index = nndx::randT(hProv) % obj[11]->net.weight.size();
@@ -631,7 +634,7 @@ void mA_gen(::std::vector<Object*>& obj, int tg)
 
 	mT(obj[4]->net.weight, static_cast<size_t>(nndx::randT(hProv) % obj[11]->net.weight.size()), obj[11]->net.weight.size());
 
-	for (size_t i = 0; i < tg - 2; ++i)
+	for (size_t i = {0}; i < tg - 2; ++i)
 	{
 		obj[3]->net.weight[i] = obj[11]->net.weight[i];
 	}
@@ -643,7 +646,7 @@ void mA_gen(::std::vector<Object*>& obj, int tg)
 		mT(obj[3]->net.weight, index, index + 1);
 	}
 
-	for (size_t i = 0; i < tg - 2; ++i)
+	for (size_t i = {0}; i < tg - 2; ++i)
 	{
 		obj[2]->net.weight[i] = obj[10]->net.weight[i];
 	}
@@ -662,7 +665,7 @@ void mT(::std::vector<nndx::dataW>& v, size_t index1, size_t index2)
 {
 	for (size_t i = index1; i < index2; ++i)
 	{
-		for (size_t j = 0; j < v[i].size(); ++j)
+		for (size_t j = {0}; j < v[i].size(); ++j)
 		{
 			v[i][j].wg = static_cast<double>(WEIGHT_FUNC);
 		}

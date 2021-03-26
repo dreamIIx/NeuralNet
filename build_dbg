@@ -2,10 +2,11 @@
 clear
 echo "DBG --Project2--"
 echo "compiling..."
-g++ -c ./Project2/main.cpp ./Project2/NN.cpp -Wall
+rm ./main.o
+g++ -c -Wall -g ./Project2/main.cpp ./Project2/NN.cpp -std=c++17
 # -Wfatal-errors -fpermissive -Wall -Werror
 # -fsyntax-only
 echo "linking..."
-g++ -o ./x64/Debug/g++_Project2 main.o NN.o -g -pthread -lX11 -std=c++17 -lsfml-system -lsfml-window -lsfml-graphics
+g++ -o ./x64/Debug/g++_Project2 main.o NN.o -pthread -lX11 -lsfml-system -lsfml-window -lsfml-graphics
 #echo "starting..."
 #./run/media/dream11x/dreamIIx/programming/C++/Project2/x64/Debug/g++_Project2

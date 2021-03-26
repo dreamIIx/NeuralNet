@@ -3,10 +3,11 @@
 class Object
 {
 public:
+	int score;
+	int stepA;
+	bool life;
 	sf::Sprite obj;
 	nndx::neuronet net;
-	int score, stepA;
-	bool life;
 
 	Object(sf::Texture&, nndx::dy_tpl&&, int);
 	void mA(::std::vector<double>&&);
@@ -33,7 +34,7 @@ private:
 };
 
 Object::Object(sf::Texture& t, nndx::dy_tpl&& tpl, int i)
-	: obj(t), net(::std::move(tpl), []() -> double { return static_cast<double>(WEIGHT_FUNC); }, nndx::neuron::_func::_fnTANH), score(0), life(true), stepA(def_STEPA_)
+	: score(0), stepA(def_STEPA_), life(true), obj(t), net(::std::move(tpl), []() -> double { return static_cast<double>(WEIGHT_FUNC); }, nndx::neuron::_func::_fnTANH)
 {
 	//if (i != 0)	net.SPECinit(topology);
 	//net.setParams(0.5, 0.35); // just for U, moment is unnecessary (FOR callFuncHebb ONLY)

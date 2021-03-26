@@ -3,7 +3,7 @@
 //Autor - -dreamIIx
 //GitHub - https://github.com/dreamIIx
 //Release [v0.1] on GitHub 27.09.2018
-//Actual version 4.2
+//Actual version 4.5
 //The library include functions and classes to provide support the work with Neural Networks
 
 #if defined(_WIN32)
@@ -36,23 +36,12 @@
 #define defDX_S_(x)		defDX_S(x)
 #define defDX_S__LINE__	defDX_S_(__LINE__)
 #define defDX__FILELINE		(__FILE__  " line " defDX_S__LINE__)
-/*
-#define ERROR_				{ ::std::cout << "Error - " << defDX__FILELINE << ::std::endl; \
-							system("pause"); }
-*/
+
 #ifndef ERROR_
 
 #if defined(_WIN32)
 #define ERROR_				{ ::std::cout << "![EXCPT]" << (const char*)defDX__FILELINE << ::std::endl; 	\
 							throw ::std::exception(); }
-							/*try {																		\
-                            	throw ::std::exception();												\
-							} catch (::std::exception& x) {												\
-								::std::cout << (const char*)defDX__FILELINE << ::std::endl;				\
-							}*/
-							// ((const char*)defDX_S_(__LINE__))
-							//::std::cout << (const char*)defDX__FILELINE << ::std::endl; \
-							//throw ::std::exception();
 #elif defined(__unix__)
 #if defined(__linux__)
 #define ERROR_				try {																			\
@@ -60,7 +49,6 @@
 							} catch (::std::exception& x) {													\
 								::std::cout << "![EXCPT]" << (const char*)defDX__FILELINE << ::std::endl;	\
 							}
-							// ((const char*)defDX_S_(__LINE__))
 #else
 #error This UNIX operating system is not supported by dx::NN
 #endif
@@ -70,21 +58,19 @@
 
 #endif
 #ifndef ER_IF
-//#define ER_IF(x) if ( (x) ) { ERROR_ }
 #define ER_IF(x, beforeExc, AfterExc) if ( (x) ) { beforeExc ERROR_ AfterExc }
 #endif
 #ifndef ER_IFN
-//#define ER_IFN(x) if ( !(x) ) { ERROR_ }
 #define ER_IFN(x, beforeExc, AfterExc) if ( !(x) ) { beforeExc ERROR_ AfterExc }
 #endif
 
-// main flag
+// header flag
 #define _NNDX_NEURONET_DEF
-
-typedef unsigned short int _dTYPEFUNC;
 
 namespace nndx
 {
+	using _dTYPEFUNC = unsigned short int;
+
 	dxFastInt32 randT(dxCRYPT&);
 	dxFastInt32 randB(dxCRYPT&);
 
@@ -177,7 +163,7 @@ namespace nndx
 		neuronet(const dy_tpl&, double(void), neuron::_func); // ch
 		~neuronet(); // ch
 
-		neuronet& operator=(const neuronet&);
+		neuronet& operator=(const neuronet&) noexcept(false);
 		neuronet& operator=(neuronet&&) noexcept(false);
 
 		bool init(const dy_tpl&, neuron::_func); // ch
@@ -207,12 +193,12 @@ namespace nndx
 	private:
 		void activationF(); // work
 		void backProp(const ::std::vector<double>&); // work
-		void funcHebb();
+		void funcHebb(); // ch
 
 #ifdef _NNDX_CONV_NEURONET_DEF
 	protected:
-		void backProp(const ::std::vector<double>&, ::std::vector<double>&);
-		bool callBackProp(const ::std::vector<double>&, ::std::vector<double>&);
+		void backProp(const ::std::vector<double>&, ::std::vector<double>&); // ch
+		bool callBackProp(const ::std::vector<double>&, ::std::vector<double>&); // ch
 #endif
 	};
 }

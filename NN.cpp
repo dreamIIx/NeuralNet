@@ -236,7 +236,7 @@ namespace nndx
 		}
 
 		auto pos = temp.data();
-		for (size_t i = {0}; i < temp.size(); i++)
+		for (size_t i {0}; i < temp.size(); i++)
 		{
 			int a = *pos++;
 			ER_IFN(a > 0,, )
@@ -257,18 +257,18 @@ namespace nndx
 
 		ER_IF(data.empty(),, )
 
-		for (size_t i = {0}; i < data.size() - 1; i++)
+		for (size_t i {0}; i < data.size() - 1; i++)
 		{
 			data[i].reserve(data[i].capacity() + 1);
 			data[i].emplace_back(neuron(1));
 			data[i].back().setAsBias();
 		}
 
-		for (size_t i = {0}; i < data.size() - 2; i++)
+		for (size_t i {0}; i < data.size() - 2; i++)
 		{
 			weight.reserve(weight.capacity() + 1);
 			weight.emplace_back(dataW());
-			for (size_t j = {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); j++)
+			for (size_t j {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); j++)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
 				weight.back().emplace_back(this->GenWeight());
@@ -276,7 +276,7 @@ namespace nndx
 		}
 		weight.reserve(weight.capacity() + 1);
 		weight.emplace_back(dataW());
-		for (size_t j = {0}; j < data[data.size() - 2].size() * data.back().size(); j++)
+		for (size_t j {0}; j < data[data.size() - 2].size() * data.back().size(); j++)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
 			weight.back().emplace_back(this->GenWeight());
@@ -367,7 +367,7 @@ namespace nndx
 		}
 
 		auto pos = temp.data();
-		for (size_t i = {0}; i < temp.size(); ++i)
+		for (size_t i {0}; i < temp.size(); ++i)
 		{
 			int a = *pos++;
 			ER_IFN(a > 0,, return false; )
@@ -388,18 +388,18 @@ namespace nndx
 
 		ER_IF(data.empty(),, return false; )
 
-		for (size_t i = {0}; i < data.size() - 1; ++i)
+		for (size_t i {0}; i < data.size() - 1; ++i)
 		{
 			data[i].reserve(data[i].capacity() + 1);
 			data[i].emplace_back(neuron(1));
 			data[i].back().setAsBias();
 		}
 
-		for (size_t i = {0}; i < data.size() - 2; ++i)
+		for (size_t i {0}; i < data.size() - 2; ++i)
 		{
 			weight.reserve(weight.capacity() + 1);
 			weight.emplace_back(dataW());
-			for (size_t j = {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			for (size_t j {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
 				weight.back().emplace_back(this->GenWeight());
@@ -407,7 +407,7 @@ namespace nndx
 		}
 		weight.reserve(weight.capacity() + 1);
 		weight.emplace_back(dataW());
-		for (size_t j = {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		for (size_t j {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
 			weight.back().emplace_back(this->GenWeight());
@@ -429,7 +429,7 @@ namespace nndx
 		}
 
 		auto pos = temp.data();
-		for (size_t i = {0}; i < temp.size(); ++i)
+		for (size_t i {0}; i < temp.size(); ++i)
 		{
 			int a = *pos++;
 			ER_IFN(a > 0,, return false; )
@@ -450,18 +450,18 @@ namespace nndx
 
 		ER_IF(data.empty(),, return false; )
 
-		for (size_t i = {0}; i < data.size() - 1; ++i)
+		for (size_t i {0}; i < data.size() - 1; ++i)
 		{
 			data[i].reserve(data[i].capacity() + 1);
 			data[i].emplace_back(neuron(1));
 			data[i].back().setAsBias();
 		}
 
-		for (size_t i = {0}; i < data.size() - 2; ++i)
+		for (size_t i {0}; i < data.size() - 2; ++i)
 		{
 			weight.reserve(weight.capacity() + 1);
 			weight.emplace_back(dataW());
-			for (size_t j = {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			for (size_t j {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
 				weight.back().emplace_back(this->GenWeight());
@@ -469,7 +469,7 @@ namespace nndx
 		}
 		weight.reserve(weight.capacity() + 1);
 		weight.emplace_back(dataW());
-		for (size_t j = {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		for (size_t j {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
 			weight.back().emplace_back(this->GenWeight());
@@ -510,7 +510,7 @@ namespace nndx
 		}
 
 		auto pos = temp.data();
-		for (size_t i = {0}; i < temp.size(); ++i)
+		for (size_t i {0}; i < temp.size(); ++i)
 		{
 			int a = *pos++;
 			ER_IFN(a > 0,, return false; )
@@ -531,18 +531,18 @@ namespace nndx
 
 		ER_IF(data.empty(),, return false; )
 
-		for (size_t i = {0}; i < data.size() - 1; ++i)
+		for (size_t i {0}; i < data.size() - 1; ++i)
 		{
 			data[i].reserve(data[i].capacity() + 1);
 			data[i].emplace_back(neuron(1));
 			data[i].back().setAsBias();
 		}
 
-		for (size_t i = {0}; i < data.size() - 2; ++i)
+		for (size_t i {0}; i < data.size() - 2; ++i)
 		{
 			weight.reserve(weight.capacity() + 1);
 			weight.emplace_back(dataW());
-			for (size_t j = {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			for (size_t j {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
 				weight.back().emplace_back(this->GenWeight());
@@ -550,7 +550,7 @@ namespace nndx
 		}
 		weight.reserve(weight.capacity() + 1);
 		weight.emplace_back(dataW());
-		for (size_t j = {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		for (size_t j {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
 			weight.back().emplace_back(this->GenWeight());
@@ -574,7 +574,7 @@ namespace nndx
 		}
 
 		auto pos = temp.data();
-		for (size_t i = {0}; i < temp.size(); ++i)
+		for (size_t i {0}; i < temp.size(); ++i)
 		{
 			int a = *pos++;
 			ER_IFN(a > 0,, return false; )
@@ -595,18 +595,18 @@ namespace nndx
 
 		ER_IF(data.empty(),, return false; )
 
-		for (size_t i = {0}; i < data.size() - 1; ++i)
+		for (size_t i {0}; i < data.size() - 1; ++i)
 		{
 			data[i].reserve(data[i].capacity() + 1);
 			data[i].emplace_back(neuron(1));
 			data[i].back().setAsBias();
 		}
 
-		for (size_t i = {0}; i < data.size() - 2; ++i)
+		for (size_t i {0}; i < data.size() - 2; ++i)
 		{
 			weight.reserve(weight.capacity() + 1);
 			weight.emplace_back(dataW());
-			for (size_t j = {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			for (size_t j {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
 				weight.back().emplace_back(this->GenWeight());
@@ -614,7 +614,7 @@ namespace nndx
 		}
 		weight.reserve(weight.capacity() + 1);
 		weight.emplace_back(dataW());
-		for (size_t j = {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		for (size_t j {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
 			weight.back().emplace_back(this->GenWeight());
@@ -659,18 +659,18 @@ namespace nndx
 
 		ER_IF(data.empty(),, return false; )
 
-		for (size_t i = {0}; i < data.size() - 1; ++i)
+		for (size_t i {0}; i < data.size() - 1; ++i)
 		{
 			data[i].reserve(data[i].capacity() + 1);
 			data[i].emplace_back(neuron(1));
 			data[i].back().setAsBias();
 		}
 
-		for (size_t i = {0}; i < data.size() - 2; ++i)
+		for (size_t i {0}; i < data.size() - 2; ++i)
 		{
 			weight.reserve(weight.capacity() + 1);
 			weight.emplace_back(dataW());
-			for (size_t j = {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			for (size_t j {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
 				weight.back().emplace_back(this->GenWeight());
@@ -678,7 +678,7 @@ namespace nndx
 		}
 		weight.reserve(weight.capacity() + 1);
 		weight.emplace_back(dataW());
-		for (size_t j = {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		for (size_t j {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
 			weight.back().emplace_back(this->GenWeight());
@@ -722,7 +722,7 @@ namespace nndx
 
 		ER_IF(data.empty(),, return false; )
 
-		for (size_t i = {0}; i < data.size() - 1; ++i)
+		for (size_t i {0}; i < data.size() - 1; ++i)
 		{
 			data[i].reserve(data[i].capacity() + 1);
 			data[i].emplace_back(neuron(1));
@@ -730,11 +730,11 @@ namespace nndx
 		}
 
 		auto w = 0.;
-		for (size_t i = {0}; i < data.size() - 2; ++i)
+		for (size_t i {0}; i < data.size() - 2; ++i)
 		{
 			weight.reserve(weight.capacity() + 1);
 			weight.emplace_back(dataW());
-			for (size_t j = {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
+			for (size_t j {0}; j < (data[i].size() * data[i + 1].size()) - data[i].size(); ++j)
 			{
 				weight.back().reserve(weight.back().capacity() + 1);
 
@@ -752,7 +752,7 @@ namespace nndx
 
 		weight.reserve(weight.capacity() + 1);
 		weight.emplace_back(dataW());
-		for (size_t j = {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
+		for (size_t j {0}; j < data[data.size() - 2].size() * data.back().size(); ++j)
 		{
 			weight.back().reserve(weight.back().capacity() + 1);
 
@@ -828,7 +828,7 @@ namespace nndx
 		numT = 0;
 		while (numT < nums)
 		{
-			for (size_t i = {0}; i < data[0].size() - 1; ++i)
+			for (size_t i {0}; i < data[0].size() - 1; ++i)
 			{
 				read >> data[0][i].data;
 				if (!data[0][i].isBias())	RunDRVFunc_T(data[0][i]);
@@ -838,7 +838,7 @@ namespace nndx
 			int j = 0;
 			::std::vector<double> errDat;
 			errDat.reserve(data.back().size());
-			for (size_t i = {0}; i < data.back().size(); ++i)
+			for (size_t i {0}; i < data.back().size(); ++i)
 			{
 				read >> j;
 				if (acomments) ::std::cout << "j - " << j << ::std::endl;
@@ -860,7 +860,7 @@ namespace nndx
 		ER_IFN(dataT.size() == data[0].size() - 1,, return false; )
 		else
 		{
-			for (size_t i = {0}; i < data[0].size() - 1; ++i)
+			for (size_t i {0}; i < data[0].size() - 1; ++i)
 			{
 				data[0][i].data = dataT[i];
 				ER_IF(data[0][i].isBias(),, return false; )
@@ -879,7 +879,7 @@ namespace nndx
 		ER_IFN(dataT.size() == data[0].size() - 1,, return false; )
 		else
 		{
-			for (size_t i = {0}; i < data[0].size() - 1; ++i)
+			for (size_t i {0}; i < data[0].size() - 1; ++i)
 			{
 				data[0][i].data = dataT[i];
 				ER_IF(data[0][i].isBias(),, return false; )
@@ -898,15 +898,15 @@ namespace nndx
 		::std::ofstream f(s);
 		ER_IF(!f.is_open(), f.close();, return false; )
 
-		for (size_t i = {0}; i < topology_save.size(); ++i)
+		for (size_t i {0}; i < topology_save.size(); ++i)
 		{
 			f << topology_save[i] << " ";
 		}
 		f << "0" << ::std::endl;
 
-		for (size_t i = {0}; i < weight.size(); ++i)
+		for (size_t i {0}; i < weight.size(); ++i)
 		{
-			for (size_t j = {0}; j < weight[i].size(); ++j)
+			for (size_t j {0}; j < weight[i].size(); ++j)
 			{
 				f << weight[i][j].wg << ::std::endl;
 				f << weight[i][j].dwg << ::std::endl;
@@ -949,7 +949,7 @@ namespace nndx
 
 		for (size_t i = {1}; i < data.size() - 1; ++i)
 		{
-			for (size_t j = {0}; j < data[i].size() - 1; ++j)
+			for (size_t j {0}; j < data[i].size() - 1; ++j)
 			{
 				//if (!data[i][j].isBias()) // useless
 				//{
@@ -964,7 +964,7 @@ namespace nndx
 				//}
 			}
 		}
-		for (size_t j = {0}; j < data.back().size(); ++j)
+		for (size_t j {0}; j < data.back().size(); ++j)
 		{
 			//if (!data.back()[j].isBias()) // useless
 			//{
@@ -986,13 +986,13 @@ namespace nndx
 		::std::vector<dw> errR;
 
 		errR.reserve(data.size());
-		for (size_t i = {0}; i < data.size(); ++i)
+		for (size_t i {0}; i < data.size(); ++i)
 		{
 			errR.emplace_back(dw());
 		}
 
 		//default error
-		for (size_t i = {0}; i < data.back().size(); ++i)
+		for (size_t i {0}; i < data.back().size(); ++i)
 		{
 			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
 		}
@@ -1000,12 +1000,12 @@ namespace nndx
 		/*
 		//quad error
 		double ErrorQuad = 0.;
-		for (size_t i = {0}; i < data.back().size(); ++i)
+		for (size_t i {0}; i < data.back().size(); ++i)
 		{
 			ErrorQuad += ::std::pow(d[i] - data.back()[i].data, 2);
 		}
 		ErrorQuad /= 2.;
-		for (size_t i = {0}; i < data.back().size(); ++i)
+		for (size_t i {0}; i < data.back().size(); ++i)
 		{
 			errR.back().emplace_back(ErrorQuad * (d[i] - data.back()[i].data));
 		}
@@ -1013,7 +1013,7 @@ namespace nndx
 
 		double local_sum;
 		errR[data.size() - 2].reserve(data[data.size() - 2].size());
-		for (size_t j = {0}; j < data[data.size() - 2].size(); ++j)
+		for (size_t j {0}; j < data[data.size() - 2].size(); ++j)
 		{
 			local_sum = 0.;
 			for (size_t next = {0}; next < data.back().size(); ++next)
@@ -1026,10 +1026,10 @@ namespace nndx
 		for (ptrdiff_t i = static_cast<ptrdiff_t>(data.size() - 3); i >= 0; --i)
 		{
 			errR[i].reserve(data[i].size());
-			for (size_t j = {0}; j < data[i].size(); ++j)
+			for (size_t j {0}; j < data[i].size(); ++j)
 			{
 				local_sum = 0.;
-				for (size_t next = {0}; next < data[i + 1].size() - 1; ++next)
+				for (size_t next {0}; next < data[i + 1].size() - 1; ++next)
 				{
 					local_sum += errR[i + 1][next] * weight[i][(data[i + 1].size() - 1) * j + next].wg;
 					weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data;
@@ -1038,20 +1038,20 @@ namespace nndx
 			}
 		}
 
-		for (size_t i = {1}; i < data.size() - 1; ++i)
+		for (size_t i {1}; i < data.size() - 1; ++i)
 		{
-			for (size_t j = {0}; j < data[i].size() - 1; ++j)
+			for (size_t j {0}; j < data[i].size() - 1; ++j)
 			{
-				for (size_t prev = {0}; prev < data[i - 1].size(); ++prev)
+				for (size_t prev {0}; prev < data[i - 1].size(); ++prev)
 				{
 					weight[i - 1][prev * (data[i].size() - 1) + j].dwg = u * weight[i - 1][prev * (data[i].size() - 1) + j].grad + (moment * weight[i - 1][prev * (data[i].size() - 1) + j].dwg);
 					weight[i - 1][prev * (data[i].size() - 1) + j].wg += weight[i - 1][prev * (data[i].size() - 1) + j].dwg;
 				}
 			}
 		}
-		for (size_t j = {0}; j < data.back().size(); ++j)
+		for (size_t j {0}; j < data.back().size(); ++j)
 		{
-			for (size_t prev = {0}; prev < data[data.size() - 2].size(); ++prev)
+			for (size_t prev {0}; prev < data[data.size() - 2].size(); ++prev)
 			{
 				weight[data.size() - 2][prev * data.back().size() + j].dwg = u * weight[data.size() - 2][prev * data.back().size() + j].grad + (moment * weight[data.size() - 2][prev * data.back().size() + j].dwg);
 				weight[data.size() - 2][prev * data.back().size() + j].wg += weight[data.size() - 2][prev * data.back().size() + j].dwg;
@@ -1061,19 +1061,19 @@ namespace nndx
 
 	void neuronet::funcHebb()
 	{
-		for (size_t i = {0}; i < data.size() - 2; ++i)
+		for (size_t i {0}; i < data.size() - 2; ++i)
 		{
-			for (size_t j = {0}; j < data[i].size(); ++j)
+			for (size_t j {0}; j < data[i].size(); ++j)
 			{
-				for (size_t next = {0}; next < data[i + 1].size() - 1; ++next)
+				for (size_t next {0}; next < data[i + 1].size() - 1; ++next)
 				{
 					weight[i][j * (data[i + 1].size() - 1) + next].wg = weight[i][j * (data[i + 1].size() - 1) + next].wg + u * (data[i][j].prevdata - data[i][j].data) * (data[i + 1][next].prevdata - data[i + 1][next].data);
 				}
 			}
 		}
-		for (size_t j = {0}; j < data[data.size() - 2].size(); ++j)
+		for (size_t j {0}; j < data[data.size() - 2].size(); ++j)
 		{
-			for (size_t next = {0}; next < data.back().size(); ++next)
+			for (size_t next {0}; next < data.back().size(); ++next)
 			{
 				weight[data.size() - 2][j * data.back().size() + next].wg = weight[data.size() - 2][j * data.back().size() + next].wg + u * (data[data.size() - 2][j].prevdata - data[data.size() - 2][j].data) * (data.back()[next].prevdata - data.back()[next].data);
 			}
@@ -1100,7 +1100,7 @@ namespace nndx
 		ER_IF(!this->isReady,, return {}; )
 		::std::vector<double> temp;
 		temp.reserve(data.back().size());
-		for (size_t i = {0}; i < data.back().size(); ++i)
+		for (size_t i {0}; i < data.back().size(); ++i)
 		{
 			temp.emplace_back(data.back()[i].data);
 		}

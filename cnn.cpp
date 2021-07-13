@@ -66,6 +66,9 @@ int main(int argc, char** argv)
 
 	// <NUMOFARGV (ARGC)> --<option1> <numofargv of option1> <argv of option1> --<option2> ...
 	// example: 9 --loadkrnl 3 1 kr11 0 kr12 1 kr21 --initfunc 3 prll 0 -2
+	// Default dirs(pathes) should be ./image/, ./output/, ./data/, or specify them by
+	// --initdirs: --initdirs <path/to/images> <path/to/output> <path/to/data>
+	//		instead of following flags
 	// --initimg: <path/filename.extension (of input image)>
 	// --loadkrnl: --loadkrnl <numofargs> <bool flag1: create new vkernel element> <filename1 of kernel1 (without ext - .krnl)> <flag2> <filename2> ...
 	// --loadkrnl: <flag> <filename> - is ONE arg
@@ -111,9 +114,12 @@ int main(int argc, char** argv)
 					while (!read.eof())
 					{
 						read >> option;
-						int flag = ::std::atoi(option.c_str());
+						int flag1 = ::std::atoi(option.c_str());
 						read >> option;
-						ER_IFN(test.addKrnlFromFile((flag == 0) ? false : true, option.c_str()),, return 1; )
+						int flag2 = ::std::atoi(option.c_str());
+						read >> option;
+						if (!::std::strcmp(option.c_str(), "none")) option = "";
+						ER_IFN(test.defKrnlFromFile(static_cast<size_t>(flag1), static_cast<size_t>(flag2), option.c_str()),, return 1; )
 					}
 				}
 			}
@@ -177,11 +183,21 @@ int main(int argc, char** argv)
 					}
 				}
 			}
+			else if (option == "--initdirs")
+			{
+				option = argv[i++];
+				::std::string str1 = argv[i++];
+				::std::string str2 = argv[i++];
+				ER_IFN(test.initDir(option, str1, str2), , return 1; )
+			}
 			else if (option == "--help")
 			{
 				::std::cout << R"(
 <NUMOFARGV (ARGC)> <option1> <numofargv of option1> <argv of option1> <option2> ...
 example: 9 --loadkrnl 3 1 kr11 0 kr12 1 kr21 --initfunc 2 prll 0 -2
+Default dirs(pathes) should be ./image/, ./output/, ./data/, or specify them by
+--initdirs: --initdirs <path/to/images> <path/to/output> <path/to/data>
+	instead of following flags
 --initimg: <path/filename.extension (of input image)>
 --loadkrnl: --loadkrnl <numofargs> <bool flag1: create new vkernel element> <filename1 of kernel1 (without ext - .krnl)> <flag2> <filename2> ...
 --loadkrnl: <flag> <filename> - is ONE arg
@@ -198,7 +214,6 @@ example: 9 --loadkrnl 3 1 kr11 0 kr12 1 kr21 --initfunc 2 prll 0 -2
 			-4 - decreaseX2_RGB(mid)
 --loadfunc: <path/filename.finf (of functions info file)>
 .finf files: syntax same as --initfunc init (without first arg - numofargs)
-Also, default dirs(pathes) should be ./image/, ./output/, ./data/
 					)" << ::std::endl;
 				return 0;
 			}
@@ -314,17 +329,5 @@ Also, default dirs(pathes) should be ./image/, ./output/, ./data/
 		ERROR_
 	}
 */
-
-#if defined(_WIN32)
-	system("pause");
-#elif defined(__unix__)
-    #if defined(__linux__)
-		// none
-    #else
-        #error This UNIX operating system is not supported by dx::NN
-    #endif
-#else
-    #error This operating system is not supported by dx::NN
-#endif
 	return 0;
 }

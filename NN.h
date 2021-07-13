@@ -31,11 +31,20 @@
 #include <string>
 #include <vector>
 #include <cstdarg>
+#include <cmath>
 
+#if !defined(defDX_S)
 #define defDX_S(x)		#x
+#endif
+#if !defined(defDX_S_)
 #define defDX_S_(x)		defDX_S(x)
+#endif
+#if !defined(defDX_S__LINE__)
 #define defDX_S__LINE__	defDX_S_(__LINE__)
+#endif
+#if !defined(defDX__FILELINE)
 #define defDX__FILELINE		(__FILE__  " line " defDX_S__LINE__)
+#endif
 
 #ifndef ERROR_
 

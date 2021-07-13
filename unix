@@ -1,0 +1,11 @@
+#!/bin/bash
+echo "---Starting program---"
+if [[ "$1" == "" ]]; then
+    make all
+    ./Debug/Test
+elif [[ "$1" == "-g" ]]; then
+    make alld
+    gdb ./Debug/Test ${@:2}
+else    make all
+        ./Debug/Test $@
+fi

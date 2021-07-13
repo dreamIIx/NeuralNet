@@ -1,0 +1,49 @@
+#.PHONY: all clean
+
+CXX = g++
+SOURCES = ./_TEST_/cnn.cpp ./_TEST_/NN.cpp
+
+ifeq ($(OS), Windows_NT)
+	CFLAGS = -c -Wall -std=c++17 -O2
+	INCLUDE_DIR = -IC:\opencv\build\include\
+	LDFLAGS = -LC:\opencv\build\x64\vc15\bin -lopencv_world450d
+	EXECUTABLE = ./Debug/Test.exe
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S), Linux)
+		CFLAGS = -c -Wall -std=c++17 -O2
+		INCLUDE_DIR = -I/run/media/dream11x/dreamIIx/programming/C++/_TEST_/_TEST_/opencv2
+		LDFLAGS = -L/usr/lib -pthread -lX11 -lopencv_stitching -lopencv_superres -lopencv_videostab -lopencv_aruco -lopencv_bgsegm -lopencv_bioinspired -lopencv_ccalib -lopencv_dnn -lopencv_dpm -lopencv_fuzzy -lopencv_line_descriptor -lopencv_optflow -lopencv_plot -lopencv_reg -lopencv_saliency -lopencv_stereo -lopencv_structured_light -lopencv_rgbd -lopencv_surface_matching -lopencv_tracking -lopencv_datasets -lopencv_text -lopencv_face -lopencv_xfeatures2d -lopencv_shape -lopencv_video -lopencv_ximgproc -lopencv_calib3d -lopencv_features2d -lopencv_flann -lopencv_xobjdetect -lopencv_objdetect -lopencv_ml -lopencv_xphoto -lopencv_highgui -lopencv_videoio -lopencv_imgcodecs -lopencv_photo -lopencv_imgproc -lopencv_core
+		EXECUTABLE = ./Debug/Test
+    endif
+endif
+
+$(info init..)
+alld: CFLAGS += -ggdb -Og
+alld: $(SOURCES) $(EXECUTABLE)
+
+all: $(SOURCES) $(EXECUTABLE)
+	
+./_TEST_/cnn.o: ./_TEST_/cnn.cpp ./_TEST_/ConvNN.h
+	$(info processing....)
+	$(CXX) $(CFLAGS) $< -o $@
+
+./_TEST_/NN.o: ./_TEST_/NN.cpp ./_TEST_/NN.h
+	$(info processing.....)
+	$(CXX) $(CFLAGS) $< -o $@
+
+$(EXECUTABLE): ./_TEST_/cnn.o ./_TEST_/NN.o
+	$(info processing......)
+	$(CXX) $(LDFLAGS) $^ -o $@
+
+clean:
+	rm ./_TEST_/*.o
+#ifeq ($(OS), Windows_NT)
+#	copy .\_TEST_\*.o .\*.o
+#	del .\_TEST_\*.o
+#else
+#    UNAME_S := $(shell uname -s)
+#    ifeq ($(UNAME_S), Linux)
+#		rm *.o
+#    endif
+#endif

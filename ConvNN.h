@@ -36,7 +36,7 @@
 
 namespace nndx
 {
-constexpr unsigned /*char*/int _clr_ = static_cast<unsigned /*char*/int>(0b1111'1111);
+/*constexpr unsigned char*//*int*/double _clr_ = 255.;
 constexpr int parall_flag = 0b1111'1111;
 constexpr const char* kernel_ext = ".krnl";
 constexpr const char* _filend = "endOFfile";
@@ -166,15 +166,15 @@ public:
 
 	rgb_T(double func(void)) : Rn(0., func()), Gn(0., func()), Bn(0., func()) {}
 
-	rgb_T(double r, double g, double b) : Rn(r, 0.), Gn(g, 0.), Bn(b, 0.) {}
+	rgb_T(double r, double g, double b) : Rn(r/* / _clr_*/, 0.), Gn(g/* / _clr_*/, 0.), Bn(b/* / _clr_*/, 0.) {}
 
-	rgb_T(double rbias, double gbias, double bbias, double initx) : Rn(initx, rbias), Gn(initx, gbias), Bn(initx, bbias) {}
+	rgb_T(double rbias, double gbias, double bbias, double initx) : Rn(initx / _clr_, rbias), Gn(initx / _clr_, gbias), Bn(initx / _clr_, bbias) {}
 
 	rgb_T(const cv::Vec3b& v)
 	{
-		Bn.data = v[0];// / _clr_;
-		Gn.data = v[1];// / _clr_;
-		Rn.data = v[2];// / _clr_;
+		Bn.data = static_cast<double>(v[0])/* / _clr_*/;
+		Gn.data = static_cast<double>(v[1])/* / _clr_*/;
+		Rn.data = static_cast<double>(v[2])/* / _clr_*/;
 	}
 
 	rgb_T(const rgb_T& instance)
@@ -196,7 +196,7 @@ public:
 
 	double Grayn() noexcept
 	{
-		return 0.299 * Rn.data + 0.587 * Gn.data + 0.114 * Bn.data;
+		return 0.299 * Rn.data/* * _clr_*/ + 0.587 * Gn.data/* * _clr_*/ + 0.114 * Bn.data/* * _clr_*/;
 	}
 
 	~rgb_T() {}
@@ -220,7 +220,7 @@ public:
 
 	explicit cnnKernel_c3() : R(0.), G(0.), B(0.) {}
 
-	explicit cnnKernel_c3(double r, double g, double b) : R(r), G(g), B(b) {}
+	explicit cnnKernel_c3(double r, double g, double b) : R(r/* / _clr_*/), G(g/* / _clr_*/), B(b/* / _clr_*/) {}
 
 	~cnnKernel_c3() {}
 };
@@ -244,7 +244,7 @@ private:
 	::std::vector<::std::vector<mapge>> vkernel;	// vector of kernel's data
 	::std::vector<ptrdiff_t> vfunc;					// vector of functions(conv, decr)
 	nndx::neuronet net;								// main forward neural network
-	nndx::neuronet Inet;							// neuronet between CNN and NN neurons (3n -> 1n)
+	::std::vector<nndx::neuronet> vInet;			// neuronets between CNN and NN (image -> neuron)
 
 public:
 	explicit CNN() : isReady(false), u_net(0.), moment_net(0.) {}
@@ -267,7 +267,7 @@ public:
 		}
 	}
 
-	CNN(const char* filename, double rand_func(void)) : isReady(false), u_net(0.), moment_net(0.)
+	CNN(const char* filename, double (rand_func)(void)) : isReady(false), u_net(0.), moment_net(0.)
 	{
 		::std::ifstream read(filename);
 		ER_IF(!read.is_open(),, )
@@ -361,7 +361,74 @@ public:
 		this->outputF			=		/*::std::forward<decltype(data.outputF)>*/ ::std::move(data.outputF);
 		this->dataF				=		/*::std::forward<decltype(data.dataF)>*/ ::std::move(data.dataF);
 		this->net				=		/*::std::forward<decltype(data.net)>*/ ::std::move(data.net);
-		this->Inet				=		/*::std::forward<decltype(data.Inet)>*/ ::std::move(data.Inet);
+		//this->Inet				=		/*::std::forward<decltype(data.Inet)>*/ ::std::move(data.Inet);
+	}
+
+	template <typename TFunc, typename... TT>
+	bool initCNN(const char* filename, TFunc&& func, TT&&... args)//double (rand_func)(void))
+	{
+		isReady = false;
+		u_net = 0.;
+		moment_net = 0.;
+
+		::std::ifstream read(filename);
+		ER_IF(!read.is_open(),, )
+		else
+		{
+			::std::string s1;
+			::std::string s2;
+			int temp1, temp2;
+			//__bool res;
+
+			read >> s1;
+			read >> temp1;
+			read >> temp2;
+			ER_IFN(init_image(temp1, temp2, 0., 0., 0.),, )
+			read >> s1;
+			::std::vector<ptrdiff_t> vfuncIn;
+			read >> temp1;
+			vfuncIn.reserve(temp1);
+			for (int i = 0; i < temp1; ++i)
+			{
+				read >> temp2;
+				vfuncIn.emplace_back(temp2);
+			}
+			read >> s1;
+			read >> inputF;
+			read >> s1;
+			read >> outputF;
+			read >> s1;
+			read >> dataF;
+			read >> s1;
+			read >> temp2;
+			for(size_t i = 0; i < temp2; ++i)
+			{
+				read >> temp1;
+				for (size_t j = 0; j < temp1; ++j)
+				{
+					size_t check1, check2;
+					read >> s1;
+					read >> check1;
+					read >> check2;
+					if (s1 == "rand")
+					{
+						ER_IFN(initKrnl(i, j, check1, check2, func, args...),, )
+					}
+					else if (s1 == "save")
+					{
+						ER_IFN(defKrnlFromFile(i, j),, )
+						ER_IF(vkernel[i][j].size() != check2,, )
+						ER_IF(vkernel[i][j].back().size() != check1,, )
+					}
+					else
+					{
+						ERROR_
+					}
+				}
+			}
+			
+			read.close();
+		}
 	}
 	
 	bool initDir(const ::std::string& in, const ::std::string& out, const ::std::string& data)
@@ -476,7 +543,8 @@ public:
 	}
 
 	// can replaces existing kernel
-	bool initKrnl(size_t idx_, size_t idxKernel, size_t sizex, size_t sizey, double rand_func(void))
+	template <typename TFunc, typename... TT>
+	bool initKrnl(size_t idx_, size_t idxKernel, size_t sizex, size_t sizey, TFunc&& func, TT&&... args)//double (rand_func)(void))
 	{
 		ER_IF(idx_ > vkernel.size(),, return false; )
 		else if (idx_ == vkernel.size())
@@ -503,7 +571,11 @@ public:
 			vkernel[idx_][idxKernel].back().reserve(sizex);
 			for (size_t j = 0; j < sizex; ++j)
 			{
-				vkernel[idx_][idxKernel].back().emplace_back(cnnKernel_c3(rand_func(), rand_func(), rand_func()));
+				vkernel[idx_][idxKernel].back().emplace_back(
+					cnnKernel_c3(
+						std::invoke(std::forward<TFunc>(func), std::forward<TT>(args)...),
+						std::invoke(std::forward<TFunc>(func), std::forward<TT>(args)...),
+						std::invoke(std::forward<TFunc>(func), std::forward<TT>(args)...)));
 			}
 		}
 
@@ -749,7 +821,7 @@ public:
 		return isReady;
 	}
 
-	void setParams(double moment, double u)
+	inline void setParams(double moment, double u)
 	{
 		moment_net = moment;
 		u_net = u;
@@ -775,33 +847,32 @@ public:
 		}
 		//num *= 3; // CV_8UC3!
 		tplNet.emplace(tplNet.begin(), num);
+		tplNet.emplace(tplNet.begin() + 1, static_cast<int>(num / 2));
+		tplNet.emplace(tplNet.begin() + 2, static_cast<int>(num / 4));
 
 		ER_IFN(net.setGenWeightsFunc(funcWeights),, )
 		ER_IFN(net.init(/*::std::forward<::std::vector<int>>*/::std::move(tplNet), funcNet),, )
 		ER_IFN(net.setParams(moment, u),, )
 
-		//// Inet init
+		/*//// Inet init
 		if (Inet.getState())
 		{
 			Inet.~neuronet();
 			ER_IF(Inet.getState(),, return false; )
 		}
-		else
-		{
-			ER_IFN(Inet.setGenWeightsFunc(funcWeights),, return false; )
-			ER_IFN(Inet.init(::std::vector<int>{3, 2, 1}, funcNet),, return false; )
-			ER_IFN(Inet.setParams(moment, u),, return false; )
-		}
+		ER_IFN(Inet.setGenWeightsFunc(funcWeights),, return false; )
+		ER_IFN(Inet.init(::std::vector<int>{3, 2, 1}, funcNet),, return false; )
+		ER_IFN(Inet.setParams(moment, u),, return false; )*/
 
-		return (net.getState() && Inet.getState());
+		return (net.getState()/* && Inet.getState()*/);
 	}
 
 	bool init_neuronet(nndx::neuronet&& x, nndx::neuronet&& Ix)
 	{
 		net = /*::std::forward<decltype(x)>*/::std::move(x);
-		Inet = /*::std::forward<decltype(Ix)>*/::std::move(Ix);
+		//Inet = /*::std::forward<decltype(Ix)>*/::std::move(Ix);
 
-		return (net.getState() && Inet.getState());
+		return (net.getState()/* && Inet.getState()*/);
 	}
 
 	bool init_neuronet(::std::string file, ::std::string Ifile, nndx::neuron::_func funcNet, double moment, double u)
@@ -820,7 +891,7 @@ public:
 		ER_IFN(net.setParams(moment, u),, )
 
 		//// Inet init
-		if (Inet.getState())
+		/*if (Inet.getState())
 		{
 			Inet.~neuronet();
 			ER_IF(Inet.getState(),, return false; )
@@ -831,9 +902,9 @@ public:
 			ER_IFN(Inet.initFromFile(),, return false; )
 			ER_IFN(Inet.setFunc(funcNet),, return false; )
 			ER_IFN(Inet.setParams(moment, u),, return false; )
-		}
+		}*/
 
-		return (net.getState() && Inet.getState());
+		return (net.getState()/* && Inet.getState()*/);
 	}
 
 	bool SaveCNN()
@@ -910,7 +981,9 @@ public:
 				{
 					for (size_t x = 0; x < vkernel[id][j].back().size(); ++x)
 					{
-						write << vkernel[id][j][y][x].R.wg << " " << vkernel[id][j][y][x].G.wg << " " << vkernel[id][j][y][x].B.wg << ::std::endl;
+						write << static_cast<int>(vkernel[id][j][y][x].R.wg/* * _clr_*/) << " "
+							<< static_cast<int>(vkernel[id][j][y][x].G.wg/* * _clr_*/) << " "
+							<< static_cast<int>(vkernel[id][j][y][x].B.wg/* * _clr_*/) << ::std::endl;
 					}
 				}
 				write << "endOFfile";
@@ -937,14 +1010,14 @@ public:
 		::std::string temp1 = outputF + "net.txt";
 		::std::string temp2 = outputF + "Inet.txt";
 		ER_IFN(net.saveF(temp1),, return false; )
-		ER_IFN(Inet.saveF(temp2),, return false; )
+		//ER_IFN(Inet.saveF(temp2),, return false; )
 		ER_IFN(SaveCNN(),, return false; )
 		ER_IFN(SaveKrnl(),, return false; )
 
 		return true;
 	}
 
-	bool mA_Iter(const ::std::vector<::std::vector<double>>& results, unsigned int iter, size_t func(unsigned int&), ::std::string subS, ::std::string extImg)
+	bool mA_Iter(const ::std::vector<::std::vector<double>>& results, unsigned int iter, ::std::string subS, size_t (func)(unsigned int, unsigned int), unsigned int num4func, ::std::string extImg)
 	{
 		ER_IF(iter == 0,, return false; )
 		ER_IF(inputF.empty() || outputF.empty() || dataF.empty(),, return false; )
@@ -959,7 +1032,7 @@ public:
 		for (unsigned int i = 0; i < iter; ++i)
 		{
 			in.clear();
-			ER_IFN(init_image(cv::imread(sfile + nndx::nts(func(i)) + extImg)),, return false; )
+			ER_IFN(init_image(cv::imread(sfile + nndx::nts(func(i, num4func)) + extImg)),, return false; )
 
 			ER_IFN(mA(),, return false; )
 
@@ -975,12 +1048,12 @@ public:
 				}
 			}*/
 
-			ER_IFN(fillInputCNN(in), ::std::cout << "[CNN] fillInputCNN() returns false" << ::std::endl; , return false; )
+			ER_IFN(getOutputCNN(in), ::std::cout << "[CNN] getOutputCNN() returns false" << ::std::endl; , return false; )
 			ER_IFN(net.fillInput(in), ::std::cout << "[CNN] net.fillInput() returns false" << ::std::endl; , return false; )
 			ER_IFN(net.callActivationF(), ::std::cout << "[CNN] net.callActivationF() returns false" << ::std::endl; , return false; )
 
 #ifdef _CNN_COMMENTS
-			::std::cout << " func(i) - " << func(i) << "\n";
+			::std::cout << " func(i) - " << func(i, num4func) << "\n";
 			for (auto& x : net.getResults())
 			{
 				::std::cout << x << "\n";
@@ -988,7 +1061,7 @@ public:
 			::std::cout << "\n";
 #endif
 
-			ER_IFN(net.callBackProp(results[func(i)]),, return false; )
+			ER_IFN(net.callBackProp(results[func(i, num4func)]),, return false; )
 		}
 		::std::cout << ::std::endl;
 
@@ -998,7 +1071,7 @@ public:
 		return true;
 	}
 
-	bool mA_ByValue(const ::std::vector<::std::vector<double>>& results, unsigned int Xnum, double CounterValue, size_t func(unsigned int&), ::std::string subS, ::std::string extImg)
+	bool mA_ByValue(const ::std::vector<::std::vector<double>>& results, unsigned int Xnum, double CounterValue, ::std::string subS, size_t func(unsigned int&), ::std::string extImg)
 	{
 		ER_IF(results.size() != Xnum,, return false; )
 		ER_IF(inputF.empty() || outputF.empty() || dataF.empty(),, return false; )
@@ -1033,7 +1106,7 @@ public:
 				}
 			}*/
 
-			ER_IFN(fillInputCNN(in), ::std::cout << "[CNN] fillInputCNN() returns false" << ::std::endl; , return false; )
+			ER_IFN(getOutputCNN(in), ::std::cout << "[CNN] getOutputCNN() returns false" << ::std::endl; , return false; )
 			ER_IFN(net.fillInput(in), ::std::cout << "[CNN] net.fillInput() returns false" << ::std::endl; , return false; )
 			ER_IFN(net.callActivationF(), ::std::cout << "[CNN] net.callActivationF() returns false" << ::std::endl; , return false; )
 
@@ -1123,7 +1196,7 @@ public:
 			}
 		}*/
 
-		ER_IFN(fillInputCNN(in), ::std::cout << "[CNN] fillInputCNN() returns false" << ::std::endl; , return false; )
+		ER_IFN(getOutputCNN(in), ::std::cout << "[CNN] getOutputCNN() returns false" << ::std::endl; , return false; )
 		ER_IFN(net.fillInput(in), ::std::cout << "[CNN] net.fillInput() returns false" << ::std::endl; , return false; )
 		ER_IFN(net.callActivationF(), ::std::cout << "[CNN] net.callActivationF() returns false" << ::std::endl; , return false; )
 
@@ -1137,27 +1210,21 @@ public:
 	}
 
 private:
-	bool fillInputCNN(::std::vector<double>& input)
+	bool getOutputCNN(::std::vector<double>& input)
 	{
-		double maxVal = -10000.;
+		//double maxVal = -10000.;
 		for (size_t s = 0; s < vlayer.back().size(); ++s)
 		{
 			for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
 			{
 				for (size_t j = 0; j < vlayer.back()[s].back().size(); ++j)
 				{
-					//::std::cout << vlayer.back()[s][i][j].Rn.data << ::std::endl;
-					//::std::cout << vlayer.back()[s][i][j].Gn.data << ::std::endl;
-					//::std::cout << vlayer.back()[s][i][j].Bn.data << ::std::endl;
-					Inet.fillInput(::std::vector<double>{vlayer.back()[s][i][j].Rn.data, vlayer.back()[s][i][j].Gn.data, vlayer.back()[s][i][j].Bn.data});
-					Inet.activationF();
-					double resInet = Inet.getResults()[0];
+					//Inet.fillInput(::std::vector<double>{vlayer.back()[s][i][j].Rn.data, vlayer.back()[s][i][j].Gn.data, vlayer.back()[s][i][j].Bn.data});
+					//Inet.activationF();
+					//double resInet = Inet.getResults()[0];
+					//if (resInet > maxVal) maxVal = resInet;
 					input.reserve(input.capacity() + 1);
-					//double tempVal = /*cneuron::mSIGMOID(*/vlayer.back()[s][i][j].Grayn();//);
-					//if (tempVal > maxVal) maxVal = tempVal;
-					if (resInet > maxVal) maxVal = resInet;
-					//input.emplace_back(tempVal);
-					input.emplace_back(resInet);
+					input.emplace_back(vlayer.back()[s][i][j].Grayn());
 				}
 			}
 		}
@@ -1670,16 +1737,38 @@ private:
 		return true;
 	}
 
+	void decreaseBeforeFullConn(const ::std::vector<double>& fc, ::std::vector<image>& dcrs)
+	{
+		for(size_t k {0}; k < fc.size() - 1; ++k)
+		{
+			for(size_t h {0}; h < dcrs.size(); ++h)
+			{
+				for(size_t i {0}; i < dcrs[h].size(); ++i)
+				{
+					for(size_t j {0}; j < dcrs[h][i].size(); ++j)
+					{
+						dcrs[h][i][j].Rn;
+					}
+				}
+			}
+		}
+	}
+
+	void decreaseBeforeConv()
+	{
+		
+	}
+
 	bool ConvBackProp(const ::std::vector<double>& res)
 	{
 		//receive Error
 		::std::vector<double> vErr;
 		net.callBackProp(res, vErr);
 
-		for (auto& x : vErr)
+		/*for (auto& x : vErr)
 		{
 			Inet.callBackProp(::std::vector<double>{ x }, vErr);
-		}
+		}*/
 
 		//
 		//
@@ -2009,9 +2098,9 @@ private:
 			{
 				for (size_t x = 0; x < locX; ++x)
 				{
-					output.at<cv::Vec3b>(cv::Point(x, y))[2] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Rn.data/*  * _clr_*/);
-					output.at<cv::Vec3b>(cv::Point(x, y))[1] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Gn.data/*  * _clr_*/);
-					output.at<cv::Vec3b>(cv::Point(x, y))[0] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Bn.data/*  * _clr_*/);
+					output.at<cv::Vec3b>(cv::Point(x, y))[2] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Rn.data/* * _clr_*/);
+					output.at<cv::Vec3b>(cv::Point(x, y))[1] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Gn.data/* * _clr_*/);
+					output.at<cv::Vec3b>(cv::Point(x, y))[0] = static_cast<unsigned char>(vlayer[idx][cur][y][x].Bn.data/* * _clr_*/);
 				}
 			}
 			::std::string s = outputF + "imRGB" + nts(idx);
@@ -2036,7 +2125,7 @@ private:
 			{
 				for (size_t x = 0; x < locX; ++x)
 				{
-					output.at<uint8_t>(cv::Point(x, y)) = static_cast<unsigned char>(vlayer[idx][cur][y][x].Grayn()/* * _clr_*/);
+					output.at<uint8_t>(cv::Point(x, y)) = static_cast<unsigned char>(vlayer[idx][cur][y][x].Grayn());
 				}
 			}
 			::std::string s = outputF + "imGray" + nts(idx);
@@ -2151,6 +2240,16 @@ inline double dxReLU(double x)
 	return (x > 0.) ? 1. : 0.;
 }
 
+double softmax(::std::vector<double>& y, size_t i)
+{
+	double res = 0.;
+	for(auto& x : y)
+	{
+		res += ::std::exp(x);
+	}
+	return y.at(i) / res;
+}
+
 template<typename _T>
 ::std::string nts(const _T& example)
 {
@@ -2250,12 +2349,14 @@ void neuronet::backProp(const ::std::vector<double>& d, ::std::vector<double>& e
 			weight[data.size() - 2][prev * data.back().size() + j].wg += weight[data.size() - 2][prev * data.back().size() + j].dwg;
 		}
 	}
+
+	errback = errR[0];
 	
-	for (size_t i = 0; i < errR[0].size() - 1; ++i) // -1 BIAS ERROR, since BIAS don't connected with previos layer
+	/*for (size_t i = 0; i < errR[0].size() - 1; ++i) // -1 BIAS ERROR, since BIAS don't connected with previos layer
 	{
 		errback.reserve(errback.capacity() + 1);
 		errback.emplace_back(errR[0][i]);
-	}
+	}*/
 }
 
 #endif

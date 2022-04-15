@@ -1018,8 +1018,8 @@ namespace nndx
 			local_sum = 0.;
 			for (size_t next = {0}; next < data.back().size(); ++next)
 			{
-				local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data.back().size() * j + next].wg;
-				weight[data.size() - 2][data.back().size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
+				local_sum += errR.back()[next] * weight.back()[data.back().size() * j + next].wg;
+				weight.back()[data.back().size() * j + next].grad = errR.back()[next] * data[data.size() - 2][j].data;
 			}
 			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
 		}

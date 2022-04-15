@@ -46,17 +46,22 @@
 #define defDX__FILELINE		(__FILE__  " line " defDX_S__LINE__)
 #endif
 
+#ifndef NOTATION_
+#define NOTATION_ ::std::cout << "![NTTN]" << (const char*)defDX__FILELINE << ::std::endl;
+#define NTTN_ NOTATION_
+#endif
+
 #ifndef ERROR_
 
 #if defined(_WIN32)
-#define ERROR_				{ ::std::cout << "![EXCPT]" << (const char*)defDX__FILELINE << ::std::endl; 	\
+#define ERROR_				{ NTTN_ 	\
 							throw ::std::exception(); }
 #elif defined(__unix__)
 #if defined(__linux__)
 #define ERROR_				try {																			\
                             	throw ::std::exception();													\
 							} catch (::std::exception& x) {													\
-								::std::cout << "![EXCPT]" << (const char*)defDX__FILELINE << ::std::endl;	\
+								NTTN_	\
 							}
 #else
 #error This UNIX operating system is not supported by dx::NN

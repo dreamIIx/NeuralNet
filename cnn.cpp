@@ -74,7 +74,12 @@ int main(int argc, char** argv)
 	// --initdirs: --initdirs <path/to/images> <path/to/output> <path/to/data>
 	//		instead of following flags
 	// --loadCNN: <path/to/saved/CNN.txt> <rand function accuracy ([int])>
-	// --loadNN: <path/to/saved/NN.txt> <path/to/saved/INN.txt> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
+	// --loadNN: <path/to/saved/NN.txt> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
+	// --loadINN: <path/to/saved/INN.txt> <idx: index of Inet> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
+	// --loadNNINF: (make sure you are initCNNEx before!)
+	// --loadNNINF: <path/to/saved/nninfo.ninf>
+	//				<path/to/saved/NN.txt> <-1> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
+	//				<path/to/saved/INN.txt> <idx: index of Inet> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
 	// --initimg: <path/filename.extension (of input image)>
 	// --loadkrnl: --loadkrnl <numofargs> <bool flag1: create new vkernel element> <filename1 of kernel1 (without ext - .krnl)> <flag2> <filename2> ...
 	// --loadkrnl: <flag> <filename> - is ONE arg
@@ -91,6 +96,7 @@ int main(int argc, char** argv)
 	// 				-4 - decreaseX2_RGB(mid)
 	// --loadfunc: <path/filename.finf (of functions info file)>
 	// .finf files: syntax same as --initfunc init (without first arg - numofargs)
+	// --initCNNEx: for initialize CNN (make sure you are init all func and kernels before!)
 	// --maoption: option to learn by
 	// 			1: result on one picture
 	//			2: learn CNN on result pack by defined iterations (<file with desire result> <count of iterations> <subString of images> <num: func to get id of each image (x % num)> <extension of images>)
@@ -112,26 +118,91 @@ int main(int argc, char** argv)
 		{
 			option = argv[i++];
 			int accur = ::std::atoi(argv[i++]);
-			ER_IFN(test.initCNN(option.c_str(), [accur]() -> double { return static_cast<double>((nndx::randB(hProv) % (accur + 1)) / static_cast<double>(accur)); }),
+			ER_IFN(test.initCNN(option.c_str(), hProv, [accur]() -> double { return static_cast<double>((nndx::randB(hProv) % (accur + 1)) / static_cast<double>(accur)); }),
 				::std::cout << "ERROR while loading an CNN [defined path : " << option << ']' << ::std::endl;, return 1; )
 			isloadedCNN = true;
 		}
 		else if (option == "--loadNN")
 		{
 			::std::string str1 = argv[i++];
-			::std::string str2 = argv[i++];
 			int funcopt = ::std::atoi(argv[i++]);
 			double mnt = ::std::atof(argv[i++]);
 			double u = ::std::atof(argv[i++]);
 			if (funcopt == 0)
 			{
-				test.init_neuronet(str1, str2, nndx::neuron::_func::_fnSIGMOID, mnt, u);
+				test.init_neuronet(str1, nndx::neuron::_func::_fnSIGMOID, mnt, u);
 			}
 			else if (funcopt == 1)
 			{
-				test.init_neuronet(str1, str2, nndx::neuron::_func::_fnTANH, mnt, u);
+				test.init_neuronet(str1, nndx::neuron::_func::_fnTANH, mnt, u);
 			}
-			isloadedNN = true;
+			isloadedNN = true; // khm
+		}
+		else if (option == "--loadINN")
+		{
+			::std::string str1 = argv[i++];
+			int funcopt = ::std::atoi(argv[i++]);
+			size_t idx = ::std::atof(argv[i++]);
+			double mnt = ::std::atof(argv[i++]);
+			double u = ::std::atof(argv[i++]);
+			if (funcopt == 0)
+			{
+				test.init_neuronet(idx, str1, nndx::neuron::_func::_fnSIGMOID, mnt, u);
+			}
+			else if (funcopt == 1)
+			{
+				test.init_neuronet(idx, str1, nndx::neuron::_func::_fnTANH, mnt, u);
+			}
+			isloadedNN = true; // khm
+		}
+		else if (option == "--loadNNINF")
+		{
+			::std::string str1 = argv[i++];
+			::std::ifstream read(str1);
+			ER_IFN(read.is_open(),
+				::std::cout << "read.is_open() returns - false" << ::std::endl;
+				::std::cout << "str = " << str1 << ::std::endl;, return 1; )
+			else
+			{
+				// as default
+				test.setParams(0.4, 0.1);
+				while (!read.eof())
+				{
+					read >> option;
+					if (option == "###") break;
+					int funcopt;
+					ptrdiff_t idx = ::std::atoi(option.c_str());
+					double mnt;
+					double u;
+					read >> str1;
+					read >> funcopt;
+					read >> mnt;
+					read >> u;
+					if (funcopt == 0)
+					{
+						if (idx == -1)
+						{
+							test.init_neuronet(str1, nndx::neuron::_func::_fnSIGMOID, mnt, u);
+						}
+						else
+						{
+							test.init_neuronet(idx, str1, nndx::neuron::_func::_fnSIGMOID, mnt, u);
+						}
+					}
+					else if (funcopt == 1)
+					{
+						if (idx == -1)
+						{
+							test.init_neuronet(str1, nndx::neuron::_func::_fnTANH, mnt, u);
+						}
+						else
+						{
+							test.init_neuronet(idx, str1, nndx::neuron::_func::_fnTANH, mnt, u);
+						}
+					}
+				}
+			}
+			isloadedNN = true; // khm
 		}
 		else if (option == "--loadkrnl")
 		{
@@ -162,7 +233,7 @@ int main(int argc, char** argv)
 					int flag2 = ::std::atoi(option.c_str());
 					read >> option;
 					if (!::std::strcmp(option.c_str(), "none")) option = "";
-					ER_IFN(test.defKrnlFromFile(static_cast<size_t>(flag1), static_cast<size_t>(flag2), option.c_str()),, return 1; )
+					ER_IFN(test.defKrnlFromFile(static_cast<size_t>(flag1), static_cast<size_t>(flag2), hProv, option.c_str()),, return 1; )
 				}
 			}
 		}
@@ -208,6 +279,14 @@ int main(int argc, char** argv)
 				}
 			}
 		}
+		else if (option == "--initCNNEx")
+		{
+			if (!isloadedCNN)
+			{
+				// as default
+				ER_IFN(test.initFuncEx([]()->double { return 0.; }, vArg),, return 1; )
+			}
+		}
 		else if (option == "--initimg")
 		{
 			option = argv[i++];
@@ -227,7 +306,12 @@ Default dirs(pathes) should be ./image/, ./output/, ./data/, or specify them by
 --initdirs: --initdirs <path/to/images> <path/to/output> <path/to/data>
 	instead of following flags
 --loadCNN: <path/to/saved/CNN.txt> <rand function accuracy ([int])>
---loadNN: <path/to/saved/NN.txt> <path/to/saved/INN.txt> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
+--loadNN: <path/to/saved/NN.txt> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
+--loadINN: <path/to/saved/INN.txt> <idx: index of Inet> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
+--loadNNINF: (make sure you are initCNNEx before!)
+--loadNNINF: <path/to/saved/nninfo.ninf>
+		<path/to/saved/NN.txt> <-1> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
+		<path/to/saved/INN.txt> <idx: index of Inet> <func: 0 or 1 (SIGMOID, TANH)> <moment of learning> <speed of learning>
 --initimg: <path/filename.extension (of input image)>
 --loadkrnl: --loadkrnl <numofargs> <bool flag1: create new vkernel element> <filename1 of kernel1 (without ext - .krnl)> <flag2> <filename2> ...
 --loadkrnl: <flag> <filename> - is ONE arg
@@ -244,6 +328,7 @@ Default dirs(pathes) should be ./image/, ./output/, ./data/, or specify them by
 		-4 - decreaseX2_RGB(mid)
 --loadfunc: <path/filename.finf (of functions info file)>
 .finf files: syntax same as --initfunc init (without first arg - numofargs)
+--initCNNEx: for initialize CNN (make sure you are init all func and kernels before!)
 --ma: option to learn by
 		1: result on one picture
 		2: learn CNN on result pack by defined iterations (<file with desire result> <count of iterations> <subString of images> <num: func to get id of each image (x % num)> <extension of images>)
@@ -266,9 +351,9 @@ Default dirs(pathes) should be ./image/, ./output/, ./data/, or specify them by
 	if (!isloadedNN)
 	{
 		// as default
-		test.setParams(0.2, 0.4);
-		ER_IFN(test.init_neuronet(::std::vector<int>{10, 5, 4}, []()->double { return static_cast<double>(((nndx::randB(hProv) % 100) - 50.) / 100.); },
-			nndx::neuron::_func::_fnSIGMOID, 0.1, 1),, return 1; )
+		test.setParams(0.4, 0.1);
+		ER_IFN(test.init_neuronet(::std::vector<int>{10}, []()->double { return static_cast<double>(((nndx::randB(hProv) % 101) - 50.) / 100.); },
+			[]()->double { return static_cast<double>(((nndx::randB(hProv) % 101) - 50.) / 100.); }, nndx::neuron::_func::_fnSIGMOID, 0.4, 0.2),, return 1; )
 	}
 
 	ER_IF(mA_var == -1, ::std::cout << "Chose no option to learn by, using default (1)" << ::std::endl;, mA_var = 1; )
@@ -277,7 +362,7 @@ Default dirs(pathes) should be ./image/, ./output/, ./data/, or specify them by
 	{
 		::std::cout << "---Single result---" << ::std::endl;
 
-		ER_IFN(test.mA_Res(), ::std::cout << "test.mA_Res() returns - false" << ::std::endl;, return 1; )
+		ER_IFN(test.mA_Res(::std::vector<double>{1}), ::std::cout << "test.mA_Res() returns - false" << ::std::endl;, return 1; )
 	}
 	else if (mA_var == 2)
 	{
@@ -289,15 +374,20 @@ Default dirs(pathes) should be ./image/, ./output/, ./data/, or specify them by
 		unsigned int nIter;
 		unsigned int num4Func;
 		::std::cout << "Specify file of desire results:" << ::std::endl;
-		::std::getline(::std::cin, opt);
+		//::std::getline(::std::cin, opt);
+		::std::cin >> opt;
 
-		::std::ifstream read(opt);
-		ER_IFN(read.is_open(), ::std::cout << "Can not read from " << opt << ::std::endl;, return 1; )
+		::std::ifstream read(test.dataF + opt);
+		ER_IFN(read.is_open(), ::std::cout << "Can not read from " << test.dataF + opt << ::std::endl;, return 1; )
 
-		::std::getline(read, opt);
+		//::std::getline(read, opt);
+		read >> opt;
 		int szResults = ::std::atoi(opt.c_str());
-		::std::getline(read, opt);
+		::std::cout << "szResults = " << szResults << ::std::endl;
+		//::std::getline(read, opt);
+		read >> opt;
 		int szResultLine = ::std::atoi(opt.c_str());
+		::std::cout << "szResultLine = " << szResultLine << ::std::endl;
 		::std::vector<::std::vector<double>> resNet;
 		resNet.reserve(szResults);
 
@@ -315,11 +405,19 @@ Default dirs(pathes) should be ./image/, ./output/, ./data/, or specify them by
 		}
 		ER_IFN(resNet.size() == szResults, ::std::cout << "Error: resNet.size() not equal szResults" << ::std::endl;, return 1; )
 		::std::cout << "Specify count of iterations:" << ::std::endl;
-		::std::cin >> nIter;
-		::std::cout << "Specify num for func (x % <num):" << ::std::endl;
-		::std::cin >> num4Func;
-		::std::getline(::std::cin, subString);
-		::std::getline(::std::cin, extOfImage);
+		read >> nIter;
+		::std::cout << "nIter = " << nIter << ::std::endl;
+		::std::cout << "Specify num for func (x %< num):" << ::std::endl;
+		read >> num4Func;
+		::std::cout << "num4Func = " << num4Func << ::std::endl;
+		//::std::getline(::std::cin, subString);
+		//::std::getline(::std::cin, extOfImage);
+		::std::cout << "Specify subString of images:" << ::std::endl;
+		read >> subString;
+		::std::cout << "subString = " << subString << ::std::endl;
+		::std::cout << "Specify extension of images:" << ::std::endl;
+		read >> extOfImage;
+		::std::cout << "extension = " << extOfImage << ::std::endl;
 		ER_IFN(test.mA_Iter(resNet, nIter, subString, [](unsigned int x, unsigned int y) -> size_t { return x % y; }, num4Func, extOfImage), ::std::cout << "test.mA_Iter() returns - false" << ::std::endl;, return 1; )
 	}
 	ER_IFN(test.FullSave(), ::std::cout << "test.FullSave() returns - false" << ::std::endl;, return 1; )

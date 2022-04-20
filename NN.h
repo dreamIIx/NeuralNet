@@ -212,7 +212,9 @@ namespace nndx
 #ifdef _NNDX_CONV_NEURONET_DEF
 	protected:
 		void backProp(const ::std::vector<double>&, ::std::vector<double>&); // ch
+		void backPropByErr(const ::std::vector<double>&, ::std::vector<double>&); // ch
 		bool callBackProp(const ::std::vector<double>&, ::std::vector<double>&); // ch
+		bool callBackPropByErr(const ::std::vector<double>&, ::std::vector<double>&); // ch
 #endif
 	};
 }

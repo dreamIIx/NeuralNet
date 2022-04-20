@@ -994,22 +994,8 @@ namespace nndx
 		//default error
 		for (size_t i {0}; i < data.back().size(); ++i)
 		{
-			errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
+			errR.back().emplace_back(d[i] - data.back()[i].data);
 		}
-		
-		/*
-		//quad error
-		double ErrorQuad = 0.;
-		for (size_t i {0}; i < data.back().size(); ++i)
-		{
-			ErrorQuad += ::std::pow(d[i] - data.back()[i].data, 2);
-		}
-		ErrorQuad /= 2.;
-		for (size_t i {0}; i < data.back().size(); ++i)
-		{
-			errR.back().emplace_back(ErrorQuad * (d[i] - data.back()[i].data));
-		}
-		*/
 
 		double local_sum;
 		errR[data.size() - 2].reserve(data[data.size() - 2].size());
@@ -1018,10 +1004,10 @@ namespace nndx
 			local_sum = 0.;
 			for (size_t next = {0}; next < data.back().size(); ++next)
 			{
-				local_sum += errR.back()[next] * weight.back()[data.back().size() * j + next].wg;
-				weight.back()[data.back().size() * j + next].grad = errR.back()[next] * data[data.size() - 2][j].data;
+				local_sum += errR.back()[next] * data.back()[next].funcDRV * weight.back()[data.back().size() * j + next].wg;
+				weight.back()[data.back().size() * j + next].grad = errR.back()[next] * data[data.size() - 2][j].data * data.back()[next].funcDRV;
 			}
-			errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
+			errR[data.size() - 2].emplace_back(local_sum);
 		}
 		for (ptrdiff_t i = static_cast<ptrdiff_t>(data.size() - 3); i >= 0; --i)
 		{
@@ -1031,10 +1017,10 @@ namespace nndx
 				local_sum = 0.;
 				for (size_t next {0}; next < data[i + 1].size() - 1; ++next)
 				{
-					local_sum += errR[i + 1][next] * weight[i][(data[i + 1].size() - 1) * j + next].wg;
-					weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data;
+					local_sum += errR[i + 1][next] * data[i + 1][next].funcDRV * weight[i][(data[i + 1].size() - 1) * j + next].wg;
+					weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data * data[i + 1][next].funcDRV;
 				}
-				errR[i].emplace_back(local_sum * data[i][j].funcDRV);
+				errR[i].emplace_back(local_sum);
 			}
 		}
 

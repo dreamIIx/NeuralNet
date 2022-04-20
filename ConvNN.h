@@ -24,6 +24,7 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <iomanip>
 
 #include "opencv2/opencv.hpp"
 
@@ -55,8 +56,12 @@ ptrdiff_t operator "" _sprll(unsigned long long x)
 inline double max_4(double, double, double, double);
 inline double min_4(double, double, double, double);
 inline double mid_4(double, double, double, double);
+class rgb_T;
+inline void err_reverse_max_4(rgb_T&, rgb_T&, rgb_T&, rgb_T&, rgb_T&);
+inline void err_reverse_min_4(rgb_T&, rgb_T&, rgb_T&, rgb_T&, rgb_T&);
+inline void err_reverse_mid_4(rgb_T&, rgb_T&, rgb_T&, rgb_T&, rgb_T&);
 inline double ReLU(double);
-inline double dxReLU(double);
+constexpr inline double ReLU_DRV(double);
 template<typename _T>
 ::std::string nts(const _T&);
 /*
@@ -128,14 +133,6 @@ public:
 		}
 	}
 
-	cneuron& operator=(cneuron x)
-	{
-		this->data = x.data;
-		this->mBIAS = x.mBIAS;
-		this->err = x.err;
-		return *this;
-	}
-
 	cneuron& operator=(double x)
 	{
 		data = x;
@@ -179,9 +176,9 @@ public:
 
 	rgb_T(const rgb_T& instance)
 	{
-		Bn.data = instance.Bn.data;
-		Gn.data = instance.Gn.data;
-		Rn.data = instance.Rn.data;
+		Bn = instance.Bn;
+		Gn = instance.Gn;
+		Rn = instance.Rn;
 	}
 
 	void init(double r, double g, double b)
@@ -235,10 +232,12 @@ private:
 	double u_net;
 	double moment_net;
 
+public:
 	::std::string inputF;
 	::std::string outputF;
 	::std::string dataF;
 
+private:
 	image vinLayer;									// input image
 	::std::vector<::std::vector<image>> vlayer;		// vector of layer's data
 	::std::vector<::std::vector<mapge>> vkernel;	// vector of kernel's data
@@ -267,16 +266,14 @@ public:
 		}
 	}
 
-	CNN(const char* filename, double (rand_func)(void)) : isReady(false), u_net(0.), moment_net(0.)
+	CNN(const char* filename, double (rand_func)(void), double (rand_func2)(void), dxCRYPT& hProv) : isReady(false), u_net(0.), moment_net(0.)
 	{
 		::std::ifstream read(filename);
 		ER_IF(!read.is_open(),, )
 		else
 		{
 			::std::string s1;
-			::std::string s2;
 			int temp1, temp2;
-			//__bool res;
 
 			read >> s1;
 			read >> temp1;
@@ -314,7 +311,7 @@ public:
 					}
 					else if (s1 == "save")
 					{
-						ER_IFN(defKrnlFromFile(i, j),, )
+						ER_IFN(defKrnlFromFile(i, j, hProv),, )
 						ER_IF(vkernel[i][j].size() != check2,, )
 						ER_IF(vkernel[i][j].back().size() != check1,, )
 					}
@@ -325,22 +322,31 @@ public:
 				}
 			}
 			read >> s1;
-			double d1 = 0.3;
-			double d2 = 0.6;
+			double d1 = 0.;
+			double d2 = 0.;
 			if (s1 == "netF")
 			{
 				read >> s1;
-				read >> s2;
 				read >> temp1;
 				read >> d1;
 				read >> d2;
 				ER_IFN(initFuncEx(rand_func, vfuncIn),, )
-				ER_IFN(init_neuronet(s1, s2, static_cast<nndx::neuron::_func>(temp1), d1, d2),, )
+				ER_IFN(init_neuronet(s1, static_cast<nndx::neuron::_func>(temp1), d1, d2),, )
+				read >> temp2;
+				for(size_t i {0}; i < temp2; ++i)
+				{
+					read >> s1;
+					read >> temp1;
+					read >> d1;
+					read >> d2;
+					ER_IFN(initFuncEx(rand_func, vfuncIn),, )
+					ER_IFN(init_neuronet(i, s1, static_cast<nndx::neuron::_func>(temp1), d1, d2),, )
+				}
 			}
 			else
 			{
 				ER_IFN(initFuncEx(rand_func, vfuncIn),, )
-				ER_IFN(init_neuronet(::std::vector<int>{10, 1}, []()->double { return 0.1; },
+				ER_IFN(init_neuronet(::std::vector<int>{5, 1}, rand_func, rand_func2,
 					nndx::neuron::_func::_fnSIGMOID, 0.3, 0.5),, )
 			}
 			
@@ -361,11 +367,12 @@ public:
 		this->outputF			=		/*::std::forward<decltype(data.outputF)>*/ ::std::move(data.outputF);
 		this->dataF				=		/*::std::forward<decltype(data.dataF)>*/ ::std::move(data.dataF);
 		this->net				=		/*::std::forward<decltype(data.net)>*/ ::std::move(data.net);
+		this->vInet				=		/*::std::forward<decltype(data.net)>*/ ::std::move(data.vInet);
 		//this->Inet				=		/*::std::forward<decltype(data.Inet)>*/ ::std::move(data.Inet);
 	}
 
 	template <typename TFunc, typename... TT>
-	bool initCNN(const char* filename, TFunc&& func, TT&&... args)//double (rand_func)(void))
+	bool initCNN(const char* filename, dxCRYPT& hProv, TFunc&& func, TT&&... args)//double (rand_func)(void))
 	{
 		isReady = false;
 		u_net = 0.;
@@ -416,7 +423,7 @@ public:
 					}
 					else if (s1 == "save")
 					{
-						ER_IFN(defKrnlFromFile(i, j),, )
+						ER_IFN(defKrnlFromFile(i, j, hProv),, )
 						ER_IF(vkernel[i][j].size() != check2,, )
 						ER_IF(vkernel[i][j].back().size() != check1,, )
 					}
@@ -584,7 +591,7 @@ public:
 
 	// files must be with .krnl extension
 	// can replaces existing kernel
-	bool defKrnlFromFile(size_t idx_, size_t idxKernel, const char* Filename = "")
+	bool defKrnlFromFile(size_t idx_, size_t idxKernel, dxCRYPT& hProv, const char* Filename = "")
 	{
 		ER_IF(idx_ > vkernel.size(),, return false; )
 		else if (idx_ == vkernel.size())
@@ -619,39 +626,79 @@ public:
 		{
 			sfile = dataF + Filename;
 			read.open(sfile + kernel_ext);
+			ER_IF(!read.is_open(),
+				::std::cout << "Filename - " << Filename << ::std::endl;
+				::std::cout << "full_path_to - " << sfile + kernel_ext << ::std::endl;
+				read.close();, return false; )
 		}
-		ER_IF(!read.is_open(),
-			::std::cout << "Filename - " << Filename << ::std::endl;
-			::std::cout << "full_path_to - " << sfile + kernel_ext << ::std::endl;
-			read.close();, return false; )
-
 		size_t sizey, sizex;
-		double kernelTempR = 0.;
-		double kernelTempG = 0.;
-		double kernelTempB = 0.;
 		read >> sizex;
 		read >> sizey;
-
-		vkernel[idx_][idxKernel].reserve(sizey);
-		for (size_t i = 0; i < sizey; ++i)
+		read >> sfile;
+		if (!::std::strcmp(sfile.c_str(), "rand"))
 		{
-			vkernel[idx_][idxKernel].emplace_back(::std::vector<cnnKernel_c3>());
-			vkernel[idx_][idxKernel].back().reserve(sizex);
-			for (size_t j = 0; j < sizex; ++j)
+			auto rand_func = [&hProv]() -> double {	if		((nndx::randB(hProv) % 6) & 1)		{ return static_cast<double>(nndx::randB(hProv) % 7) - 3; }
+													else if	(!(nndx::randB(hProv) % 6))			{ return static_cast<double>(nndx::randB(hProv) % 21) - 10; }
+													else										{ return static_cast<double>(nndx::randB(hProv) % 17) - 8; } };
+			vkernel[idx_][idxKernel].reserve(sizey);
+			for (size_t i = 0; i < sizey; ++i)
 			{
-				kernelTempR = 0.;
-				kernelTempG = 0.;
-				kernelTempB = 0.;
-				read >> kernelTempR;
-				read >> kernelTempG;
-				read >> kernelTempB;
-				vkernel[idx_][idxKernel].back().emplace_back(kernelTempR, kernelTempG, kernelTempB);
+				vkernel[idx_][idxKernel].emplace_back(::std::vector<cnnKernel_c3>());
+				vkernel[idx_][idxKernel].back().reserve(sizex);
+				for (size_t j = 0; j < sizex; ++j)
+				{
+					vkernel[idx_][idxKernel].back().emplace_back(rand_func(), rand_func(), rand_func());
+				}
 			}
 		}
-		read >> sfile;
-		ER_IF(sfile != _filend, read.close();, return false; )
+		else if (!::std::strcmp(sfile.c_str(), "grad"))
+		{
+			double clr_r = static_cast<double>(nndx::randB(hProv) % 128) + 63;
+			double clr_g = static_cast<double>(nndx::randB(hProv) % 128) + 63;
+			double clr_b = static_cast<double>(nndx::randB(hProv) % 128) + 63;
+			double clr_r2 = static_cast<double>(nndx::randB(hProv) % 128) + 63;
+			double clr_g2 = static_cast<double>(nndx::randB(hProv) % 128) + 63;
+			double clr_b2 = static_cast<double>(nndx::randB(hProv) % 128) + 63;
+			vkernel[idx_][idxKernel].reserve(sizey);
+			for (size_t i = 0; i < sizey; ++i)
+			{
+				vkernel[idx_][idxKernel].emplace_back(::std::vector<cnnKernel_c3>());
+				vkernel[idx_][idxKernel].back().reserve(sizex);
+				for (size_t j = 0; j < sizex; ++j)
+				{
+					rgb_T xxx(
+						//::std::sqrt(::std::pow(static_cast<double>(j) / sizex, 2) + ::std::pow(static_cast<double>(i) / sizey, 2))
+						clr_r * (static_cast<double>(j) / sizex) + clr_r2 * (1. - static_cast<double>(j) / sizex),
+						clr_g * (static_cast<double>(i) / sizey) + clr_g2 * (1. - static_cast<double>(i) / sizey),
+						clr_b * ::std::sqrt(::std::pow(static_cast<double>(j) / sizex, 2.) + ::std::pow(static_cast<double>(i) / sizey, 2.)) / ::std::sqrt(2.) +
+						clr_b2 * (1. - ::std::sqrt(::std::pow(static_cast<double>(j) / sizex, 2.) + ::std::pow(static_cast<double>(i) / sizey, 2.)) / ::std::sqrt(2.)));
+					vkernel[idx_][idxKernel].back().emplace_back(xxx.Rn.data, xxx.Gn.data, xxx.Bn.data);
+				}
+			}
+		}
+		else if (!::std::strcmp(sfile.c_str(), "def"))
+		{
+			vkernel[idx_][idxKernel].reserve(sizey);
+			for (size_t i = 0; i < sizey; ++i)
+			{
+				vkernel[idx_][idxKernel].emplace_back(::std::vector<cnnKernel_c3>());
+				vkernel[idx_][idxKernel].back().reserve(sizex);
+				for (size_t j = 0; j < sizex; ++j)
+				{
+					double kernelTempR;
+					double kernelTempG;
+					double kernelTempB;
+					read >> kernelTempR;
+					read >> kernelTempG;
+					read >> kernelTempB;
+					vkernel[idx_][idxKernel].back().emplace_back(kernelTempR, kernelTempG, kernelTempB);
+				}
+			}
+			read >> sfile;
+			ER_IF(sfile != _filend, read.close();, return false; )
 
-		read.close();
+			read.close();
+		}
 		return true;
 	}
 
@@ -827,9 +874,28 @@ public:
 		u_net = u;
 	}
 
+	bool init_neuronet()
+	{
+		ER_IF(!isReady,, return false; )
+		if (net.getState())
+		{
+			net.~neuronet();
+			ER_IF(net.getState(),, return false; )
+		}
+		size_t num = vlayer.back().size() * 3ull;
+		vInet.clear();
+		vInet.reserve(num);
+		for(size_t i {0}; i < num; ++i)
+		{
+			vInet.emplace_back(nndx::neuronet());
+		}
+		return true;
+	}
+
 	//initFuncEx must be called earlier
 	//mA() must be called earlier (?)
-	bool init_neuronet(::std::vector<int>&& tplNet, double funcWeights(), nndx::neuron::_func&& funcNet, double moment, double u)
+#define _EXTRA_NEURON_COUNT 10
+	bool init_neuronet(::std::vector<int> tplNet, double funcWeights(), double funcWeights2(), nndx::neuron::_func&& funcNet, double moment, double u)
 	{
 		ER_IF(!isReady,, return false; )
 		if (net.getState())
@@ -838,44 +904,70 @@ public:
 			ER_IF(net.getState(),, return false; )
 		}
 
-		//__bool res;
-		int num = 0;
-
-		for (auto& x : vlayer.back())
-		{
-			num += static_cast<int>(x.size() * x[0].size());
-		}
-		//num *= 3; // CV_8UC3!
+		// net init
+		size_t num = vlayer.back().size() * 3ull;
 		tplNet.emplace(tplNet.begin(), num);
-		tplNet.emplace(tplNet.begin() + 1, static_cast<int>(num / 2));
-		tplNet.emplace(tplNet.begin() + 2, static_cast<int>(num / 4));
+		int div_power = 1;
+		while(num / (1 << div_power) > _EXTRA_NEURON_COUNT)
+		{
+			tplNet.emplace(tplNet.begin() + div_power, num / (1 << div_power));
+			++div_power;
+		}
+#undef _EXTRA_NEURON_COUNT
 
 		ER_IFN(net.setGenWeightsFunc(funcWeights),, )
-		ER_IFN(net.init(/*::std::forward<::std::vector<int>>*/::std::move(tplNet), funcNet),, )
+		ER_IFN(net.init(tplNet, funcNet),, )
 		ER_IFN(net.setParams(moment, u),, )
 
-		/*//// Inet init
-		if (Inet.getState())
+		// vInet init
+		vInet.clear();
+		vInet.reserve(num);
+		bool res = true;
+		for(size_t i {0}; i < num / 3ull; ++i)
 		{
-			Inet.~neuronet();
-			ER_IF(Inet.getState(),, return false; )
+			vInet.emplace_back(/*nndx::neuronet()*/);
+			vInet.emplace_back(/*nndx::neuronet()*/);
+			vInet.emplace_back(/*nndx::neuronet()*/);
+			ER_IFN(vInet[i * 3ull].setGenWeightsFunc(funcWeights2), res = false;, return false; )
+			ER_IFN(vInet[i * 3ull + 1].setGenWeightsFunc(funcWeights2), res = false;, return false; )
+			ER_IFN(vInet[i * 3ull + 2].setGenWeightsFunc(funcWeights2), res = false;, return false; )
+#define _INNER_EXTRA_NEURON_COUNT 4
+			tplNet.clear();
+			div_power = 1;
+			size_t count_neurons = vlayer.back()[i].size() * vlayer.back()[i].back().size();
+			tplNet.push_back(count_neurons);
+			while(count_neurons / (1 << div_power) > _INNER_EXTRA_NEURON_COUNT)
+			{
+				tplNet.push_back(count_neurons / (1 << div_power));
+				++div_power;
+			}
+			tplNet.push_back(1);
+#undef _INNER_EXTRA_NEURON_COUNT
+			ER_IFN(vInet[i * 3ull].init(tplNet, funcNet), res = false;, return false; )
+			ER_IFN(vInet[i * 3ull + 1].init(tplNet, funcNet), res = false;, return false; )
+			ER_IFN(vInet[i * 3ull + 2].init(tplNet, funcNet), res = false;, return false; )
+			ER_IFN(vInet[i * 3ull].setParams(moment, u), res = false;, return false; )
+			ER_IFN(vInet[i * 3ull + 1].setParams(moment, u), res = false;, return false; )
+			ER_IFN(vInet[i * 3ull + 2].setParams(moment, u), res = false;, return false; )
+			if (!res) break;
 		}
-		ER_IFN(Inet.setGenWeightsFunc(funcWeights),, return false; )
-		ER_IFN(Inet.init(::std::vector<int>{3, 2, 1}, funcNet),, return false; )
-		ER_IFN(Inet.setParams(moment, u),, return false; )*/
 
-		return (net.getState()/* && Inet.getState()*/);
+		return (net.getState() && res);
 	}
 
-	bool init_neuronet(nndx::neuronet&& x, nndx::neuronet&& Ix)
+	bool init_neuronet(nndx::neuronet&& _x)
 	{
-		net = /*::std::forward<decltype(x)>*/::std::move(x);
-		//Inet = /*::std::forward<decltype(Ix)>*/::std::move(Ix);
-
-		return (net.getState()/* && Inet.getState()*/);
+		net = ::std::move(_x);
+		return (net.getState());
 	}
 
-	bool init_neuronet(::std::string file, ::std::string Ifile, nndx::neuron::_func funcNet, double moment, double u)
+	bool init_neuronet(size_t _idx, nndx::neuronet&& _ix)
+	{
+		vInet.at(_idx) = ::std::move(_ix);
+		return (vInet.at(_idx).getState());
+	}
+
+	bool init_neuronet(::std::string file, nndx::neuron::_func funcNet, double moment, double u)
 	{
 		ER_IF(!isReady,, return false; )
 		if (net.getState())
@@ -883,28 +975,31 @@ public:
 			net.~neuronet();
 			ER_IF(net.getState(),, return false; )
 		}
-
-		//__bool res;
-		net.nDataNet = file;
+		net.nDataNet = dataF + file;
 		ER_IFN(net.initFromFile(),, )
 		ER_IFN(net.setFunc(funcNet),, )
 		ER_IFN(net.setParams(moment, u),, )
+		return (net.getState());
+	}
 
-		//// Inet init
-		/*if (Inet.getState())
+	bool init_neuronet(size_t _idx, ::std::string ifile, nndx::neuron::_func funcNet, double moment, double u)
+	{
+		ER_IF(!isReady,, return false; )
+		if (vInet.size() <= _idx)
 		{
-			Inet.~neuronet();
-			ER_IF(Inet.getState(),, return false; )
+			vInet.reserve(vInet.capacity() + 1);
+			vInet.emplace_back(neuronet());
 		}
-		else
+		else if (vInet.at(_idx).getState())
 		{
-			Inet.nDataNet = Ifile;
-			ER_IFN(Inet.initFromFile(),, return false; )
-			ER_IFN(Inet.setFunc(funcNet),, return false; )
-			ER_IFN(Inet.setParams(moment, u),, return false; )
-		}*/
-
-		return (net.getState()/* && Inet.getState()*/);
+			vInet.at(_idx).~neuronet();
+			ER_IF(vInet.at(_idx).getState(),, return false; )
+		}
+		vInet.at(_idx).nDataNet = dataF + ifile;
+		ER_IFN(vInet.at(_idx).initFromFile(),, )
+		ER_IFN(vInet.at(_idx).setFunc(funcNet),, )
+		ER_IFN(vInet.at(_idx).setParams(moment, u),, )
+		return (vInet.at(_idx).getState());
 	}
 
 	bool SaveCNN()
@@ -935,6 +1030,18 @@ public:
 			}
 		}
 		write << ::std::endl;
+		::std::string temp1 = outputF + "net.txt";
+		write << temp1 << ::std::endl;
+		write << static_cast<_dTYPEFUNC>(net.funcInstance) << ::std::endl;
+		write << net.moment << ::std::endl;
+		write << net.u << ::std::endl;
+		for(size_t i {0}; i < vInet.size(); ++i)
+		{
+			temp1 = outputF + "Inet" + nts(i) + ".txt";
+			write << static_cast<_dTYPEFUNC>(vInet[i].funcInstance) << ::std::endl;
+			write << vInet[i].moment << ::std::endl;
+			write << vInet[i].u << ::std::endl;
+		}
 		/*write << "un " << u_net << ::std::endl;
 		write << "mn " << moment_net << ::std::endl;
 		write << "BIASES" << ::std::endl;
@@ -977,6 +1084,7 @@ public:
 				ER_IF(!write.is_open(), write.close();, return false; )
 
 				write << vkernel[id][j].back().size() << " " << vkernel[id][j].size() << ::std::endl;
+				write << "def" << ::std::endl;
 				for (size_t y = 0; y < vkernel[id][j].size(); ++y)
 				{
 					for (size_t x = 0; x < vkernel[id][j].back().size(); ++x)
@@ -994,6 +1102,38 @@ public:
 
 		return true;
 	}
+
+	bool SaveKrnl_Img()
+	{
+		ER_IF(vkernel.empty(),, return false; )
+
+		for (size_t id = 0; id < vkernel.size(); ++id)
+		{
+			for (size_t j = 0; j < vkernel[id].size(); ++j)
+			{
+				size_t locY = vkernel[id][j].size();
+				size_t locX = vkernel[id][j].back().size();
+				cv::Mat output(static_cast<int>(locY), static_cast<int>(locX), CV_8UC3, cv::Scalar(0, 0, 0));
+				for (size_t y = 0; y < vkernel[id][j].size(); ++y)
+				{
+					for (size_t x = 0; x < vkernel[id][j].back().size(); ++x)
+					{
+						output.at<cv::Vec3b>(cv::Point(x, y))[2] = static_cast<unsigned char>(vkernel[id][j][y][x].R.wg/* * _clr_*/);
+						output.at<cv::Vec3b>(cv::Point(x, y))[1] = static_cast<unsigned char>(vkernel[id][j][y][x].G.wg/* * _clr_*/);
+						output.at<cv::Vec3b>(cv::Point(x, y))[0] = static_cast<unsigned char>(vkernel[id][j][y][x].B.wg/* * _clr_*/);
+					}
+				}
+				::std::string sstemp = outputF + "krnl/";
+				sstemp += nts(id) + "_";
+				sstemp += nts(j);
+				sstemp += ".jpg";
+				cv::imwrite(sstemp, output);
+			}
+		}
+
+		return true;
+	}
+
 #if defined(_WIN32)
 	__forceinline bool FullSave()
 #elif defined(__unix__)
@@ -1008,11 +1148,15 @@ public:
 	{
 		//__bool temp;
 		::std::string temp1 = outputF + "net.txt";
-		::std::string temp2 = outputF + "Inet.txt";
 		ER_IFN(net.saveF(temp1),, return false; )
-		//ER_IFN(Inet.saveF(temp2),, return false; )
+		for(size_t i {0}; i < vInet.size(); ++i)
+		{
+			temp1 = outputF + "Inet" + nts(i) + ".txt";
+			ER_IFN(vInet[i].saveF(temp1),, return false; )
+		}
 		ER_IFN(SaveCNN(),, return false; )
 		ER_IFN(SaveKrnl(),, return false; )
+		ER_IFN(SaveKrnl_Img(),, return false; )
 
 		return true;
 	}
@@ -1025,8 +1169,12 @@ public:
 		ER_IF((u_net == 0.) || (moment_net == 0.),, return false; )
 		ER_IF(!isReady,, return false; )
 
+		ER_IFN(SaveKrnl(),, return false; )
+		ER_IFN(SaveKrnl_Img(),, return false; )
+
 		::std::string sfile = inputF + subS;
 		::std::vector<double> in;
+		size_t count_perfect_max_delt = 0ull;
 		//__bool resT;
 
 		for (unsigned int i = 0; i < iter; ++i)
@@ -1054,18 +1202,65 @@ public:
 
 #ifdef _CNN_COMMENTS
 			::std::cout << " func(i) - " << func(i, num4func) << "\n";
-			for (auto& x : net.getResults())
-			{
-				::std::cout << x << "\n";
-			}
-			::std::cout << "\n";
 #endif
+			double max_delt = 0.;
+			double sq_err = 0.;
+			for (size_t j = {0}; j < net.getResults().size(); ++j)
+			{
+				double delt = ::std::fabs(net.getResults()[j] - results[func(i, num4func)][j]);
+				if (max_delt < delt) max_delt = delt;
+				sq_err += ::std::pow(delt, 2.);
+#ifdef _CNN_COMMENTS
+				std::cout.width(16);
+				::std::cout << std::left << delt << ' ';
+				::std::cout << std::left << '[' << net.getResults()[j] << ']' << ::std::endl;
+#endif
+			}
+			sq_err /= 2.;
+#ifdef _CNN_COMMENTS
+			std::cout.width(0);
+			::std::cout << "---";
+			std::cout.width(16);
+			::std::cout << std::left << max_delt << ' ';
+			::std::cout << std::left <<"[" << sq_err << "]---\n";
+			std::cout.width(0);
+#endif
+#define KF_FOR_MAX_DELT 0.2
+			if (max_delt < KF_FOR_MAX_DELT)
+			{
+				++count_perfect_max_delt;
+				if (count_perfect_max_delt >= num4func * 2u)
+				{
+					::std::cout << "[STOPPED!] max_delt < " << KF_FOR_MAX_DELT  << " on " << i << " iteration" << ::std::endl;
+					break;
+				}
+			}
+			else
+			{
+				count_perfect_max_delt = 0ull;
+			}
 
-			ER_IFN(net.callBackProp(results[func(i, num4func)]),, return false; )
+			//ER_IFN(net.callBackProp(results[func(i, num4func)]),, return false; )
+			if (max_delt >= KF_FOR_MAX_DELT)
+#undef KF_FOR_MAX_DELT
+			{
+				setParams(max_delt * 0.8, 0.2);
+				for(size_t h {0}; h < vInet.size(); ++h)
+				{
+					vInet[h].setParams(max_delt * 0.8, 0.2);
+				}
+				net.setParams(max_delt * 0.8, 0.2);
+				ER_IFN(ConvBackProp(results[func(i, num4func)]),, return false; )
+			}
 		}
 		::std::cout << ::std::endl;
 
 		//actions after main work
+		for (size_t i {0}; i < vlayer.size(); ++i)
+		{
+			ER_IFN(saveIm_RGB(static_cast<size_t>(i)),, return false; )
+			ER_IFN(saveIm_Gray(static_cast<size_t>(i)),, return false; )
+		}
 		ER_IFN(FullSave(),, return false; )
 
 		return true;
@@ -1170,12 +1365,17 @@ public:
 		::std::cout << ::std::endl;
 
 		//actions after main work
+		for (size_t i {0}; i < vlayer.size(); ++i)
+		{
+			ER_IFN(saveIm_RGB(static_cast<size_t>(i)),, return false; )
+			ER_IFN(saveIm_Gray(static_cast<size_t>(i)),, return false; )
+		}
 		ER_IFN(FullSave(),, return false; )
 
 		return true;
 	}
 
-	bool mA_Res()
+	bool mA_Res(const ::std::vector<double>& res)
 	{
 		ER_IF(!isReady, ::std::cout << "[CNN] isReady = false" << ::std::endl; , return false; )
 
@@ -1206,13 +1406,19 @@ public:
 		}
 		::std::cout << "\n";
 
+		//actions after main work
+		for (size_t i {0}; i < vlayer.size(); ++i)
+		{
+			ER_IFN(saveIm_RGB(static_cast<size_t>(i)),, return false; )
+			ER_IFN(saveIm_Gray(static_cast<size_t>(i)),, return false; )
+		}
+
 		return true;
 	}
 
 private:
 	bool getOutputCNN(::std::vector<double>& input)
 	{
-		//double maxVal = -10000.;
 		for (size_t s = 0; s < vlayer.back().size(); ++s)
 		{
 			for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
@@ -1223,17 +1429,18 @@ private:
 					//Inet.activationF();
 					//double resInet = Inet.getResults()[0];
 					//if (resInet > maxVal) maxVal = resInet;
-					input.reserve(input.capacity() + 1);
-					input.emplace_back(vlayer.back()[s][i][j].Grayn());
+					vInet[s * 3ull].data[0][i * vlayer.back()[s].size() + j].data = vlayer.back()[s][i][j].Rn.data / _clr_;
+					vInet[s * 3ull + 1].data[0][i * vlayer.back()[s].size() + j].data = vlayer.back()[s][i][j].Gn.data / _clr_;
+					vInet[s * 3ull + 2].data[0][i * vlayer.back()[s].size() + j].data = vlayer.back()[s][i][j].Bn.data / _clr_;
 				}
 			}
 		}
-		//::std::cout << "MaxValue = " << maxVal << ::std::endl;
-		/*for(auto& x : input)
+		for(size_t i = 0ull; i < vInet.size(); ++i)
 		{
-			x /= maxVal;
-		}*/
-
+			vInet[i].callActivationF();
+			input.reserve(input.capacity() + 1);
+			input.emplace_back(vInet[i].getResults().front());
+		}
 		return true;
 	}
 
@@ -1260,7 +1467,7 @@ private:
 				}
 			}
 		}
-		else if (vfunc[0] >= parall_flag) // for parallel
+		else if (vfunc[0] & parall_flag) // for parallel
 		{
 			size_t szKrnl = vkernel[operator ""_prll(vfunc[0])].size();
 #ifdef _DEBUG
@@ -1585,8 +1792,8 @@ private:
 				ER_IFN(convFunc_RGB(current, x),, return false; )
 			}
 			++current;
-			ER_IFN(saveIm_RGB(static_cast<size_t>(current)),, return false; )
-			ER_IFN(saveIm_Gray(static_cast<size_t>(current)),, return false; )
+			//ER_IFN(saveIm_RGB(static_cast<size_t>(current)),, return false; )
+			//ER_IFN(saveIm_Gray(static_cast<size_t>(current)),, return false; )
 			//ER_IFN(saveDat_RGB(static_cast<size_t>(current)),, return false; )
 			//ER_IFN(saveDat_Gray(static_cast<size_t>(current)),, return false; )
 		}
@@ -1621,6 +1828,59 @@ private:
 							ReLU(pFunc(vlayer[idxSource][i][y * 2][x * 2].Rn.data, vlayer[idxSource][i][y * 2 + 1][x * 2].Rn.data, vlayer[idxSource][i][y * 2][x * 2 + 1].Rn.data, vlayer[idxSource][i][y * 2 + 1][x * 2 + 1].Rn.data)),
 							ReLU(pFunc(vlayer[idxSource][i][y * 2][x * 2].Gn.data, vlayer[idxSource][i][y * 2 + 1][x * 2].Gn.data, vlayer[idxSource][i][y * 2][x * 2 + 1].Gn.data, vlayer[idxSource][i][y * 2 + 1][x * 2 + 1].Gn.data)),
 							ReLU(pFunc(vlayer[idxSource][i][y * 2][x * 2].Bn.data, vlayer[idxSource][i][y * 2 + 1][x * 2].Bn.data, vlayer[idxSource][i][y * 2][x * 2 + 1].Bn.data, vlayer[idxSource][i][y * 2 + 1][x * 2 + 1].Bn.data)));
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	//idx of this func - -2, -3, -4
+	bool err_by_reverse_decreaseX2_RGB(ptrdiff_t idxSource, ptrdiff_t _func_idx)
+	{
+		void (*ptr_to_func)(rgb_T&, rgb_T&, rgb_T&, rgb_T&, rgb_T&) = nullptr;
+		switch (_func_idx)
+		{
+		case -2:
+		{
+			ptr_to_func = err_reverse_max_4;
+			break;
+		}
+		case -3:
+		{
+			ptr_to_func = err_reverse_min_4;
+			break;
+		}
+		case -4:
+		{
+			ptr_to_func = err_reverse_mid_4;
+			break;
+		}
+		default:
+		{
+			ERROR_
+			return false;
+		}
+		}
+		if (idxSource == -1)
+		{
+			::std::cout << "nothing to do here" << ::std::endl;
+			NTTN_
+			return true;
+		}
+		else
+		{
+			for (size_t i = 0; i < vlayer[idxSource].size(); ++i)
+			{
+				for (size_t y = 0; y < vlayer[idxSource][i].size() / 2; ++y)
+				{
+					for (size_t x = 0; x < vlayer[idxSource][i].back().size() / 2; ++x)
+					{
+						ptr_to_func(
+							vlayer[idxSource][i][y * 2][x * 2],
+							vlayer[idxSource][i][y * 2 + 1][x * 2],
+							vlayer[idxSource][i][y * 2][x * 2 + 1],
+							vlayer[idxSource][i][y * 2 + 1][x * 2 + 1], vlayer[idxSource + 1][i][y][x]);
 					}
 				}
 			}
@@ -1737,349 +1997,552 @@ private:
 		return true;
 	}
 
-	void decreaseBeforeFullConn(const ::std::vector<double>& fc, ::std::vector<image>& dcrs)
+	void err_by_rotated_kernel(size_t idxSource, size_t idxKernel)
 	{
-		for(size_t k {0}; k < fc.size() - 1; ++k)
+		size_t tempIdxKernel;
+		if (idxKernel >= parall_flag)
 		{
-			for(size_t h {0}; h < dcrs.size(); ++h)
+			tempIdxKernel = operator ""_prll(idxKernel);
+		}
+		else
+		{
+			tempIdxKernel = idxKernel;
+		}
+		// need to vlayer[idxSource - 1][all][all_x][all_y].err be 0
+		if (idxKernel >= parall_flag)
+		{
+			size_t szKrnl = vkernel[tempIdxKernel].size();
+			for (int j = 0; j < static_cast<int>(szKrnl); ++j)
 			{
-				for(size_t i {0}; i < dcrs[h].size(); ++i)
+				for (int y = 1 - static_cast<int>(vkernel[tempIdxKernel][j].size()); y < static_cast<int>(vlayer[idxSource][j].size()); ++y)
 				{
-					for(size_t j {0}; j < dcrs[h][i].size(); ++j)
+					for (int x = 1 - static_cast<int>(vkernel[tempIdxKernel][j].back().size()); x < static_cast<int>(vlayer[idxSource][j].back().size()); ++x)
 					{
-						dcrs[h][i][j].Rn;
+						for (int ky = 0; ky < static_cast<int>(vkernel[tempIdxKernel][j].size()); ++ky)
+						{
+							for (int kx = 0; kx < static_cast<int>(vkernel[tempIdxKernel][j].back().size()); ++kx)
+							{
+								if (y + ky >= 0 && x + kx >= 0 && y + ky < vlayer[idxSource][j].size() && x + kx < vlayer[idxSource][j].back().size())
+								{
+									vlayer[idxSource - 1][j][y - 1 + static_cast<int>(vkernel[tempIdxKernel][j].size()) + ky][x - 1 + static_cast<int>(vkernel[tempIdxKernel][j].back().size()) + kx].Rn.err +=
+										vkernel[tempIdxKernel][j].at(static_cast<int>(vkernel[tempIdxKernel][j].size()) - 1 - ky).at(static_cast<int>(vkernel[tempIdxKernel][j].back().size()) - 1 - kx).R.wg * vlayer[idxSource][j][y + ky][x + kx].Rn.err;
+									vlayer[idxSource - 1][j][y - 1 + static_cast<int>(vkernel[tempIdxKernel][j].size()) + ky][x - 1 + static_cast<int>(vkernel[tempIdxKernel][j].back().size()) + kx].Gn.err +=
+										vkernel[tempIdxKernel][j].at(static_cast<int>(vkernel[tempIdxKernel][j].size()) - 1 - ky).at(static_cast<int>(vkernel[tempIdxKernel][j].back().size()) - 1 - kx).G.wg * vlayer[idxSource][j][y + ky][x + kx].Gn.err;
+									vlayer[idxSource - 1][j][y - 1 + static_cast<int>(vkernel[tempIdxKernel][j].size()) + ky][x - 1 + static_cast<int>(vkernel[tempIdxKernel][j].back().size()) + kx].Bn.err +=
+										vkernel[tempIdxKernel][j].at(static_cast<int>(vkernel[tempIdxKernel][j].size()) - 1 - ky).at(static_cast<int>(vkernel[tempIdxKernel][j].back().size()) - 1 - kx).B.wg * vlayer[idxSource][j][y + ky][x + kx].Bn.err;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			size_t szKrnl = vkernel[tempIdxKernel].size();
+			for (int j = 0; j < vlayer[idxSource - 1].size(); ++j)
+			{
+				for (int k = 0; k < static_cast<int>(szKrnl); ++k)
+				{
+					for (int y = 1 - static_cast<int>(vkernel[tempIdxKernel][j].size()); y < static_cast<int>(vlayer[idxSource][static_cast<int>(szKrnl) * j + k].size()); ++y)
+					{
+						for (int x = 1 - static_cast<int>(vkernel[tempIdxKernel][j].back().size()); x < static_cast<int>(vlayer[idxSource][static_cast<int>(szKrnl) * j + k].back().size()); ++x)
+						{
+							for (int ky = 0; ky < static_cast<int>(vkernel[tempIdxKernel][k].size()); ++ky)
+							{
+								for (int kx = 0; kx < static_cast<int>(vkernel[tempIdxKernel][k].back().size()); ++kx)
+								{
+									if (y + ky >= 0 && x + kx >= 0 && y + ky < vlayer[idxSource][static_cast<int>(szKrnl) * j + k].size() && x + kx < vlayer[idxSource][static_cast<int>(szKrnl) * j + k].back().size())
+									{
+										vlayer[idxSource - 1][j][y - 1 + static_cast<int>(vkernel[tempIdxKernel][k].size()) + ky][x - 1 + static_cast<int>(vkernel[tempIdxKernel][k].back().size()) + kx].Rn.err +=
+											vkernel[tempIdxKernel][k].at(static_cast<int>(vkernel[tempIdxKernel][k].size()) - 1 - ky).at(static_cast<int>(vkernel[tempIdxKernel][k].back().size()) - 1 - kx).R.wg * vlayer[idxSource][static_cast<int>(szKrnl) * j + k][y + ky][x + kx].Rn.err;
+										vlayer[idxSource - 1][j][y - 1 + static_cast<int>(vkernel[tempIdxKernel][k].size()) + ky][x - 1 + static_cast<int>(vkernel[tempIdxKernel][k].back().size()) + kx].Gn.err +=
+											vkernel[tempIdxKernel][k].at(static_cast<int>(vkernel[tempIdxKernel][k].size()) - 1 - ky).at(static_cast<int>(vkernel[tempIdxKernel][k].back().size()) - 1 - kx).G.wg * vlayer[idxSource][static_cast<int>(szKrnl) * j + k][y + ky][x + kx].Gn.err;
+										vlayer[idxSource - 1][j][y - 1 + static_cast<int>(vkernel[tempIdxKernel][k].size()) + ky][x - 1 + static_cast<int>(vkernel[tempIdxKernel][k].back().size()) + kx].Bn.err +=
+											vkernel[tempIdxKernel][k].at(static_cast<int>(vkernel[tempIdxKernel][k].size()) - 1 - ky).at(static_cast<int>(vkernel[tempIdxKernel][k].back().size()) - 1 - kx).B.wg * vlayer[idxSource][static_cast<int>(szKrnl) * j + k][y + ky][x + kx].Bn.err;
+									}
+								}
+							}
+						}
 					}
 				}
 			}
 		}
 	}
 
-	void decreaseBeforeConv()
+	bool err_forward_by_conv(ptrdiff_t idxSource, size_t idxKernel)
 	{
-		
+		size_t tempIdxKernel;
+		if (idxKernel >= parall_flag)
+		{
+			tempIdxKernel = operator ""_prll(idxKernel);
+		}
+		else
+		{
+			tempIdxKernel = idxKernel;
+		}
+
+		if (idxKernel >= parall_flag)
+		{
+			size_t szKrnl = vkernel[tempIdxKernel].size();
+			for (size_t j = 0; j < szKrnl; ++j)
+			{
+				for (size_t y = 0; y < vlayer[idxSource][j].size() - vkernel[tempIdxKernel][j].size(); ++y)
+				{
+					for (size_t x = 0; x < vlayer[idxSource][j].back().size() - vkernel[tempIdxKernel][j].back().size(); ++x)
+					{
+						for (size_t ky = 0; ky < vkernel[tempIdxKernel][j].size(); ++ky)
+						{
+							for (size_t kx = 0; kx < vkernel[tempIdxKernel][j].back().size(); ++kx)
+							{
+								vkernel[tempIdxKernel][j][ky][kx].R.grad += ReLU_DRV(0./*vlayer[idxSource][j][y + ky][x + kx].Rn.data*/)
+									* vlayer[idxSource + 1][j][y][x].Rn.err * vlayer[idxSource][j][y + ky][x + kx].Rn.data;
+
+								vkernel[tempIdxKernel][j][ky][kx].G.grad += ReLU_DRV(0./*vlayer[idxSource][j][y + ky][x + kx].Gn.data*/)
+									* vlayer[idxSource + 1][j][y][x].Gn.err * vlayer[idxSource][j][y + ky][x + kx].Gn.data;
+
+								vkernel[tempIdxKernel][j][ky][kx].B.grad += ReLU_DRV(0./*vlayer[idxSource][j][y + ky][x + kx].Bn.data*/)
+									* vlayer[idxSource + 1][j][y][x].Bn.err * vlayer[idxSource][j][y + ky][x + kx].Bn.data;
+							}
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			size_t szKrnl = vkernel[tempIdxKernel].size();
+			for (size_t j = 0; j < vlayer[idxSource].size(); ++j)
+			{
+				for (size_t k = 0; k < szKrnl; ++k)
+				{
+					for (size_t y = 0; y < vlayer[idxSource][j].size() - vkernel[tempIdxKernel][k].size(); ++y)
+					{
+						for (size_t x = 0; x < vlayer[idxSource][j].back().size() - vkernel[tempIdxKernel][k].back().size(); ++x)
+						{
+							for (size_t ky = 0; ky < vkernel[tempIdxKernel][k].size(); ++ky)
+							{
+								for (size_t kx = 0; kx < vkernel[tempIdxKernel][k].back().size(); ++kx)
+								{
+									vkernel[tempIdxKernel][k][ky][kx].R.grad += ReLU_DRV(0./*vlayer[idxSource][j][y + ky][x + kx].Rn.data*/)
+										* vlayer[idxSource + 1][j][y][x].Rn.err * vlayer[idxSource][j][y + ky][x + kx].Rn.data;
+
+									vkernel[tempIdxKernel][k][ky][kx].G.grad += ReLU_DRV(0./*vlayer[idxSource][j][y + ky][x + kx].Gn.data*/)
+										* vlayer[idxSource + 1][j][y][x].Gn.err * vlayer[idxSource][j][y + ky][x + kx].Gn.data;
+
+									vkernel[tempIdxKernel][k][ky][kx].B.grad += ReLU_DRV(0./*vlayer[idxSource][j][y + ky][x + kx].Bn.data*/)
+										* vlayer[idxSource + 1][j][y][x].Bn.err * vlayer[idxSource][j][y + ky][x + kx].Bn.data;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		for(size_t h {0}; h < vkernel[tempIdxKernel].size(); ++h)
+		{
+			for(size_t i {0}; i < vkernel[tempIdxKernel][h].size(); ++i)
+			{
+				for(size_t j {0}; j < vkernel[tempIdxKernel][h].back().size(); ++j)
+				{
+					vkernel[tempIdxKernel][h][i][j].R.dwg = u_net * vkernel[tempIdxKernel][h][i][j].R.grad + moment_net * vkernel[tempIdxKernel][h][i][j].R.dwg;
+					vkernel[tempIdxKernel][h][i][j].G.dwg = u_net * vkernel[tempIdxKernel][h][i][j].G.grad + moment_net * vkernel[tempIdxKernel][h][i][j].G.dwg;
+					vkernel[tempIdxKernel][h][i][j].B.dwg = u_net * vkernel[tempIdxKernel][h][i][j].B.grad + moment_net * vkernel[tempIdxKernel][h][i][j].B.dwg;
+					vkernel[tempIdxKernel][h][i][j].R.wg += vkernel[tempIdxKernel][h][i][j].R.dwg;
+					vkernel[tempIdxKernel][h][i][j].G.wg += vkernel[tempIdxKernel][h][i][j].G.dwg;
+					vkernel[tempIdxKernel][h][i][j].B.wg += vkernel[tempIdxKernel][h][i][j].B.dwg;
+					vkernel[tempIdxKernel][h][i][j].R.grad = 0.;
+					vkernel[tempIdxKernel][h][i][j].G.grad = 0.;
+					vkernel[tempIdxKernel][h][i][j].B.grad = 0.;
+				}
+			}
+		}
+		return true;
 	}
 
 	bool ConvBackProp(const ::std::vector<double>& res)
 	{
 		//receive Error
 		::std::vector<double> vErr;
+		::std::vector<::std::vector<double>> vIErr;
 		net.callBackProp(res, vErr);
 
-		/*for (auto& x : vErr)
+		vIErr.reserve(vInet.size());
+		for(size_t i {0}; i < vInet.size(); ++i)
 		{
-			Inet.callBackProp(::std::vector<double>{ x }, vErr);
-		}*/
+			vIErr.emplace_back(::std::vector<double>());
+			vInet[i].callBackPropByErr(::std::vector<double>{vErr[0]}, vIErr.back());
+		}
 
-		//
-		//
-		// NOT VALID FOR LATEST V. SINCE PARALLEL!!!!!!!!!
-		//
-		//
-		//init error into back layer
-		size_t temp_ = 0;
-		for (size_t s = 0; s < vlayer.back().size(); ++s)
+		for(auto& x : vIErr)
 		{
-			for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
+			for(auto& y : x)
 			{
-				for (size_t j = 0; j < vlayer.back()[s].back().size(); ++j)
-				{
-					//* 0.299; // before [temp_++] 3 times
-					//* 0.587;
-					//* 0.114;
+				y *= 255.;
+			}
+		}
 
-					vlayer.back()[s][i][j].Rn.err = vErr[temp_] * 0.299;
-					vlayer.back()[s][i][j].Gn.err = vErr[temp_] * 0.587;
-					vlayer.back()[s][i][j].Bn.err = vErr[temp_] * 0.114;
+		for(size_t h {0}; h < vlayer.back().size(); ++h)
+		{
+			for(size_t i {0}; i < vlayer.back()[h].size(); ++i)
+			{
+				for(size_t j {0}; j < vlayer.back()[h][i].size(); ++j)
+				{
+					vlayer.back()[h][i][j].Rn.err = vIErr[h * 3ull][i * vlayer.back()[h][i].size() + j];
+					vlayer.back()[h][i][j].Gn.err = vIErr[h * 3ull + 1][i * vlayer.back()[h][i].size() + j];
+					vlayer.back()[h][i][j].Bn.err = vIErr[h * 3ull + 2][i * vlayer.back()[h][i].size() + j];
 				}
 			}
 		}
 
-		//mA backward
-		for (size_t i = vfunc.size() - 1; i > 0; --i)
+		for(size_t idxLayer = vlayer.size() - 1; idxLayer > 0ull; --idxLayer)
 		{
-			if (vfunc[i] < 0)
-			{
-				if (vfunc[i] == -4)
-				{
-					for (size_t layer = 0; layer < vlayer[i].size(); ++layer)
-					{
-						for (size_t y = 0; y < vlayer[i][layer].size(); ++y)
-						{
-							for (size_t x = 0; x < vlayer[i][layer].back().size(); ++x)
-							{
-								auto& temp2 = vlayer[i][layer][y][x];
-								if (temp2.Rn.err != 0.)
-								{
-									vlayer[i - 1][layer][y * 2][x * 2].Rn.err			= temp2.Rn.err;
-									vlayer[i - 1][layer][y * 2 + 1][x * 2].Rn.err		= temp2.Rn.err;
-									vlayer[i - 1][layer][y * 2][x * 2 + 1].Rn.err		= temp2.Rn.err;
-									vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Rn.err	= temp2.Rn.err;
-								}
-								if (temp2.Gn.err != 0.)
-								{
-									vlayer[i - 1][layer][y * 2][x * 2].Gn.err			= temp2.Gn.err;
-									vlayer[i - 1][layer][y * 2 + 1][x * 2].Gn.err		= temp2.Gn.err;
-									vlayer[i - 1][layer][y * 2][x * 2 + 1].Gn.err		= temp2.Gn.err;
-									vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Gn.err	= temp2.Gn.err;
-								}
-								if (temp2.Bn.err != 0.)
-								{
-
-									vlayer[i - 1][layer][y * 2][x * 2].Bn.err			= temp2.Bn.err;
-									vlayer[i - 1][layer][y * 2 + 1][x * 2].Bn.err		= temp2.Bn.err;
-									vlayer[i - 1][layer][y * 2][x * 2 + 1].Bn.err		= temp2.Bn.err;
-									vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Bn.err	= temp2.Bn.err;
-								}
-							}
-						}
-					}
-				}
-				else if ((vfunc[i] == -2) || (vfunc[i] == -3))
-				{
-					for (size_t layer = 0; layer < vlayer[i].size(); ++layer)
-					{
-						for (size_t y = 0; y < vlayer[i][layer].size(); ++y)
-						{
-							for (size_t x = 0; x < vlayer[i][layer].back().size(); ++x)
-							{
-								for (size_t ly = y * 2; ly < y * 2 + 1; ++ly)
-								{
-									for (size_t lx = x * 2; lx < x * 2 + 1; ++lx)
-									{
-										auto& tempnext = vlayer[i][layer][y][x];
-										auto& temptarg = vlayer[i - 1][layer][ly][lx];
-										if (tempnext.Rn.err != 0.)
-										{
-											if (temptarg.Rn.data == tempnext.Rn.data)	temptarg.Rn.err = tempnext.Rn.err;
-										}
-										if (tempnext.Gn.err != 0.)
-										{
-											if (temptarg.Gn.data == tempnext.Gn.data)	temptarg.Gn.err = tempnext.Gn.err;
-										}
-										if (tempnext.Bn.err != 0.)
-										{
-											if (temptarg.Bn.data == tempnext.Bn.data)	temptarg.Bn.err = tempnext.Bn.err;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+			//for(size_t h {0}; h < vlayer[idxLayer].size(); ++h)
+			//{
+				if (vfunc[idxLayer] < 0) err_by_reverse_decreaseX2_RGB(idxLayer - 1, vfunc[idxLayer]);
 				else
 				{
-					ERROR_
-						return false;
+					err_by_rotated_kernel(idxLayer, vfunc[idxLayer]);
 				}
-			}
-			else if (vfunc[i] >= parall_flag)
-			{
-				auto& kern = vkernel[operator ""_prll(vfunc[i])]; //					current stack of kernels
-				auto& prevlayer = vlayer[i - 1]; //										-previous- layer
-				size_t szprevlayer = prevlayer.size(); //								prevlayer size
-				for (size_t prev = 0; prev < szprevlayer; ++prev)
-				{
-					auto& curkern__ = kern[prev]; //									current kernel
-					size_t szcurkerny = curkern__.size(); //							current kernel size y
-					size_t szcurkernx = curkern__.back().size(); //						current kernel size x
-					auto& next = vlayer[i][prev]; //									-current next- layer
-					auto& curprevlayer__ = prevlayer[prev]; //							current previous layer
-					size_t sznext = next.size(); //										next size y
-					size_t szbknext = next.back().size(); //							next size x
-					for (size_t y = 0; y < sznext; ++y)
-					{
-						for (size_t x = 0; x < szbknext; ++x)
-						{
-							for (size_t ky = 0; ky < szcurkerny; ++ky)
-							{
-								for (size_t kx = 0; kx < szcurkernx; ++kx)
-								{
-									auto& curprevlayer_ = curprevlayer__[y + ky][x + kx];
-									auto& curnextpoint_ = next[y][x];
-									auto& curkernpoint_ = curkern__[ky][kx];
-									if (curnextpoint_.Rn.err != 0.)
-									{
-										curprevlayer_.Rn.err += curnextpoint_.Rn.err * curkernpoint_.R.wg;
-										curkernpoint_.R.grad += curnextpoint_.Rn.err * curprevlayer_.Rn.data;
-									}
-									if (curnextpoint_.Gn.err != 0.)
-									{
-										curprevlayer_.Gn.err += curnextpoint_.Gn.err * curkernpoint_.G.wg;
-										curkernpoint_.G.grad += curnextpoint_.Gn.err * curprevlayer_.Gn.data;
-									}
-									if (curnextpoint_.Bn.err != 0.)
-									{
-										curprevlayer_.Bn.err += curnextpoint_.Bn.err * curkernpoint_.B.wg;
-										curkernpoint_.B.grad += curnextpoint_.Bn.err * curprevlayer_.Bn.data;
-									}
-								}
-							}
-						}
-					}
-					size_t szcurprevy = curprevlayer__.size(); //						size y of current previous layer
-					size_t szcurprevx = curprevlayer__.back().size(); //				size x of current previous layer
-					for (size_t y = 0; y < szcurprevy; ++y)
-					{
-						for (size_t x = 0; x < szcurprevx; ++x)
-						{
-							auto& curpoint_ = curprevlayer__[y][x];
-							curpoint_.Rn.err *= dxReLU(curpoint_.Rn.data);
-							curpoint_.Gn.err *= dxReLU(curpoint_.Gn.data);
-							curpoint_.Bn.err *= dxReLU(curpoint_.Bn.data);
-						}
-					}
-
-					for (size_t ky = 0; ky < szcurkerny; ++ky)
-					{
-						for (size_t kx = 0; kx < szcurkernx; ++kx)
-						{
-							auto& curkernpoint__ = curkern__[ky][kx];
-							curkernpoint__.R.dwg = u_net * curkernpoint__.R.grad + moment_net * curkernpoint__.R.dwg;
-							curkernpoint__.G.dwg = u_net * curkernpoint__.G.grad + moment_net * curkernpoint__.G.dwg;
-							curkernpoint__.B.dwg = u_net * curkernpoint__.B.grad + moment_net * curkernpoint__.B.dwg;
-
-							curkernpoint__.R.wg += curkernpoint__.R.dwg;
-							curkernpoint__.G.wg += curkernpoint__.G.dwg;
-							curkernpoint__.B.wg += curkernpoint__.B.dwg;
-						}
-					}
-				}
-			}
-			else
-			{
-				auto& kern = vkernel[vfunc[i]]; //											current stack of kernels
-				size_t szkern = kern.size(); //												kern size
-				for (size_t k = 0; k < szkern; ++k)
-				{
-					auto& prevlayer = vlayer[i - 1]; //										-previous- layer
-					auto& curkern__ = kern[k]; //											current kernel
-					size_t szprevlayer = prevlayer.size(); //								prevlayer size
-					size_t szcurkerny = curkern__.size(); //								current kernel size y
-					size_t szcurkernx = curkern__.back().size(); //							current kernel size x
-					for (size_t prev = 0; prev < szprevlayer; ++prev)
-					{
-						auto& next = vlayer[i][szkern * prev + k]; //						-current next- layer
-						auto& curprevlayer__ = prevlayer[prev]; //							current previous layer
-						size_t sznext = next.size(); //										next size y
-						size_t szbknext = next.back().size(); //							next size x
-						for (size_t y = 0; y < sznext; ++y)
-						{
-							for (size_t x = 0; x < szbknext; ++x)
-							{
-								for (size_t ky = 0; ky < szcurkerny; ++ky)
-								{
-									for (size_t kx = 0; kx < szcurkernx; ++kx)
-									{
-										auto& curprevlayer_ = curprevlayer__[y + ky][x + kx];
-										auto& curnextpoint_ = next[y][x];
-										auto& curkernpoint_ = curkern__[ky][kx];
-										if (curnextpoint_.Rn.err != 0.)
-										{
-											curprevlayer_.Rn.err += curnextpoint_.Rn.err * curkernpoint_.R.wg;
-											curkernpoint_.R.grad += curnextpoint_.Rn.err * curprevlayer_.Rn.data;
-										}
-										if (curnextpoint_.Gn.err != 0.)
-										{
-											curprevlayer_.Gn.err += curnextpoint_.Gn.err * curkernpoint_.G.wg;
-											curkernpoint_.G.grad += curnextpoint_.Gn.err * curprevlayer_.Gn.data;
-										}
-										if (curnextpoint_.Bn.err != 0.)
-										{
-											curprevlayer_.Bn.err += curnextpoint_.Bn.err * curkernpoint_.B.wg;
-											curkernpoint_.B.grad += curnextpoint_.Bn.err * curprevlayer_.Bn.data;
-										}
-									}
-								}
-							}
-						}
-						size_t szcurprevy = curprevlayer__.size(); //						size y of current previous layer
-						size_t szcurprevx = curprevlayer__.back().size(); //				size x of current previous layer
-						for (size_t y = 0; y < szcurprevy; ++y)
-						{
-							for (size_t x = 0; x < szcurprevx; ++x)
-							{
-								auto& curpoint_ = curprevlayer__[y][x];
-								curpoint_.Rn.err *= dxReLU(curpoint_.Rn.data);
-								curpoint_.Gn.err *= dxReLU(curpoint_.Gn.data);
-								curpoint_.Bn.err *= dxReLU(curpoint_.Bn.data);
-							}
-						}
-					}
-
-					for (size_t ky = 0; ky < szcurkerny; ++ky)
-					{
-						for (size_t kx = 0; kx < szcurkernx; ++kx)
-						{
-							auto& curkernpoint__ = curkern__[ky][kx];
-							curkernpoint__.R.dwg = u_net * curkernpoint__.R.grad + moment_net * curkernpoint__.R.dwg;
-							curkernpoint__.G.dwg = u_net * curkernpoint__.G.grad + moment_net * curkernpoint__.G.dwg;
-							curkernpoint__.B.dwg = u_net * curkernpoint__.B.grad + moment_net * curkernpoint__.B.dwg;
-
-							curkernpoint__.R.wg += curkernpoint__.R.dwg;
-							curkernpoint__.G.wg += curkernpoint__.G.dwg;
-							curkernpoint__.B.wg += curkernpoint__.B.dwg;
-						}
-					}
-				}
-			}
+			//}
 		}
 
-		if (vfunc[0] >= 0) // if first vfunc < 0, then do nothing(wWw in decrease layers don't changing)
+		for(size_t i {1}; i < vfunc.size(); ++i)
 		{
-			auto& kern = vkernel[vfunc[0] >= parall_flag ? operator ""_prll(vfunc[0]) : vfunc[0]]; // current stack of kernels
-			size_t szkern = kern.size(); //												kern size
-			for (size_t k = 0; k < szkern; ++k)
+			if (vfunc[i] >= 0)	err_forward_by_conv(i - 1, vfunc[i]);
+		}
+
+		for(auto& x : vlayer)
+		{
+			for(auto& y : x)
 			{
-				auto& curkern__ = kern[k]; //											current kernel
-				size_t szcurkerny = curkern__.size(); //								current kernel size y
-				size_t szcurkernx = curkern__.back().size(); //							current kernel size x
-				auto& next = vlayer[0][k]; //											-current next- layer
-				size_t sznext = next.size(); //											next size y
-				size_t szbknext = next.back().size(); //								next size x
-				for (size_t y = 0; y < sznext; ++y)
+				for(auto& h : y)
 				{
-					for (size_t x = 0; x < szbknext; ++x)
+					for(auto& g : h)
 					{
-						for (size_t ky = 0; ky < szcurkerny; ++ky)
-						{
-							for (size_t kx = 0; kx < szcurkernx; ++kx)
-							{
-								auto& curprevlayer_ = vinLayer[y + ky][x + kx];
-								auto& curnextpoint_ = next[y][x];
-								auto& curkernpoint_ = curkern__[ky][kx];
-								if (curnextpoint_.Rn.err != 0.)
-								{
-									curkernpoint_.R.grad += curnextpoint_.Rn.err * curprevlayer_.Rn.data;
-								}
-								if (curnextpoint_.Gn.err != 0.)
-								{
-									curkernpoint_.G.grad += curnextpoint_.Gn.err * curprevlayer_.Gn.data;
-								}
-								if (curnextpoint_.Bn.err != 0.)
-								{
-									curkernpoint_.B.grad += curnextpoint_.Bn.err * curprevlayer_.Bn.data;
-								}
-							}
-						}
-					}
-				}
-
-				for (size_t ky = 0; ky < szcurkerny; ++ky)
-				{
-					for (size_t kx = 0; kx < szcurkernx; ++kx)
-					{
-						auto& curkernpoint__ = curkern__[ky][kx];
-						curkernpoint__.R.dwg = u_net * curkernpoint__.R.grad + moment_net * curkernpoint__.R.dwg;
-						curkernpoint__.G.dwg = u_net * curkernpoint__.G.grad + moment_net * curkernpoint__.G.dwg;
-						curkernpoint__.B.dwg = u_net * curkernpoint__.B.grad + moment_net * curkernpoint__.B.dwg;
-
-						curkernpoint__.R.wg += curkernpoint__.R.dwg;
-						curkernpoint__.G.wg += curkernpoint__.G.dwg;
-						curkernpoint__.B.wg += curkernpoint__.B.dwg;
+						g.Rn.err = 0.;
+						g.Gn.err = 0.;
+						g.Bn.err = 0.;
 					}
 				}
 			}
 		}
+
+		// /*for (auto& x : vErr)
+		// {
+		// 	Inet.callBackProp(::std::vector<double>{ x }, vErr);
+		// }*/
+
+		// //
+		// //
+		// // NOT VALID FOR LATEST V. SINCE PARALLEL!!!!!!!!!
+		// //
+		// //
+		// //init error into back layer
+		// size_t temp_ = 0;
+		// for (size_t s = 0; s < vlayer.back().size(); ++s)
+		// {
+		// 	for (size_t i = 0; i < vlayer.back()[s].size(); ++i)
+		// 	{
+		// 		for (size_t j = 0; j < vlayer.back()[s].back().size(); ++j)
+		// 		{
+		// 			//* 0.299; // before [temp_++] 3 times
+		// 			//* 0.587;
+		// 			//* 0.114;
+
+		// 			vlayer.back()[s][i][j].Rn.err = vErr[temp_] * 0.299;
+		// 			vlayer.back()[s][i][j].Gn.err = vErr[temp_] * 0.587;
+		// 			vlayer.back()[s][i][j].Bn.err = vErr[temp_] * 0.114;
+		// 		}
+		// 	}
+		// }
+
+		// //mA backward
+		// for (size_t i = vfunc.size() - 1; i > 0; --i)
+		// {
+		// 	if (vfunc[i] < 0)
+		// 	{
+		// 		if (vfunc[i] == -4)
+		// 		{
+		// 			for (size_t layer = 0; layer < vlayer[i].size(); ++layer)
+		// 			{
+		// 				for (size_t y = 0; y < vlayer[i][layer].size(); ++y)
+		// 				{
+		// 					for (size_t x = 0; x < vlayer[i][layer].back().size(); ++x)
+		// 					{
+		// 						auto& temp2 = vlayer[i][layer][y][x];
+		// 						if (temp2.Rn.err != 0.)
+		// 						{
+		// 							vlayer[i - 1][layer][y * 2][x * 2].Rn.err			= temp2.Rn.err;
+		// 							vlayer[i - 1][layer][y * 2 + 1][x * 2].Rn.err		= temp2.Rn.err;
+		// 							vlayer[i - 1][layer][y * 2][x * 2 + 1].Rn.err		= temp2.Rn.err;
+		// 							vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Rn.err	= temp2.Rn.err;
+		// 						}
+		// 						if (temp2.Gn.err != 0.)
+		// 						{
+		// 							vlayer[i - 1][layer][y * 2][x * 2].Gn.err			= temp2.Gn.err;
+		// 							vlayer[i - 1][layer][y * 2 + 1][x * 2].Gn.err		= temp2.Gn.err;
+		// 							vlayer[i - 1][layer][y * 2][x * 2 + 1].Gn.err		= temp2.Gn.err;
+		// 							vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Gn.err	= temp2.Gn.err;
+		// 						}
+		// 						if (temp2.Bn.err != 0.)
+		// 						{
+
+		// 							vlayer[i - 1][layer][y * 2][x * 2].Bn.err			= temp2.Bn.err;
+		// 							vlayer[i - 1][layer][y * 2 + 1][x * 2].Bn.err		= temp2.Bn.err;
+		// 							vlayer[i - 1][layer][y * 2][x * 2 + 1].Bn.err		= temp2.Bn.err;
+		// 							vlayer[i - 1][layer][y * 2 + 1][x * 2 + 1].Bn.err	= temp2.Bn.err;
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 		}
+		// 		else if ((vfunc[i] == -2) || (vfunc[i] == -3))
+		// 		{
+		// 			for (size_t layer = 0; layer < vlayer[i].size(); ++layer)
+		// 			{
+		// 				for (size_t y = 0; y < vlayer[i][layer].size(); ++y)
+		// 				{
+		// 					for (size_t x = 0; x < vlayer[i][layer].back().size(); ++x)
+		// 					{
+		// 						for (size_t ly = y * 2; ly < y * 2 + 1; ++ly)
+		// 						{
+		// 							for (size_t lx = x * 2; lx < x * 2 + 1; ++lx)
+		// 							{
+		// 								auto& tempnext = vlayer[i][layer][y][x];
+		// 								auto& temptarg = vlayer[i - 1][layer][ly][lx];
+		// 								if (tempnext.Rn.err != 0.)
+		// 								{
+		// 									if (temptarg.Rn.data == tempnext.Rn.data)	temptarg.Rn.err = tempnext.Rn.err;
+		// 								}
+		// 								if (tempnext.Gn.err != 0.)
+		// 								{
+		// 									if (temptarg.Gn.data == tempnext.Gn.data)	temptarg.Gn.err = tempnext.Gn.err;
+		// 								}
+		// 								if (tempnext.Bn.err != 0.)
+		// 								{
+		// 									if (temptarg.Bn.data == tempnext.Bn.data)	temptarg.Bn.err = tempnext.Bn.err;
+		// 								}
+		// 							}
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 		}
+		// 		else
+		// 		{
+		// 			ERROR_
+		// 				return false;
+		// 		}
+		// 	}
+		// 	else if (vfunc[i] >= parall_flag)
+		// 	{
+		// 		auto& kern = vkernel[operator ""_prll(vfunc[i])]; //					current stack of kernels
+		// 		auto& prevlayer = vlayer[i - 1]; //										-previous- layer
+		// 		size_t szprevlayer = prevlayer.size(); //								prevlayer size
+		// 		for (size_t prev = 0; prev < szprevlayer; ++prev)
+		// 		{
+		// 			auto& curkern__ = kern[prev]; //									current kernel
+		// 			size_t szcurkerny = curkern__.size(); //							current kernel size y
+		// 			size_t szcurkernx = curkern__.back().size(); //						current kernel size x
+		// 			auto& next = vlayer[i][prev]; //									-current next- layer
+		// 			auto& curprevlayer__ = prevlayer[prev]; //							current previous layer
+		// 			size_t sznext = next.size(); //										next size y
+		// 			size_t szbknext = next.back().size(); //							next size x
+		// 			for (size_t y = 0; y < sznext; ++y)
+		// 			{
+		// 				for (size_t x = 0; x < szbknext; ++x)
+		// 				{
+		// 					for (size_t ky = 0; ky < szcurkerny; ++ky)
+		// 					{
+		// 						for (size_t kx = 0; kx < szcurkernx; ++kx)
+		// 						{
+		// 							auto& curprevlayer_ = curprevlayer__[y + ky][x + kx];
+		// 							auto& curnextpoint_ = next[y][x];
+		// 							auto& curkernpoint_ = curkern__[ky][kx];
+		// 							if (curnextpoint_.Rn.err != 0.)
+		// 							{
+		// 								curprevlayer_.Rn.err += curnextpoint_.Rn.err * curkernpoint_.R.wg;
+		// 								curkernpoint_.R.grad += curnextpoint_.Rn.err * curprevlayer_.Rn.data;
+		// 							}
+		// 							if (curnextpoint_.Gn.err != 0.)
+		// 							{
+		// 								curprevlayer_.Gn.err += curnextpoint_.Gn.err * curkernpoint_.G.wg;
+		// 								curkernpoint_.G.grad += curnextpoint_.Gn.err * curprevlayer_.Gn.data;
+		// 							}
+		// 							if (curnextpoint_.Bn.err != 0.)
+		// 							{
+		// 								curprevlayer_.Bn.err += curnextpoint_.Bn.err * curkernpoint_.B.wg;
+		// 								curkernpoint_.B.grad += curnextpoint_.Bn.err * curprevlayer_.Bn.data;
+		// 							}
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 			size_t szcurprevy = curprevlayer__.size(); //						size y of current previous layer
+		// 			size_t szcurprevx = curprevlayer__.back().size(); //				size x of current previous layer
+		// 			for (size_t y = 0; y < szcurprevy; ++y)
+		// 			{
+		// 				for (size_t x = 0; x < szcurprevx; ++x)
+		// 				{
+		// 					auto& curpoint_ = curprevlayer__[y][x];
+		// 					curpoint_.Rn.err *= dxReLU(curpoint_.Rn.data);
+		// 					curpoint_.Gn.err *= dxReLU(curpoint_.Gn.data);
+		// 					curpoint_.Bn.err *= dxReLU(curpoint_.Bn.data);
+		// 				}
+		// 			}
+
+		// 			for (size_t ky = 0; ky < szcurkerny; ++ky)
+		// 			{
+		// 				for (size_t kx = 0; kx < szcurkernx; ++kx)
+		// 				{
+		// 					auto& curkernpoint__ = curkern__[ky][kx];
+		// 					curkernpoint__.R.dwg = u_net * curkernpoint__.R.grad + moment_net * curkernpoint__.R.dwg;
+		// 					curkernpoint__.G.dwg = u_net * curkernpoint__.G.grad + moment_net * curkernpoint__.G.dwg;
+		// 					curkernpoint__.B.dwg = u_net * curkernpoint__.B.grad + moment_net * curkernpoint__.B.dwg;
+
+		// 					curkernpoint__.R.wg += curkernpoint__.R.dwg;
+		// 					curkernpoint__.G.wg += curkernpoint__.G.dwg;
+		// 					curkernpoint__.B.wg += curkernpoint__.B.dwg;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// 	else
+		// 	{
+		// 		auto& kern = vkernel[vfunc[i]]; //											current stack of kernels
+		// 		size_t szkern = kern.size(); //												kern size
+		// 		for (size_t k = 0; k < szkern; ++k)
+		// 		{
+		// 			auto& prevlayer = vlayer[i - 1]; //										-previous- layer
+		// 			auto& curkern__ = kern[k]; //											current kernel
+		// 			size_t szprevlayer = prevlayer.size(); //								prevlayer size
+		// 			size_t szcurkerny = curkern__.size(); //								current kernel size y
+		// 			size_t szcurkernx = curkern__.back().size(); //							current kernel size x
+		// 			for (size_t prev = 0; prev < szprevlayer; ++prev)
+		// 			{
+		// 				auto& next = vlayer[i][szkern * prev + k]; //						-current next- layer
+		// 				auto& curprevlayer__ = prevlayer[prev]; //							current previous layer
+		// 				size_t sznext = next.size(); //										next size y
+		// 				size_t szbknext = next.back().size(); //							next size x
+		// 				for (size_t y = 0; y < sznext; ++y)
+		// 				{
+		// 					for (size_t x = 0; x < szbknext; ++x)
+		// 					{
+		// 						for (size_t ky = 0; ky < szcurkerny; ++ky)
+		// 						{
+		// 							for (size_t kx = 0; kx < szcurkernx; ++kx)
+		// 							{
+		// 								auto& curprevlayer_ = curprevlayer__[y + ky][x + kx];
+		// 								auto& curnextpoint_ = next[y][x];
+		// 								auto& curkernpoint_ = curkern__[ky][kx];
+		// 								if (curnextpoint_.Rn.err != 0.)
+		// 								{
+		// 									curprevlayer_.Rn.err += curnextpoint_.Rn.err * curkernpoint_.R.wg;
+		// 									curkernpoint_.R.grad += curnextpoint_.Rn.err * curprevlayer_.Rn.data;
+		// 								}
+		// 								if (curnextpoint_.Gn.err != 0.)
+		// 								{
+		// 									curprevlayer_.Gn.err += curnextpoint_.Gn.err * curkernpoint_.G.wg;
+		// 									curkernpoint_.G.grad += curnextpoint_.Gn.err * curprevlayer_.Gn.data;
+		// 								}
+		// 								if (curnextpoint_.Bn.err != 0.)
+		// 								{
+		// 									curprevlayer_.Bn.err += curnextpoint_.Bn.err * curkernpoint_.B.wg;
+		// 									curkernpoint_.B.grad += curnextpoint_.Bn.err * curprevlayer_.Bn.data;
+		// 								}
+		// 							}
+		// 						}
+		// 					}
+		// 				}
+		// 				size_t szcurprevy = curprevlayer__.size(); //						size y of current previous layer
+		// 				size_t szcurprevx = curprevlayer__.back().size(); //				size x of current previous layer
+		// 				for (size_t y = 0; y < szcurprevy; ++y)
+		// 				{
+		// 					for (size_t x = 0; x < szcurprevx; ++x)
+		// 					{
+		// 						auto& curpoint_ = curprevlayer__[y][x];
+		// 						curpoint_.Rn.err *= dxReLU(curpoint_.Rn.data);
+		// 						curpoint_.Gn.err *= dxReLU(curpoint_.Gn.data);
+		// 						curpoint_.Bn.err *= dxReLU(curpoint_.Bn.data);
+		// 					}
+		// 				}
+		// 			}
+
+		// 			for (size_t ky = 0; ky < szcurkerny; ++ky)
+		// 			{
+		// 				for (size_t kx = 0; kx < szcurkernx; ++kx)
+		// 				{
+		// 					auto& curkernpoint__ = curkern__[ky][kx];
+		// 					curkernpoint__.R.dwg = u_net * curkernpoint__.R.grad + moment_net * curkernpoint__.R.dwg;
+		// 					curkernpoint__.G.dwg = u_net * curkernpoint__.G.grad + moment_net * curkernpoint__.G.dwg;
+		// 					curkernpoint__.B.dwg = u_net * curkernpoint__.B.grad + moment_net * curkernpoint__.B.dwg;
+
+		// 					curkernpoint__.R.wg += curkernpoint__.R.dwg;
+		// 					curkernpoint__.G.wg += curkernpoint__.G.dwg;
+		// 					curkernpoint__.B.wg += curkernpoint__.B.dwg;
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+		// if (vfunc[0] >= 0) // if first vfunc < 0, then do nothing(wWw in decrease layers don't changing)
+		// {
+		// 	auto& kern = vkernel[vfunc[0] >= parall_flag ? operator ""_prll(vfunc[0]) : vfunc[0]]; // current stack of kernels
+		// 	size_t szkern = kern.size(); //												kern size
+		// 	for (size_t k = 0; k < szkern; ++k)
+		// 	{
+		// 		auto& curkern__ = kern[k]; //											current kernel
+		// 		size_t szcurkerny = curkern__.size(); //								current kernel size y
+		// 		size_t szcurkernx = curkern__.back().size(); //							current kernel size x
+		// 		auto& next = vlayer[0][k]; //											-current next- layer
+		// 		size_t sznext = next.size(); //											next size y
+		// 		size_t szbknext = next.back().size(); //								next size x
+		// 		for (size_t y = 0; y < sznext; ++y)
+		// 		{
+		// 			for (size_t x = 0; x < szbknext; ++x)
+		// 			{
+		// 				for (size_t ky = 0; ky < szcurkerny; ++ky)
+		// 				{
+		// 					for (size_t kx = 0; kx < szcurkernx; ++kx)
+		// 					{
+		// 						auto& curprevlayer_ = vinLayer[y + ky][x + kx];
+		// 						auto& curnextpoint_ = next[y][x];
+		// 						auto& curkernpoint_ = curkern__[ky][kx];
+		// 						if (curnextpoint_.Rn.err != 0.)
+		// 						{
+		// 							curkernpoint_.R.grad += curnextpoint_.Rn.err * curprevlayer_.Rn.data;
+		// 						}
+		// 						if (curnextpoint_.Gn.err != 0.)
+		// 						{
+		// 							curkernpoint_.G.grad += curnextpoint_.Gn.err * curprevlayer_.Gn.data;
+		// 						}
+		// 						if (curnextpoint_.Bn.err != 0.)
+		// 						{
+		// 							curkernpoint_.B.grad += curnextpoint_.Bn.err * curprevlayer_.Bn.data;
+		// 						}
+		// 					}
+		// 				}
+		// 			}
+		// 		}
+
+		// 		for (size_t ky = 0; ky < szcurkerny; ++ky)
+		// 		{
+		// 			for (size_t kx = 0; kx < szcurkernx; ++kx)
+		// 			{
+		// 				auto& curkernpoint__ = curkern__[ky][kx];
+		// 				curkernpoint__.R.dwg = u_net * curkernpoint__.R.grad + moment_net * curkernpoint__.R.dwg;
+		// 				curkernpoint__.G.dwg = u_net * curkernpoint__.G.grad + moment_net * curkernpoint__.G.dwg;
+		// 				curkernpoint__.B.dwg = u_net * curkernpoint__.B.grad + moment_net * curkernpoint__.B.dwg;
+
+		// 				curkernpoint__.R.wg += curkernpoint__.R.dwg;
+		// 				curkernpoint__.G.wg += curkernpoint__.G.dwg;
+		// 				curkernpoint__.B.wg += curkernpoint__.B.dwg;
+		// 			}
+		// 		}
+		// 	}
+		// }
 
 		return true;
 	}
@@ -2207,6 +2670,43 @@ inline double max_4(double f1, double f2, double f3, double f4)
 	return max;
 }
 
+void err_reverse_max_4(rgb_T& f1, rgb_T& f2, rgb_T& f3, rgb_T& f4, rgb_T& max)
+{
+	/*f1.Rn.err = 0.;
+	f2.Rn.err = 0.;
+	f3.Rn.err = 0.;
+	f4.Rn.err = 0.;
+	f1.Gn.err = 0.;
+	f2.Gn.err = 0.;
+	f3.Gn.err = 0.;
+	f4.Gn.err = 0.;
+	f1.Bn.err = 0.;
+	f2.Bn.err = 0.;
+	f3.Bn.err = 0.;
+	f4.Bn.err = 0.;*/
+	if (max.Rn.err)
+	{
+		if (f1.Rn.data == max.Rn.data)	f1.Rn.err = max.Rn.err;
+		else if (f2.Rn.data == max.Rn.data)	f2.Rn.err = max.Rn.err;
+		else if (f3.Rn.data == max.Rn.data)	f3.Rn.err = max.Rn.err;
+		else if (f4.Rn.data == max.Rn.data)	f4.Rn.err = max.Rn.err;
+	}
+	if (max.Gn.err)
+	{
+		if (f1.Gn.data == max.Gn.data)	f1.Gn.err = max.Gn.err;
+		else if (f2.Gn.data == max.Gn.data)	f2.Gn.err = max.Gn.err;
+		else if (f3.Gn.data == max.Gn.data)	f3.Gn.err = max.Gn.err;
+		else if (f4.Gn.data == max.Gn.data)	f4.Gn.err = max.Gn.err;
+	}
+	if (max.Bn.err)
+	{
+		if (f1.Bn.data == max.Bn.data)	f1.Bn.err = max.Bn.err;
+		else if (f2.Bn.data == max.Bn.data)	f2.Bn.err = max.Bn.err;
+		else if (f3.Bn.data == max.Bn.data)	f3.Bn.err = max.Bn.err;
+		else if (f4.Bn.data == max.Bn.data)	f4.Bn.err = max.Bn.err;
+	}
+}
+
 // func -3
 inline double min_4(double f1, double f2, double f3, double f4)
 {
@@ -2216,28 +2716,100 @@ inline double min_4(double f1, double f2, double f3, double f4)
 	return min;
 }
 
+void err_reverse_min_4(rgb_T& f1, rgb_T& f2, rgb_T& f3, rgb_T& f4, rgb_T& min)
+{
+	/*f1.Rn.err = 0.;
+	f2.Rn.err = 0.;
+	f3.Rn.err = 0.;
+	f4.Rn.err = 0.;
+	f1.Gn.err = 0.;
+	f2.Gn.err = 0.;
+	f3.Gn.err = 0.;
+	f4.Gn.err = 0.;
+	f1.Bn.err = 0.;
+	f2.Bn.err = 0.;
+	f3.Bn.err = 0.;
+	f4.Bn.err = 0.;*/
+	if (min.Rn.err)
+	{
+		if (f1.Rn.data == min.Rn.data)	f1.Rn.err = min.Rn.err;
+		else if (f2.Rn.data == min.Rn.data)	f2.Rn.err = min.Rn.err;
+		else if (f3.Rn.data == min.Rn.data)	f3.Rn.err = min.Rn.err;
+		else if (f4.Rn.data == min.Rn.data)	f4.Rn.err = min.Rn.err;
+	}
+	if (min.Gn.err)
+	{
+		if (f1.Gn.data == min.Gn.data)	f1.Gn.err = min.Gn.err;
+		else if (f2.Gn.data == min.Gn.data)	f2.Gn.err = min.Gn.err;
+		else if (f3.Gn.data == min.Gn.data)	f3.Gn.err = min.Gn.err;
+		else if (f4.Gn.data == min.Gn.data)	f4.Gn.err = min.Gn.err;
+	}
+	if (min.Bn.err)
+	{
+		if (f1.Bn.data == min.Bn.data)	f1.Bn.err = min.Bn.err;
+		else if (f2.Bn.data == min.Bn.data)	f2.Bn.err = min.Bn.err;
+		else if (f3.Bn.data == min.Bn.data)	f3.Bn.err = min.Bn.err;
+		else if (f4.Bn.data == min.Bn.data)	f4.Bn.err = min.Bn.err;
+	}
+}
+
 // func -4
 inline double mid_4(double f1, double f2, double f3, double f4)
 {
 	return static_cast<double>((f1 + f2 + f3 + f4) / 4.);
 }
 
+void err_reverse_mid_4(rgb_T& f1, rgb_T& f2, rgb_T& f3, rgb_T& f4, rgb_T& mid)
+{
+	/*f1.Rn.err = 0.;
+	f2.Rn.err = 0.;
+	f3.Rn.err = 0.;
+	f4.Rn.err = 0.;
+	f1.Gn.err = 0.;
+	f2.Gn.err = 0.;
+	f3.Gn.err = 0.;
+	f4.Gn.err = 0.;
+	f1.Bn.err = 0.;
+	f2.Bn.err = 0.;
+	f3.Bn.err = 0.;
+	f4.Bn.err = 0.;*/
+	double temp = f1.Rn.data + f2.Rn.data + f3.Rn.data + f4.Rn.data;
+	if (temp)
+	{
+		f1.Rn.err = mid.Rn.err * (f1.Rn.data / temp);
+		f2.Rn.err = mid.Rn.err * (f2.Rn.data / temp);
+		f3.Rn.err = mid.Rn.err * (f3.Rn.data / temp);
+		f4.Rn.err = mid.Rn.err * (f4.Rn.data / temp);
+	}
+	temp = f1.Gn.data + f2.Gn.data + f3.Gn.data + f4.Gn.data;
+	if (temp)
+	{
+		f1.Gn.err = mid.Gn.err * (f1.Gn.data / temp);
+		f2.Gn.err = mid.Gn.err * (f2.Gn.data / temp);
+		f3.Gn.err = mid.Gn.err * (f3.Gn.data / temp);
+		f4.Gn.err = mid.Gn.err * (f4.Gn.data / temp);
+	}
+	temp = f1.Bn.data + f2.Bn.data + f3.Bn.data + f4.Bn.data;
+	if (temp)
+	{
+		f1.Bn.err = mid.Bn.err * (f1.Bn.data / temp);
+		f2.Bn.err = mid.Bn.err * (f2.Bn.data / temp);
+		f3.Bn.err = mid.Bn.err * (f3.Bn.data / temp);
+		f4.Bn.err = mid.Bn.err * (f4.Bn.data / temp);
+	}
+}
+
 inline double ReLU(double x)
 {
-	/*if (x > 1.)
-	{
-		ERROR_
-	}*/
+	//return 1. / (1. + exp(-x));
+	//if (x > 255.) x = 255.;
 	return (x > 0.) ? x : 0.;
 }
 
-inline double dxReLU(double x)
+constexpr inline double ReLU_DRV(double x)
 {
-	/*if (x > 1.)
-	{
-		ERROR_
-	}*/
-	return (x > 0.) ? 1. : 0.;
+	//return x * (1. - x);
+	return 1.;
 }
 
 double softmax(::std::vector<double>& y, size_t i)
@@ -2272,6 +2844,15 @@ bool neuronet::callBackProp(const ::std::vector<double>& d, ::std::vector<double
 	return true;
 }
 
+bool neuronet::callBackPropByErr(const ::std::vector<double>& d, ::std::vector<double>& errback)
+{
+	ER_IF(!this->isReady,, return false; )
+	ER_IF((this->moment == 0) || (this->u == 0),, return false; )
+	ER_IF(d.size() != data.back().size(),, return false; )
+	backPropByErr(d, errback);
+	return true;
+}
+
 void neuronet::backProp(const ::std::vector<double>& d, ::std::vector<double>& errback)
 {
 	using dw = ::std::vector<double>;
@@ -2286,64 +2867,50 @@ void neuronet::backProp(const ::std::vector<double>& d, ::std::vector<double>& e
 	//default error
 	for (size_t i {0}; i < data.back().size(); ++i)
 	{
-		errR.back().emplace_back((d[i] - data.back()[i].data) * data.back()[i].funcDRV);
+		errR.back().emplace_back(d[i] - data.back()[i].data);
 	}
 
-	/*
-	//quad error
-	double ErrorQuad = 0.;
-	for (size_t i = 0; i < data.back().size(); ++i)
-	{
-		ErrorQuad += ::std::pow(d[i] - data.back()[i].data, 2);
-	}
-	ErrorQuad /= 2.;
-	for (size_t i = 0; i < data.back().size(); ++i)
-	{
-		errR.back().emplace_back(ErrorQuad * (d[i] - data.back()[i].data));
-	}
-	*/
-
-	double local_sum = 0.;
+	double local_sum;
 	errR[data.size() - 2].reserve(data[data.size() - 2].size());
-	for (size_t j = 0; j < data[data.size() - 2].size(); ++j)
+	for (size_t j {0}; j < data[data.size() - 2].size(); ++j)
 	{
 		local_sum = 0.;
-		for (size_t next = 0; next < data.back().size(); ++next)
+		for (size_t next = {0}; next < data.back().size(); ++next)
 		{
-			local_sum += errR[data.size() - 1][next] * weight[data.size() - 2][data.back().size() * j + next].wg;
-			weight[data.size() - 2][data.back().size() * j + next].grad = errR[data.size() - 1][next] * data[data.size() - 2][j].data;
+			local_sum += errR.back()[next] * data.back()[next].funcDRV * weight.back()[data.back().size() * j + next].wg;
+			weight.back()[data.back().size() * j + next].grad = errR.back()[next] * data[data.size() - 2][j].data * data.back()[next].funcDRV;
 		}
-		errR[data.size() - 2].emplace_back(local_sum * data[data.size() - 2][j].funcDRV);
+		errR[data.size() - 2].emplace_back(local_sum);
 	}
 	for (ptrdiff_t i = static_cast<ptrdiff_t>(data.size() - 3); i >= 0; --i)
 	{
 		errR[i].reserve(data[i].size());
-		for (size_t j = 0; j < data[i].size(); ++j)
+		for (size_t j {0}; j < data[i].size(); ++j)
 		{
 			local_sum = 0.;
-			for (size_t next = 0; next < data[i + 1].size() - 1; ++next)
+			for (size_t next {0}; next < data[i + 1].size() - 1; ++next)
 			{
-				local_sum += errR[i + 1][next] * weight[i][(data[i + 1].size() - 1) * j + next].wg;
-				weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data;
+				local_sum += errR[i + 1][next] * data[i + 1][next].funcDRV * weight[i][(data[i + 1].size() - 1) * j + next].wg;
+				weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data * data[i + 1][next].funcDRV;
 			}
-			errR[i].emplace_back(local_sum * data[i][j].funcDRV);
+			errR[i].emplace_back(local_sum);
 		}
 	}
 
-	for (size_t i = 1; i < data.size() - 1; ++i)
+	for (size_t i {1}; i < data.size() - 1; ++i)
 	{
-		for (size_t j = 0; j < data[i].size() - 1; ++j)
+		for (size_t j {0}; j < data[i].size() - 1; ++j)
 		{
-			for (size_t prev = 0; prev < data[i - 1].size(); ++prev)
+			for (size_t prev {0}; prev < data[i - 1].size(); ++prev)
 			{
 				weight[i - 1][prev * (data[i].size() - 1) + j].dwg = u * weight[i - 1][prev * (data[i].size() - 1) + j].grad + (moment * weight[i - 1][prev * (data[i].size() - 1) + j].dwg);
 				weight[i - 1][prev * (data[i].size() - 1) + j].wg += weight[i - 1][prev * (data[i].size() - 1) + j].dwg;
 			}
 		}
 	}
-	for (size_t j = 0; j < data.back().size(); ++j)
+	for (size_t j {0}; j < data.back().size(); ++j)
 	{
-		for (size_t prev = 0; prev < data[data.size() - 2].size(); ++prev)
+		for (size_t prev {0}; prev < data[data.size() - 2].size(); ++prev)
 		{
 			weight[data.size() - 2][prev * data.back().size() + j].dwg = u * weight[data.size() - 2][prev * data.back().size() + j].grad + (moment * weight[data.size() - 2][prev * data.back().size() + j].dwg);
 			weight[data.size() - 2][prev * data.back().size() + j].wg += weight[data.size() - 2][prev * data.back().size() + j].dwg;
@@ -2351,12 +2918,73 @@ void neuronet::backProp(const ::std::vector<double>& d, ::std::vector<double>& e
 	}
 
 	errback = errR[0];
-	
-	/*for (size_t i = 0; i < errR[0].size() - 1; ++i) // -1 BIAS ERROR, since BIAS don't connected with previos layer
+}
+
+void neuronet::backPropByErr(const ::std::vector<double>& err, ::std::vector<double>& errback)
+{
+	using dw = ::std::vector<double>;
+	::std::vector<dw> errR;
+
+	errR.reserve(data.size());
+	for (size_t i {0}; i < data.size(); ++i)
 	{
-		errback.reserve(errback.capacity() + 1);
-		errback.emplace_back(errR[0][i]);
-	}*/
+		errR.emplace_back(dw());
+	}
+
+	//default error
+	for (size_t i {0}; i < data.back().size(); ++i)
+	{
+		errR.back().emplace_back(err[i]);
+	}
+
+	double local_sum;
+	errR[data.size() - 2].reserve(data[data.size() - 2].size());
+	for (size_t j {0}; j < data[data.size() - 2].size(); ++j)
+	{
+		local_sum = 0.;
+		for (size_t next = {0}; next < data.back().size(); ++next)
+		{
+			local_sum += errR.back()[next] * data.back()[next].funcDRV * weight.back()[data.back().size() * j + next].wg;
+			weight.back()[data.back().size() * j + next].grad = errR.back()[next] * data[data.size() - 2][j].data * data.back()[next].funcDRV;
+		}
+		errR[data.size() - 2].emplace_back(local_sum);
+	}
+	for (ptrdiff_t i = static_cast<ptrdiff_t>(data.size() - 3); i >= 0; --i)
+	{
+		errR[i].reserve(data[i].size());
+		for (size_t j {0}; j < data[i].size(); ++j)
+		{
+			local_sum = 0.;
+			for (size_t next {0}; next < data[i + 1].size() - 1; ++next)
+			{
+				local_sum += errR[i + 1][next] * data[i + 1][next].funcDRV * weight[i][(data[i + 1].size() - 1) * j + next].wg;
+				weight[i][(data[i + 1].size() - 1) * j + next].grad = errR[i + 1][next] * data[i][j].data * data[i + 1][next].funcDRV;
+			}
+			errR[i].emplace_back(local_sum);
+		}
+	}
+
+	for (size_t i {1}; i < data.size() - 1; ++i)
+	{
+		for (size_t j {0}; j < data[i].size() - 1; ++j)
+		{
+			for (size_t prev {0}; prev < data[i - 1].size(); ++prev)
+			{
+				weight[i - 1][prev * (data[i].size() - 1) + j].dwg = u * weight[i - 1][prev * (data[i].size() - 1) + j].grad + (moment * weight[i - 1][prev * (data[i].size() - 1) + j].dwg);
+				weight[i - 1][prev * (data[i].size() - 1) + j].wg += weight[i - 1][prev * (data[i].size() - 1) + j].dwg;
+			}
+		}
+	}
+	for (size_t j {0}; j < data.back().size(); ++j)
+	{
+		for (size_t prev {0}; prev < data[data.size() - 2].size(); ++prev)
+		{
+			weight[data.size() - 2][prev * data.back().size() + j].dwg = u * weight[data.size() - 2][prev * data.back().size() + j].grad + (moment * weight[data.size() - 2][prev * data.back().size() + j].dwg);
+			weight[data.size() - 2][prev * data.back().size() + j].wg += weight[data.size() - 2][prev * data.back().size() + j].dwg;
+		}
+	}
+
+	errback = errR[0];
 }
 
 #endif
